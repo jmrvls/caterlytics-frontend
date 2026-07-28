@@ -9,7 +9,7 @@
         </div>
 
         <div class="my-auto flex justify-center items-center">
-          <img src="/src/assets/login-bg.png" alt="Catering Display" class="rounded-2xl max-h-[500px] w-[120%] object-contain scale-110"/>
+          <img src="/src/Assets/login-bg.png" alt="Catering Display" class="rounded-2xl max-h-[500px] w-[120%] object-contain scale-110"/>
         </div>
 
         <div class="space-y-6">
