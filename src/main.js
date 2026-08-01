@@ -6,11 +6,13 @@ import App from './App.vue'
 import LoginView from './Views/LoginView.vue'
 import RegisterView from './Views/RegisterView.vue'
 import AdminDashboard from './Views/AdminDashboard.vue'
+import BookingManagement from './Views/BookingManagement.vue'
 
 const routes = [
   { path: '/', component: LoginView },
   { path: '/register', component: RegisterView },
-  { path: '/admin/dashboard', component: AdminDashboard }
+  { path: '/admin/dashboard', component: AdminDashboard }, // <-- Pinalitan: Nilagyan ng comma dito
+  { path: '/admin/bookings', component: BookingManagement }
 ]
 
 const router = createRouter({
