@@ -7,10 +7,11 @@ function getAuthHeaders() {
   return { headers: { Authorization: `Bearer ${token}` } };
 }
 
-// 1. Binago mula getBookings -> getAllBookings para tumugma sa Vue file mo
+// Renamed from getBookings -> getAllBookings to match the Vue file
 export async function getAllBookings() {
   const response = await axios.get(`${API_URL}/bookings`, getAuthHeaders());
-  return response.data;
+  // Backend returns { bookings: [...] }, so unwrap it here to return a plain array
+  return response.data.bookings || [];
 }
 
 export async function createBooking(bookingData) {
@@ -28,21 +29,18 @@ export async function deleteBooking(id) {
   return response.data;
 }
 
-// 2. IDINAGDAG: Function para sa checkDateConflict gamit ang Axios
+// Client-side conflict check (no dedicated /check-conflict endpoint on the backend yet,
+// used here for a real-time warning in the modal before the form is submitted.
+// The backend still does the authoritative check on POST — see createBooking above).
 export async function checkDateConflict(eventDate) {
-  try {
-    const response = await axios.get(`${API_URL}/bookings/check-conflict`, {
-      ...getAuthHeaders(),
-      params: { date: eventDate }
-    });
-    return response.data; // Dapat mag-return ang backend mo ng { conflict: true/false, existingBookings: [...] }
-  } catch (error) {
-    // Fallback kung wala ka pang endpoint sa backend para dito:
-    const allBookings = await getAllBookings();
-    const existing = allBookings.filter(b => b.event_date === eventDate);
-    return {
-      conflict: existing.length > 0,
-      existingBookings: existing
-    };
-  }
+  const allBookings = await getAllBookings();
+  const existing = allBookings.filter(
+    (b) =>
+      b.event_date === eventDate &&
+      ['Pending', 'Confirmed'].includes(b.booking_status)
+  );
+  return {
+    conflict: existing.length > 0,
+    existingBookings: existing
+  };
 }

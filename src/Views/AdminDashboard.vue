@@ -32,7 +32,7 @@
 
         <a v-for="item in navItems" :key="item.name"
           href="#"
-          @click.prevent="activeSection = item.name"
+        @click.prevent="item.name === 'Event Bookings' ? router.push('/admin/bookings') : item.name === 'Catering Packages' ? router.push('/admin/packages') : item.name === 'Inventory' ? router.push('/admin/inventory') : item.name === 'Reports' ? router.push('/admin/reports') : (activeSection = item.name)"
           :class="activeSection === item.name ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'"
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition"
         >
@@ -96,7 +96,7 @@
 
           <!-- Quick Actions -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <button @click="activeSection = 'Event Bookings'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-left">
+            <button @click="router.push('/admin/bookings')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-left">
               <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
