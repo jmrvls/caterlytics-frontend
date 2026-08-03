@@ -138,13 +138,17 @@ const handleLogin = async () => {
   errorMessage.value = ''
   isLoading.value = true
 
-  try {
+ try {
     const result = await loginUser(form.value.username, form.value.password)
 
     localStorage.setItem('token', result.token)
     localStorage.setItem('user', JSON.stringify(result.user))
 
-    router.push('/admin/dashboard')
+    if (result.user.role === 'Client') {
+      router.push('/client/bookings')
+    } else {
+      router.push('/admin/dashboard')
+    }
 
   } catch (error) {
     if (error.response && error.response.data && error.response.data.error) {

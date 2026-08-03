@@ -29,6 +29,12 @@ export async function deleteBooking(id) {
   return response.data;
 }
 
+// Client role only - returns bookings made by the logged-in user
+export async function getMyBookings() {
+  const response = await axios.get(`${API_URL}/bookings/my`, getAuthHeaders());
+  return response.data.bookings || [];
+}
+
 // Client-side conflict check (no dedicated /check-conflict endpoint on the backend yet,
 // used here for a real-time warning in the modal before the form is submitted.
 // The backend still does the authoritative check on POST — see createBooking above).

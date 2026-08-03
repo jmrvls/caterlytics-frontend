@@ -11,6 +11,7 @@ import BookingManagement from './Views/BookingManagement.vue'
 import PackageManagement from './Views/PackageManagement.vue'
 import InventoryManagement from './Views/InventoryManagement.vue'
 import ReportsAnalytics from './Views/ReportsAnalytics.vue'
+import ClientDashboard from './Views/ClientDashboard.vue'
 
 // Routes
 const routes = [
@@ -20,7 +21,8 @@ const routes = [
   { path: '/admin/bookings', component: BookingManagement },
   { path: '/admin/packages', component: PackageManagement },
   { path: '/admin/inventory', component: InventoryManagement },
-  { path: '/admin/reports', component: ReportsAnalytics }
+  { path: '/admin/reports', component: ReportsAnalytics },
+  { path: '/client/bookings', component: ClientDashboard }
 ]
 
 const router = createRouter({
