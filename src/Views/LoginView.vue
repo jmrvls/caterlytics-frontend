@@ -150,15 +150,11 @@ const handleLogin = async () => {
       router.push('/admin/dashboard')
     }
 
-  } catch (error) {
-    if (error.response && error.response.data && error.response.data.error) {
-      errorMessage.value = error.response.data.error
-    } else {
-      errorMessage.value = 'Something went wrong. Please try again.'
-    }
-  } finally {
-    isLoading.value = false
-  }
+ } catch (error) {
+  errorMessage.value = error.message || 'Something went wrong. Please try again.'
+} finally {
+  isLoading.value = false
+}
 }
 </script>
 

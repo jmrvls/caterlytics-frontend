@@ -1,28 +1,52 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  return { headers: { Authorization: `Bearer ${token}` } };
-}
+import { supabase } from '../supabaseClient';
 
 export async function getAllPackages() {
-  const response = await axios.get(`${API_URL}/packages`, getAuthHeaders());
-  return response.data.packages || [];
+  const { data, error } = await supabase
+    .from('tbl_menu_packages')
+    .select('*')
+    .order('package_id', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function createPackage(packageData) {
-  const response = await axios.post(`${API_URL}/packages`, packageData, getAuthHeaders());
-  return response.data;
+  const { data, error } = await supabase
+    .from('tbl_menu_packages')
+    .insert({
+      package_name: packageData.package_name,
+      description: packageData.description,
+      price_per_head: packageData.price_per_head,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function updatePackage(id, packageData) {
-  const response = await axios.put(`${API_URL}/packages/${id}`, packageData, getAuthHeaders());
-  return response.data;
+  const { data, error } = await supabase
+    .from('tbl_menu_packages')
+    .update({
+      package_name: packageData.package_name,
+      description: packageData.description,
+      price_per_head: packageData.price_per_head,
+    })
+    .eq('package_id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function deletePackage(id) {
-  const response = await axios.delete(`${API_URL}/packages/${id}`, getAuthHeaders());
-  return response.data;
+  const { error } = await supabase
+    .from('tbl_menu_packages')
+    .delete()
+    .eq('package_id', id);
+
+  if (error) throw error;
+  return { message: 'Package deleted successfully' };
 }

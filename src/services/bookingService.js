@@ -1,43 +1,76 @@
-import axios from 'axios';
+import { supabase } from '../supabaseClient';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-function getAuthHeaders() {
-  const token = localStorage.getItem('token');
-  return { headers: { Authorization: `Bearer ${token}` } };
-}
-
-// Renamed from getBookings -> getAllBookings to match the Vue file
 export async function getAllBookings() {
-  const response = await axios.get(`${API_URL}/bookings`, getAuthHeaders());
-  // Backend returns { bookings: [...] }, so unwrap it here to return a plain array
-  return response.data.bookings || [];
+  const { data, error } = await supabase
+    .from('tbl_bookings')
+    .select('*')
+    .order('event_date', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 }
 
 export async function createBooking(bookingData) {
-  const response = await axios.post(`${API_URL}/bookings`, bookingData, getAuthHeaders());
-  return response.data;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('You must be logged in.');
+
+  const { data, error } = await supabase
+    .from('tbl_bookings')
+    .insert({
+      client_name: bookingData.client_name,
+      event_date: bookingData.event_date,
+      event_time: bookingData.event_time,
+      event_location: bookingData.event_location,
+      guest_count: bookingData.guest_count,
+      package_name: bookingData.package_name,
+      booking_status: bookingData.booking_status || 'Pending',
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function updateBookingStatus(id, status) {
-  const response = await axios.patch(`${API_URL}/bookings/${id}/status`, { status }, getAuthHeaders());
-  return response.data;
+  const { data, error } = await supabase
+    .from('tbl_bookings')
+    .update({ booking_status: status })
+    .eq('booking_id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
 export async function deleteBooking(id) {
-  const response = await axios.delete(`${API_URL}/bookings/${id}`, getAuthHeaders());
-  return response.data;
+  const { error } = await supabase
+    .from('tbl_bookings')
+    .delete()
+    .eq('booking_id', id);
+
+  if (error) throw error;
+  return { message: 'Booking deleted successfully' };
 }
 
-// Client role only - returns bookings made by the logged-in user
+// Client role only - own bookings
 export async function getMyBookings() {
-  const response = await axios.get(`${API_URL}/bookings/my`, getAuthHeaders());
-  return response.data.bookings || [];
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('You must be logged in.');
+
+  const { data, error } = await supabase
+    .from('tbl_bookings')
+    .select('*')
+    .eq('created_by', user.id)
+    .order('event_date', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
 }
 
-// Client-side conflict check (no dedicated /check-conflict endpoint on the backend yet,
-// used here for a real-time warning in the modal before the form is submitted.
-// The backend still does the authoritative check on POST — see createBooking above).
+// Client-side conflict check before submit
 export async function checkDateConflict(eventDate) {
   const allBookings = await getAllBookings();
   const existing = allBookings.filter(
@@ -47,6 +80,6 @@ export async function checkDateConflict(eventDate) {
   );
   return {
     conflict: existing.length > 0,
-    existingBookings: existing
+    existingBookings: existing,
   };
 }
