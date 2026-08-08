@@ -78,7 +78,7 @@
           <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8 max-w-sm">
             <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Total Revenue</h3>
-              <p class="text-3xl font-black text-gray-900 mt-2">₱0</p>
+              <p class="text-3xl font-black text-gray-900 mt-2">₱{{ formatCurrency(totalRevenue) }}</p>
             </div>
           </div>
 
@@ -112,19 +112,19 @@
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Total Bookings</h3>
-              <p class="text-3xl font-black text-gray-900 mt-2">0</p>
+              <p class="text-3xl font-black text-gray-900 mt-2">{{ isLoadingDashboard ? '…' : totalBookings }}</p>
             </div>
             <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Active Events</h3>
-              <p class="text-3xl font-black text-gray-900 mt-2">0</p>
+              <p class="text-3xl font-black text-gray-900 mt-2">{{ isLoadingDashboard ? '…' : activeEventsCount }}</p>
             </div>
             <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Low Stock Items</h3>
-              <p class="text-3xl font-black text-gray-900 mt-2">0</p>
+              <p class="text-3xl font-black text-gray-900 mt-2">{{ isLoadingDashboard ? '…' : lowStockCount }}</p>
             </div>
             <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Total Revenue</h3>
-              <p class="text-3xl font-black text-gray-900 mt-2">₱0</p>
+              <p class="text-3xl font-black text-gray-900 mt-2">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</p>
             </div>
           </div>
 
@@ -182,8 +182,21 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
-                <tr>
+                <tr v-if="isLoadingDashboard">
+                  <td colspan="4" class="text-center py-8 text-gray-400">Loading bookings...</td>
+                </tr>
+                <tr v-else-if="recentBookings.length === 0">
                   <td colspan="4" class="text-center py-8 text-gray-400">No bookings yet.</td>
+                </tr>
+                <tr v-for="b in recentBookings" :key="b.booking_id" class="hover:bg-gray-50">
+                  <td class="px-6 py-3.5 font-medium text-gray-800">{{ b.client_name }}</td>
+                  <td class="px-6 py-3.5 text-gray-500">{{ formatDate(b.event_date) }}</td>
+                  <td class="px-6 py-3.5 text-gray-500">{{ b.package_name }}</td>
+                  <td class="px-6 py-3.5">
+                    <span :class="statusBadgeClass(b.booking_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                      {{ b.booking_status }}
+                    </span>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -210,19 +223,23 @@
                 <tr>
                   <th class="text-left px-6 py-3 font-semibold">Full Name</th>
                   <th class="text-left px-6 py-3 font-semibold">Username</th>
+                  <th class="text-left px-6 py-3 font-semibold">Contact Number</th>
                   <th class="text-left px-6 py-3 font-semibold">Role</th>
+                  <th class="text-left px-6 py-3 font-semibold">Availability</th>
+                  <th class="text-right px-6 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
                 <tr v-if="isLoadingUsers">
-                  <td colspan="3" class="text-center py-8 text-gray-400">Loading users...</td>
+                  <td colspan="6" class="text-center py-8 text-gray-400">Loading users...</td>
                 </tr>
                 <tr v-else-if="userList.length === 0">
-                  <td colspan="3" class="text-center py-8 text-gray-400">No users found.</td>
+                  <td colspan="6" class="text-center py-8 text-gray-400">No users found.</td>
                 </tr>
-                <tr v-for="u in userList" :key="u.user_id" class="hover:bg-gray-50">
+                <tr v-for="u in userList" :key="u.id" class="hover:bg-gray-50">
                   <td class="px-6 py-3.5 font-medium text-gray-800">{{ u.full_name }}</td>
                   <td class="px-6 py-3.5 text-gray-500">{{ u.username }}</td>
+                  <td class="px-6 py-3.5 text-gray-500">{{ u.contact_number || '—' }}</td>
                   <td class="px-6 py-3.5">
                     <span 
                       :class="{
@@ -234,6 +251,23 @@
                     >
                       {{ u.role }}
                     </span>
+                  </td>
+                  <td class="px-6 py-3.5">
+                    <span
+                      :class="{
+                        'bg-emerald-50 text-emerald-700': u.availability === 'Available',
+                        'bg-amber-50 text-amber-700': u.availability === 'On Leave',
+                        'bg-red-50 text-red-700': u.availability === 'Unavailable'
+                      }"
+                      class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                    >
+                      {{ u.availability }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-3.5 text-right">
+                    <button @click="openEditUserModal(u)" class="text-xs font-semibold text-emerald-600 hover:underline">
+                      Edit
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -296,12 +330,26 @@
           </div>
 
           <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Contact Number</label>
+            <input type="text" v-model="newUser.contact_number" placeholder="e.g. 0917 123 4567" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+
+          <div>
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Role</label>
             <select v-model="newUser.role" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
               <option disabled value="">Select a role</option>
               <option value="Admin">Admin</option>
               <option value="Staff">Staff</option>
               <option value="Owner/Manager">Owner/Manager</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Availability</label>
+            <select v-model="newUser.availability" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+              <option value="Available">Available</option>
+              <option value="On Leave">On Leave</option>
+              <option value="Unavailable">Unavailable</option>
             </select>
           </div>
 
@@ -317,13 +365,71 @@
       </div>
     </div>
 
+    <!-- ============ EDIT USER MODAL ============ -->
+    <div v-if="showEditUserModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Edit Staff Member</h3>
+
+        <div v-if="editModalError" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+          {{ editModalError }}
+        </div>
+
+        <form @submit.prevent="handleUpdateUser" class="space-y-4">
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Full Name</label>
+            <input type="text" v-model="editUser.full_name" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Username</label>
+            <input type="text" :value="editUser.username" disabled class="w-full mt-1 p-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-500" />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Contact Number</label>
+            <input type="text" v-model="editUser.contact_number" placeholder="e.g. 0917 123 4567" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Role</label>
+            <select v-model="editUser.role" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+              <option value="Admin">Admin</option>
+              <option value="Staff">Staff</option>
+              <option value="Owner/Manager">Owner/Manager</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Availability</label>
+            <select v-model="editUser.availability" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+              <option value="Available">Available</option>
+              <option value="On Leave">On Leave</option>
+              <option value="Unavailable">Unavailable</option>
+            </select>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="button" @click="closeEditUserModal" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" :disabled="isSavingEdit" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+              {{ isSavingEdit ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getUsers, createStaffUser } from '../services/staffService'
+import { getUsers, createStaffUser, updateStaffUser } from '../services/staffService'
+import { getAllBookings } from '../services/bookingService'
+import { getAllInventory } from '../services/inventoryService'
+import { getAllPayments } from '../services/paymentService'
 
 const router = useRouter()
 const isSidebarOpen = ref(true)
@@ -339,8 +445,84 @@ const isLoadingUsers = ref(false)
 const showAddUserModal = ref(false)
 const isCreating = ref(false)
 const modalError = ref('')
-const newUser = ref({ full_name: '', username: '', password: '', role: '' })
+const newUser = ref({ full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available' })
 const showNewPassword = ref(false)
+
+const showEditUserModal = ref(false)
+const isSavingEdit = ref(false)
+const editModalError = ref('')
+const editUser = ref({ id: '', full_name: '', username: '', role: '', contact_number: '', availability: 'Available' })
+
+// ---------- Dashboard data ----------
+const allBookings = ref([])
+const allInventory = ref([])
+const allPayments = ref([])
+const isLoadingDashboard = ref(false)
+
+const totalBookings = computed(() => allBookings.value.length)
+
+const activeEventsCount = computed(() =>
+  allBookings.value.filter((b) => ['Pending', 'Confirmed'].includes(b.booking_status)).length
+)
+
+const lowStockCount = computed(() =>
+  allInventory.value.filter((item) => Number(item.quantity) <= Number(item.low_stock_threshold)).length
+)
+
+const totalRevenue = computed(() =>
+  allPayments.value.reduce((sum, p) => sum + (Number(p.amount_paid) || 0), 0)
+)
+
+const recentBookings = computed(() => {
+  return [...allBookings.value]
+    .sort((a, b) => new Date(b.event_date) - new Date(a.event_date))
+    .slice(0, 5)
+})
+
+function formatCurrency(value) {
+  const num = Number(value) || 0
+  return num.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-PH', {
+    year: 'numeric', month: 'short', day: 'numeric'
+  })
+}
+
+function statusBadgeClass(status) {
+  switch (status) {
+    case 'Confirmed': return 'bg-emerald-50 text-emerald-700'
+    case 'Pending': return 'bg-amber-50 text-amber-700'
+    case 'Completed': return 'bg-blue-50 text-blue-700'
+    case 'Cancelled': return 'bg-red-50 text-red-700'
+    default: return 'bg-gray-100 text-gray-600'
+  }
+}
+
+async function fetchDashboardData(role) {
+  isLoadingDashboard.value = true
+  try {
+    if (role === 'Staff') {
+      // Staff only has Payments access — just pull revenue.
+      allPayments.value = await getAllPayments()
+    } else {
+      const [bookings, inventory, payments] = await Promise.all([
+        getAllBookings(),
+        getAllInventory(),
+        getAllPayments()
+      ])
+      allBookings.value = bookings
+      allInventory.value = inventory
+      allPayments.value = payments
+    }
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error)
+  } finally {
+    isLoadingDashboard.value = false
+  }
+}
 
 onMounted(() => {
   const storedUser = localStorage.getItem('user')
@@ -359,6 +541,8 @@ onMounted(() => {
   userName.value = user.full_name
   userRole.value = user.role
   userInitial.value = user.full_name.charAt(0).toUpperCase()
+
+  fetchDashboardData(user.role)
 })
 
 watch(activeSection, (newSection) => {
@@ -380,7 +564,7 @@ async function fetchUsers() {
 }
 
 function openAddUserModal() {
-  newUser.value = { full_name: '', username: '', password: '', role: '' }
+  newUser.value = { full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available' }
   modalError.value = ''
   showNewPassword.value = false
   showAddUserModal.value = true
@@ -399,7 +583,9 @@ async function handleCreateUser() {
       newUser.value.username,
       newUser.value.password,
       newUser.value.full_name,
-      newUser.value.role
+      newUser.value.role,
+      newUser.value.contact_number,
+      newUser.value.availability
     )
     showAddUserModal.value = false
     fetchUsers()
@@ -407,6 +593,43 @@ async function handleCreateUser() {
     modalError.value = error.message || 'Something went wrong. Please try again.'
   } finally {
     isCreating.value = false
+  }
+}
+
+function openEditUserModal(user) {
+  editUser.value = {
+    id: user.id,
+    full_name: user.full_name,
+    username: user.username,
+    role: user.role,
+    contact_number: user.contact_number || '',
+    availability: user.availability || 'Available'
+  }
+  editModalError.value = ''
+  showEditUserModal.value = true
+}
+
+function closeEditUserModal() {
+  showEditUserModal.value = false
+}
+
+async function handleUpdateUser() {
+  editModalError.value = ''
+  isSavingEdit.value = true
+
+  try {
+    await updateStaffUser(editUser.value.id, {
+      full_name: editUser.value.full_name,
+      role: editUser.value.role,
+      contact_number: editUser.value.contact_number,
+      availability: editUser.value.availability
+    })
+    showEditUserModal.value = false
+    fetchUsers()
+  } catch (error) {
+    editModalError.value = error.message || 'Something went wrong. Please try again.'
+  } finally {
+    isSavingEdit.value = false
   }
 }
 
@@ -437,7 +660,7 @@ const navItems = computed(() =>
     : allNavItems
 )
 
-
+// Tagalog label lang para sa pamagat sa taas ng page
 const sectionLabel = computed(() =>
   activeSection.value === 'Dashboard' ? 'Pangunahing Pahina' : activeSection.value
 )

@@ -208,6 +208,11 @@
             <input type="text" v-model="form.client_name" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
           </div>
 
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Client Email (for confirmation)</label>
+            <input type="email" v-model="form.client_email" placeholder="client@example.com" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Event Date</label>
@@ -311,6 +316,7 @@ const isDeleting = ref(false)
 
 const emptyForm = () => ({
   client_name: '',
+  client_email: '',
   event_date: '',
   event_time: '',
   event_location: '',
@@ -330,6 +336,12 @@ onMounted(() => {
   const user = JSON.parse(storedUser)
   if (!['Admin', 'Staff', 'Owner/Manager'].includes(user.role)) {
     router.push('/')
+    return
+  }
+  // Per the manuscript's Use Case Diagram, Staff only has access to
+  // Login/Authentication and Manage Payments -- Bookings is Admin-only.
+  if (user.role === 'Staff') {
+    router.push('/admin/dashboard')
     return
   }
   userName.value = user.full_name
@@ -408,7 +420,7 @@ async function handleDateCheck() {
     const result = await checkDateConflict(form.value.event_date)
     if (result.conflict) {
       const existing = result.existingBookings[0]
-      conflictWarning.value = `Heads up: may existing booking na sa date na ito (${existing.client_name} at ${formatTime(existing.event_time)}). Puwede ka pa ring mag-submit, pero i-double check muna.`
+      conflictWarning.value = `May existing booking na sa date na ito (${existing.client_name} at ${formatTime(existing.event_time)}). Pumili ng ibang petsa — hindi pwede ang parehong petsa.`
     }
   } catch (error) {
     console.error('Conflict check failed:', error)
@@ -423,7 +435,7 @@ async function handleCreateBooking() {
     showCreateModal.value = false
     fetchBookings()
   } catch (error) {
-    modalError.value = error?.response?.data?.error || 'Something went wrong. Please try again.'
+    modalError.value = error?.message || error?.response?.data?.error || 'Something went wrong. Please try again.'
   } finally {
     isCreating.value = false
   }
@@ -436,7 +448,7 @@ async function handleStatusChange(booking, newStatus) {
     await updateBookingStatus(booking.booking_id, newStatus)
   } catch (error) {
     booking.booking_status = previousStatus
-    pageError.value = 'Failed to update booking status.'
+    pageError.value = error?.message || 'Failed to update booking status.'
     console.error(error)
   }
 }

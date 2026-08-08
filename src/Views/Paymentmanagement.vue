@@ -4,7 +4,7 @@
     <!-- SIDEBAR -->
     <aside
       :class="isSidebarOpen ? 'w-64' : 'w-20'"
-      class="bg-white border-r border-gray-200 flex flex-col transition-all duration-300 h-screen sticky top-0"
+      class="bg-white border-r border-gray-200 flex flex-col transition-all duration-300 h-screen sticky top-0 print:hidden"
     >
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-2 overflow-hidden">
@@ -51,7 +51,7 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 p-8 overflow-x-hidden">
+    <main class="flex-1 p-8 overflow-x-hidden print:hidden">
       <div class="max-w-7xl mx-auto">
 
         <div class="flex items-center justify-between mb-6">
@@ -149,6 +149,12 @@
                       class="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
                     >
                       Record Payment
+                    </button>
+                    <button
+                      @click="openReceiptModal(p)"
+                      class="px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100"
+                    >
+                      Receipt
                     </button>
                     <button @click="confirmDelete(p)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50" title="Delete">
                       <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -253,6 +259,68 @@
       </div>
     </div>
 
+    <!-- ============ RECEIPT MODAL ============ -->
+    <div v-if="receiptPayment" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 print:static print:bg-white print:p-0">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 print:shadow-none print:rounded-none print:max-w-full">
+
+        <div class="text-center border-b border-dashed border-gray-300 pb-4 mb-4">
+          <img src="/src/assets/logofinal.png" alt="Logo" class="w-10 h-10 object-contain mx-auto mb-1" />
+          <h3 class="font-black text-gray-900 text-lg">Caterlytics</h3>
+          <p class="text-xs text-gray-400">Official Payment Receipt</p>
+        </div>
+
+        <div class="space-y-1.5 text-sm mb-4">
+          <div class="flex justify-between">
+            <span class="text-gray-400">Receipt No.</span>
+            <span class="font-semibold text-gray-800">#{{ String(receiptPayment.payment_id).padStart(6, '0') }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Date Issued</span>
+            <span class="font-semibold text-gray-800">{{ formatDate(receiptPayment.payment_date) || generatedOn }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Client</span>
+            <span class="font-semibold text-gray-800">{{ receiptPayment.tbl_bookings?.client_name || '—' }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-400">Event Date</span>
+            <span class="font-semibold text-gray-800">{{ formatDate(receiptPayment.tbl_bookings?.event_date) }}</span>
+          </div>
+        </div>
+
+        <div class="border-t border-dashed border-gray-300 pt-4 space-y-1.5 text-sm mb-4">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Total Amount</span>
+            <span class="text-gray-800">₱{{ Number(receiptPayment.total_amount).toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Amount Paid</span>
+            <span class="text-gray-800">₱{{ Number(receiptPayment.amount_paid).toLocaleString() }}</span>
+          </div>
+          <div class="flex justify-between font-bold text-base pt-1">
+            <span class="text-gray-700">Balance</span>
+            <span :class="Number(receiptPayment.balance) > 0 ? 'text-red-600' : 'text-emerald-600'">₱{{ Number(receiptPayment.balance).toLocaleString() }}</span>
+          </div>
+        </div>
+
+        <div class="text-center border-t border-dashed border-gray-300 pt-4">
+          <span :class="statusStyle(receiptPayment.payment_status)" class="px-3 py-1 rounded-full text-xs font-bold">
+            {{ receiptPayment.payment_status }}
+          </span>
+          <p class="text-xs text-gray-400 mt-3">Thank you for booking with Caterlytics!</p>
+        </div>
+
+        <div class="flex gap-3 pt-5 print:hidden">
+          <button @click="receiptPayment = null" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+            Close
+          </button>
+          <button @click="printReceipt" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700">
+            Print / Save as PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -285,6 +353,9 @@ const recordAmount = ref(0)
 
 const paymentToDelete = ref(null)
 const isDeleting = ref(false)
+
+const receiptPayment = ref(null)
+const generatedOn = new Date().toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
 
 onMounted(() => {
   const storedUser = localStorage.getItem('user')
@@ -389,6 +460,14 @@ function confirmDelete(payment) {
   paymentToDelete.value = payment
 }
 
+function openReceiptModal(payment) {
+  receiptPayment.value = payment
+}
+
+function printReceipt() {
+  window.print()
+}
+
 async function handleDelete() {
   if (!paymentToDelete.value) return
   isDeleting.value = true
@@ -435,4 +514,13 @@ const navItems = computed(() =>
 </script>
 
 <style scoped>
+@media print {
+  :deep(.print\:hidden) { display: none !important; }
+  :deep(.print\:static) { position: static !important; }
+  :deep(.print\:bg-white) { background: white !important; }
+  :deep(.print\:p-0) { padding: 0 !important; }
+  :deep(.print\:shadow-none) { box-shadow: none !important; }
+  :deep(.print\:rounded-none) { border-radius: 0 !important; }
+  :deep(.print\:max-w-full) { max-width: 100% !important; }
+}
 </style>

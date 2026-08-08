@@ -277,6 +277,12 @@ onMounted(() => {
     router.push('/')
     return
   }
+  // Per the manuscript's Use Case Diagram, Staff only has access to
+  // Login/Authentication and Manage Payments -- Inventory is Admin-only.
+  if (user.role === 'Staff') {
+    router.push('/admin/dashboard')
+    return
+  }
   userName.value = user.full_name
   userRole.value = user.role
   userInitial.value = user.full_name.charAt(0).toUpperCase()

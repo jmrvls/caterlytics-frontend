@@ -139,23 +139,26 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div class="bg-white p-5 rounded-2xl border border-gray-100 md:col-span-1">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Estimated Revenue</h3>
-                <p class="text-2xl font-black text-emerald-600 mt-1">₱{{ formatPrice(estimatedRevenue) }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">
-                  Based on Confirmed &amp; Completed bookings (package price × guest count). Not yet linked to actual payments — pending the Payment Management module.
-                </p>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div class="bg-white p-5 rounded-2xl border border-gray-100">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Billed</h3>
+                <p class="text-2xl font-black text-gray-900 mt-1">₱{{ formatPrice(totalBilled) }}</p>
+                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Sum of all payment records in this range.</p>
               </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100 md:col-span-1">
+              <div class="bg-white p-5 rounded-2xl border border-gray-100">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Revenue Collected</h3>
+                <p class="text-2xl font-black text-emerald-600 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
+                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Actual amount paid, from the Payments module.</p>
+              </div>
+              <div class="bg-white p-5 rounded-2xl border border-gray-100">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Outstanding Balance</h3>
+                <p class="text-2xl font-black text-red-500 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
+                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Still owed by clients across their bookings.</p>
+              </div>
+              <div class="bg-white p-5 rounded-2xl border border-gray-100">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Low Stock Items</h3>
                 <p class="text-2xl font-black text-amber-500 mt-1">{{ lowStockItems.length }}</p>
                 <p class="text-[11px] text-gray-400 mt-2 leading-snug">Out of {{ inventory.length }} tracked item(s) in inventory.</p>
-              </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100 md:col-span-1">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Active Packages</h3>
-                <p class="text-2xl font-black text-gray-900 mt-1">{{ packages.length }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Catering packages currently configured.</p>
               </div>
             </div>
 
@@ -205,7 +208,9 @@
                     <th class="text-left px-6 py-3 font-semibold">Location</th>
                     <th class="text-left px-6 py-3 font-semibold">Guests</th>
                     <th class="text-left px-6 py-3 font-semibold">Package</th>
-                    <th class="text-left px-6 py-3 font-semibold">Est. Amount</th>
+                    <th class="text-left px-6 py-3 font-semibold">Total Billed</th>
+                    <th class="text-left px-6 py-3 font-semibold">Paid</th>
+                    <th class="text-left px-6 py-3 font-semibold">Balance</th>
                     <th class="text-left px-6 py-3 font-semibold">Status</th>
                   </tr>
                 </thead>
@@ -216,12 +221,24 @@
                     <td class="px-6 py-3.5 text-gray-600">{{ b.event_location }}</td>
                     <td class="px-6 py-3.5 text-gray-600">{{ b.guest_count }}</td>
                     <td class="px-6 py-3.5 text-gray-600">{{ b.package_name || '—' }}</td>
-                    <td class="px-6 py-3.5 text-gray-600">₱{{ formatPrice(estimateBookingAmount(b)) }}</td>
-                    <td class="px-6 py-3.5">
-                      <span :class="statusBadgeClass(b.booking_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                        {{ b.booking_status }}
-                      </span>
-                    </td>
+                    <template v-if="paymentByBookingId.get(b.booking_id)">
+                      <td class="px-6 py-3.5 text-gray-600">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).total_amount) }}</td>
+                      <td class="px-6 py-3.5 text-emerald-600 font-medium">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).amount_paid) }}</td>
+                      <td class="px-6 py-3.5 text-red-500">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).balance) }}</td>
+                      <td class="px-6 py-3.5">
+                        <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                          {{ paymentByBookingId.get(b.booking_id).payment_status }}
+                        </span>
+                      </td>
+                    </template>
+                    <template v-else>
+                      <td class="px-6 py-3.5 text-gray-400 italic" colspan="3">
+                        No payment record yet (est. ₱{{ formatPrice(estimateBookingAmount(b)) }})
+                      </td>
+                      <td class="px-6 py-3.5">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">No record</span>
+                      </td>
+                    </template>
                   </tr>
                 </tbody>
               </table>
@@ -285,6 +302,7 @@ import { useRouter } from 'vue-router'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPackages } from '../services/packageService'
+import { getAllPayments } from '../services/paymentService'
 
 const router = useRouter()
 
@@ -299,6 +317,7 @@ const pageError = ref('')
 const bookings = ref([])
 const inventory = ref([])
 const packages = ref([])
+const payments = ref([])
 
 const tabs = ['Overview', 'Bookings Report', 'Inventory Report']
 const activeTab = ref('Overview')
@@ -319,6 +338,12 @@ onMounted(() => {
     router.push('/')
     return
   }
+  // Per the manuscript's Use Case Diagram, Staff only has access to
+  // Login/Authentication and Manage Payments -- Reports is Owner/Manager-only.
+  if (user.role === 'Staff') {
+    router.push('/admin/dashboard')
+    return
+  }
   userName.value = user.full_name
   userRole.value = user.role
   userInitial.value = user.full_name.charAt(0).toUpperCase()
@@ -330,10 +355,11 @@ async function fetchReportData() {
   isLoading.value = true
   pageError.value = ''
   try {
-    const [b, i, p] = await Promise.all([getAllBookings(), getAllInventory(), getAllPackages()])
+    const [b, i, p, pay] = await Promise.all([getAllBookings(), getAllInventory(), getAllPackages(), getAllPayments()])
     bookings.value = b
     inventory.value = i
     packages.value = p
+    payments.value = pay
   } catch (error) {
     pageError.value = 'Failed to load report data. Please refresh the page.'
     console.error(error)
@@ -365,7 +391,54 @@ function statusBadgeClass(status) {
   }
 }
 
-// ---------- Revenue estimate (package price x guest count, since there's no Payment module yet) ----------
+function paymentStatusBadgeClass(status) {
+  switch (status) {
+    case 'Paid': return 'bg-emerald-50 text-emerald-700'
+    case 'Partial': return 'bg-amber-50 text-amber-700'
+    case 'Unpaid': return 'bg-red-50 text-red-700'
+    default: return 'bg-gray-100 text-gray-600'
+  }
+}
+
+// ---------- Real revenue (from actual tbl_payments records) ----------
+// A booking only has a payment record once Staff/Admin creates one in
+// the Payments module, so we look it up per booking rather than assume
+// every booking has one.
+const paymentByBookingId = computed(() => {
+  const map = new Map()
+  payments.value.forEach((p) => map.set(p.booking_id, p))
+  return map
+})
+
+// Payments are filtered by their linked booking's event date, so the
+// date range picker behaves the same way across every tab.
+const filteredPayments = computed(() => {
+  return payments.value.filter((p) => {
+    const eventDate = p.tbl_bookings?.event_date
+    if (dateFrom.value && (!eventDate || eventDate < dateFrom.value)) return false
+    if (dateTo.value && (!eventDate || eventDate > dateTo.value)) return false
+    return true
+  })
+})
+
+// Total Billed: what clients are supposed to pay in total for this range.
+const totalBilled = computed(() =>
+  filteredPayments.value.reduce((sum, p) => sum + Number(p.total_amount || 0), 0)
+)
+
+// Revenue Collected: actual money received (real amount_paid, not an estimate).
+const revenueCollected = computed(() =>
+  filteredPayments.value.reduce((sum, p) => sum + Number(p.amount_paid || 0), 0)
+)
+
+// Outstanding Balance: money still owed by clients in this range.
+const outstandingBalance = computed(() =>
+  filteredPayments.value.reduce((sum, p) => sum + Number(p.balance || 0), 0)
+)
+
+// ---------- Fallback estimate (only used for bookings with no payment
+// record yet, so the Bookings Report table still shows a useful number
+// instead of a blank) ----------
 function findPackagePrice(packageName) {
   const match = packages.value.find((p) => p.package_name === packageName)
   return match ? Number(match.price_per_head) || 0 : 0
@@ -374,12 +447,6 @@ function findPackagePrice(packageName) {
 function estimateBookingAmount(booking) {
   return findPackagePrice(booking.package_name) * (Number(booking.guest_count) || 0)
 }
-
-const estimatedRevenue = computed(() => {
-  return filteredBookings.value
-    .filter((b) => ['Confirmed', 'Completed'].includes(b.booking_status))
-    .reduce((sum, b) => sum + estimateBookingAmount(b), 0)
-})
 
 function formatPrice(value) {
   const num = Number(value) || 0

@@ -50,3 +50,45 @@ export async function deletePackage(id) {
   if (error) throw error;
   return { message: 'Package deleted successfully' };
 }
+
+// ---------- Package Ingredients (for Auto Deduct Stock) ----------
+
+// Get the ingredient list (with item names) for one package.
+export async function getPackageIngredients(packageId) {
+  const { data, error } = await supabase
+    .from('tbl_package_ingredients')
+    .select('id, item_id, quantity_per_guest, tbl_inventory(item_name, quantity)')
+    .eq('package_id', packageId);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Replace the full ingredient list for a package with a new one.
+// ingredients = [{ item_id, quantity_per_guest }, ...]
+export async function setPackageIngredients(packageId, ingredients) {
+  const { error: deleteError } = await supabase
+    .from('tbl_package_ingredients')
+    .delete()
+    .eq('package_id', packageId);
+
+  if (deleteError) throw deleteError;
+
+  const rows = ingredients
+    .filter((i) => i.item_id && Number(i.quantity_per_guest) > 0)
+    .map((i) => ({
+      package_id: packageId,
+      item_id: i.item_id,
+      quantity_per_guest: i.quantity_per_guest,
+    }));
+
+  if (rows.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('tbl_package_ingredients')
+    .insert(rows)
+    .select();
+
+  if (error) throw error;
+  return data;
+}

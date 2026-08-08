@@ -59,15 +59,34 @@
             <input type="text" :value="userName" disabled class="w-full mt-1 p-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-500" />
           </div>
 
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Email (for booking confirmation)</label>
+            <input type="email" v-model="form.client_email" required placeholder="you@example.com" class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Event Date</label>
-              <input type="date" v-model="form.event_date" required :min="todayStr" class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <input
+                type="date"
+                v-model="form.event_date"
+                @change="handleDateCheck"
+                required
+                :min="todayStr"
+                class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
             </div>
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Event Time</label>
               <input type="time" v-model="form.event_time" required class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
+          </div>
+
+          <div v-if="conflictWarning" class="bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium p-3 rounded-xl flex gap-2">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
+            </svg>
+            <span>{{ conflictWarning }}</span>
           </div>
 
           <div>
@@ -123,9 +142,36 @@
               <p class="text-sm text-gray-500 mt-0.5">{{ formatDate(b.event_date) }} at {{ b.event_time }} — {{ b.event_location }}</p>
               <p class="text-xs text-gray-400 mt-1">{{ b.guest_count }} guests</p>
             </div>
-            <span :class="statusBadgeClass(b.booking_status)" class="px-3 py-1.5 rounded-full text-xs font-semibold flex-shrink-0">
-              {{ b.booking_status }}
-            </span>
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <button
+                v-if="['Pending', 'Confirmed'].includes(b.booking_status)"
+                @click="confirmCancel(b)"
+                class="text-xs font-semibold text-red-500 hover:text-red-600 hover:underline"
+              >
+                Cancel
+              </button>
+              <span :class="statusBadgeClass(b.booking_status)" class="px-3 py-1.5 rounded-full text-xs font-semibold">
+                {{ b.booking_status }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CANCEL CONFIRM MODAL ============ -->
+      <div v-if="bookingToCancel" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Cancel this booking?</h3>
+          <p class="text-sm text-gray-500 mb-5">
+            Ito ay para sa <span class="font-semibold text-gray-700">{{ formatDate(bookingToCancel.event_date) }}</span> sa {{ bookingToCancel.event_location }}. Hindi na ito puwedeng ibalik pagkatapos.
+          </p>
+          <div class="flex gap-3">
+            <button @click="bookingToCancel = null" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+              Keep Booking
+            </button>
+            <button @click="handleCancelBooking" :disabled="isCancelling" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+              {{ isCancelling ? 'Cancelling...' : 'Yes, Cancel' }}
+            </button>
           </div>
         </div>
       </div>
@@ -137,7 +183,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createBooking, getMyBookings } from '../services/bookingService'
+import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking } from '../services/bookingService'
 import { getAllPackages } from '../services/packageService'
 
 const router = useRouter()
@@ -155,6 +201,10 @@ const isLoading = ref(false)
 const isSubmitting = ref(false)
 const successMessage = ref('')
 const pageError = ref('')
+const conflictWarning = ref('')
+
+const bookingToCancel = ref(null)
+const isCancelling = ref(false)
 
 const todayStr = new Date().toISOString().split('T')[0]
 
@@ -163,7 +213,8 @@ const form = ref({
   event_time: '',
   event_location: '',
   guest_count: null,
-  package_name: ''
+  package_name: '',
+  client_email: ''
 })
 
 const selectedPackage = computed(() => packages.value.find((p) => p.package_name === form.value.package_name))
@@ -206,6 +257,19 @@ async function loadMyBookings() {
   }
 }
 
+async function handleDateCheck() {
+  conflictWarning.value = ''
+  if (!form.value.event_date) return
+  try {
+    const result = await checkDateConflict(form.value.event_date)
+    if (result.conflict) {
+      conflictWarning.value = 'May naunang booking na sa petsang ito. Pumili ng ibang date bago mag-submit.'
+    }
+  } catch (error) {
+    console.error('Conflict check failed:', error)
+  }
+}
+
 async function submitBooking() {
   successMessage.value = ''
   pageError.value = ''
@@ -214,6 +278,7 @@ async function submitBooking() {
   try {
     await createBooking({
       client_name: userName.value,
+      client_email: form.value.client_email,
       event_date: form.value.event_date,
       event_time: form.value.event_time,
       event_location: form.value.event_location,
@@ -222,7 +287,8 @@ async function submitBooking() {
     })
 
     successMessage.value = 'Booking request submitted! We will confirm it shortly.'
-    form.value = { event_date: '', event_time: '', event_location: '', guest_count: null, package_name: '' }
+    form.value = { event_date: '', event_time: '', event_location: '', guest_count: null, package_name: '', client_email: '' }
+    conflictWarning.value = ''
     await loadMyBookings()
     activeTab.value = 'My Bookings'
   } catch (error) {
