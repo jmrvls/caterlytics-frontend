@@ -226,16 +226,11 @@ async function submitBooking() {
     await loadMyBookings()
     activeTab.value = 'My Bookings'
   } catch (error) {
-    if (error.response && error.response.data && error.response.data.error) {
-      pageError.value = error.response.data.error
-    } else {
-      pageError.value = 'Something went wrong. Please try again.'
-    }
+    pageError.value = error.message || 'Something went wrong. Please try again.'
   } finally {
     isSubmitting.value = false
   }
 }
-
 function statusBadgeClass(status) {
   switch (status) {
     case 'Confirmed': return 'bg-emerald-50 text-emerald-700'

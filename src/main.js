@@ -18,18 +18,50 @@ import ClientDashboard from './Views/ClientDashboard.vue'
 const routes = [
   { path: '/', component: LoginView },
   { path: '/register', component: RegisterView },
-  { path: '/admin/dashboard', component: AdminDashboard },
-  { path: '/admin/bookings', component: BookingManagement },
-  { path: '/admin/packages', component: PackageManagement },
-  { path: '/admin/inventory', component: InventoryManagement },
-  { path: '/admin/payments', component: PaymentManagement },
-  { path: '/admin/reports', component: ReportsAnalytics },
-  { path: '/client/bookings', component: ClientDashboard }
+  { path: '/admin/dashboard', component: AdminDashboard, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
+  { path: '/admin/bookings', component: BookingManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
+  { path: '/admin/packages', component: PackageManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
+  { path: '/admin/inventory', component: InventoryManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
+  { path: '/admin/payments', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
+  { path: '/admin/reports', component: ReportsAnalytics, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
+  { path: '/client/bookings', component: ClientDashboard, meta: { requiresAuth: true, roles: ['Client'] } }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// Global route guard: blocks direct-URL access to pages a role
+// isn't allowed to see, not just the sidebar links.
+router.beforeEach((to) => {
+  if (!to.meta?.requiresAuth) {
+    return true
+  }
+
+  let user = null
+  try {
+    user = JSON.parse(localStorage.getItem('user'))
+  } catch {
+    user = null
+  }
+
+  if (!user || !user.role) {
+    return '/'
+  }
+
+  if (to.meta.roles && !to.meta.roles.includes(user.role)) {
+   
+    if (user.role === 'Staff') {
+      return '/admin/payments'
+    } else if (user.role === 'Client') {
+      return '/client/bookings'
+    } else {
+      return '/'
+    }
+  }
+
+  return true
 })
 
 const app = createApp(App)

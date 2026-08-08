@@ -16,6 +16,9 @@ export async function createStaffUser(username, password, full_name, role) {
     body: { username, password, full_name, role },
   });
 
-  if (error) throw new Error('Failed to create account.');
+  if (error) {
+    const detail = data?.error || error.context?.error || error.message;
+    throw new Error(detail || 'Failed to create account.');
+  }
   return data;
 }

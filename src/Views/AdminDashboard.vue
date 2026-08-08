@@ -18,7 +18,7 @@
         </button>
       </div>
 
-      <div class="px-3 mt-2">
+      <div v-if="userRole !== 'Staff'" class="px-3 mt-2">
         <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700 transition">
           <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -65,8 +65,42 @@
 
         <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ activeSection }}</h1>
 
-        <!-- ============ DASHBOARD SECTION ============ -->
-        <div v-if="activeSection === 'Dashboard'">
+        <!-- ============ DASHBOARD SECTION (STAFF) ============ -->
+        <div v-if="activeSection === 'Dashboard' && userRole === 'Staff'">
+
+          <!-- Welcome Banner -->
+          <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8">
+            <h2 class="text-xl font-bold text-gray-800">Welcome, {{ userName }}!</h2>
+            <p class="text-gray-500 mt-2">You can view and manage client payments here.</p>
+          </div>
+
+          <!-- Summary Card -->
+          <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8 max-w-sm">
+            <div class="bg-white p-6 rounded-2xl border border-gray-100">
+              <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Total Revenue</h3>
+              <p class="text-3xl font-black text-gray-900 mt-2">₱0</p>
+            </div>
+          </div>
+
+          <!-- Quick Action -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <button @click="activeSection = 'Payments'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-left">
+              <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
+                </svg>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800 text-sm">Go to Payments</p>
+                <p class="text-xs text-gray-400">Record and track client payments</p>
+              </div>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ============ DASHBOARD SECTION (ADMIN / OWNER) ============ -->
+        <div v-if="activeSection === 'Dashboard' && userRole !== 'Staff'">
 
           <!-- Summary Cards -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -287,7 +321,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getUsers, createStaffUser } from '../services/staffService'
 
@@ -317,7 +351,7 @@ onMounted(() => {
 
   const user = JSON.parse(storedUser)
 
-  if (user.role !== 'Admin') {
+  if (!['Admin', 'Staff', 'Owner/Manager'].includes(user.role)) {
     router.push('/')
     return
   }
@@ -370,11 +404,7 @@ async function handleCreateUser() {
     showAddUserModal.value = false
     fetchUsers()
   } catch (error) {
-    if (error.response && error.response.data && error.response.data.error) {
-      modalError.value = error.response.data.error
-    } else {
-      modalError.value = 'Something went wrong. Please try again.'
-    }
+    modalError.value = error.message || 'Something went wrong. Please try again.'
   } finally {
     isCreating.value = false
   }
@@ -386,7 +416,7 @@ const handleLogout = () => {
   router.push('/')
 }
 
-const navItems = ref([
+const allNavItems = [
   { name: 'Dashboard', iconPath: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
   { name: 'Event Bookings', iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
   { name: 'Catering Packages', iconPath: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
@@ -394,7 +424,18 @@ const navItems = ref([
   { name: 'Payments', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },
   { name: 'Staff Management', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
-])
+]
+
+// Staff (per the manuscript's Use Case Diagram) only has access to
+// Login/Authentication and Manage Payments -- so their sidebar only
+// shows Dashboard (general landing view) and Payments.
+const staffAllowedSections = ['Dashboard', 'Payments']
+
+const navItems = computed(() =>
+  userRole.value === 'Staff'
+    ? allNavItems.filter(item => staffAllowedSections.includes(item.name))
+    : allNavItems
+)
 </script>
 
 <style scoped>
