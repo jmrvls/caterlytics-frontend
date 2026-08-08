@@ -19,7 +19,7 @@
       </div>
 
       <div v-if="userRole !== 'Staff'" class="px-3 mt-2">
-        <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700 transition">
+        <button class="w-full flex items-center justify-center gap-3 px-3 py-2.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700 transition">
           <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -63,20 +63,20 @@
     <main class="flex-1 p-8 overflow-x-hidden">
       <div class="max-w-7xl mx-auto">
 
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">{{ activeSection }}</h1>
+        <h1 v-if="activeSection !== 'Dashboard'" class="text-2xl font-bold text-gray-900 mb-6">{{ sectionLabel }}</h1>
 
         <!-- ============ DASHBOARD SECTION (STAFF) ============ -->
         <div v-if="activeSection === 'Dashboard' && userRole === 'Staff'">
 
           <!-- Welcome Banner -->
-          <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8">
+          <div class="p-8 rounded-2xl mb-8">
             <h2 class="text-xl font-bold text-gray-800">Welcome, {{ userName }}!</h2>
             <p class="text-gray-500 mt-2">You can view and manage client payments here.</p>
           </div>
 
           <!-- Summary Card -->
           <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8 max-w-sm">
-            <div class="bg-white p-6 rounded-2xl border border-gray-100">
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Total Revenue</h3>
               <p class="text-3xl font-black text-gray-900 mt-2">₱0</p>
             </div>
@@ -84,7 +84,7 @@
 
           <!-- Quick Action -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <button @click="activeSection = 'Payments'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-left">
+            <button @click="activeSection = 'Payments'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-center">
               <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
@@ -102,35 +102,35 @@
         <!-- ============ DASHBOARD SECTION (ADMIN / OWNER) ============ -->
         <div v-if="activeSection === 'Dashboard' && userRole !== 'Staff'">
 
+          <!-- Welcome Banner -->
+          <div class="p-8 rounded-2xl mb-8">
+            <h2 class="text-xl font-bold text-gray-800">Welcome, {{ userName }}!</h2>
+            <p class="text-gray-500 mt-2">Manage bookings, packages, and inventory.</p>
+          </div>
+
           <!-- Summary Cards -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white p-6 rounded-2xl border border-gray-100">
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Total Bookings</h3>
               <p class="text-3xl font-black text-gray-900 mt-2">0</p>
             </div>
-            <div class="bg-white p-6 rounded-2xl sborder border-gray-100">
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Active Events</h3>
               <p class="text-3xl font-black text-gray-900 mt-2">0</p>
             </div>
-            <div class="bg-white p-6 rounded-2xl border border-gray-100">
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Low Stock Items</h3>
               <p class="text-3xl font-black text-gray-900 mt-2">0</p>
             </div>
-            <div class="bg-white p-6 rounded-2xl border border-gray-100">
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center">
               <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wide">Total Revenue</h3>
               <p class="text-3xl font-black text-gray-900 mt-2">₱0</p>
             </div>
           </div>
 
-          <!-- Welcome Banner -->
-          <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-8">
-            <h2 class="text-xl font-bold text-gray-800">Welcome, {{ userName }}!</h2>
-            <p class="text-gray-500 mt-2">i bookings, packages, and inventor.</p>
-          </div>
-
           <!-- Quick Actions -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <button @click="router.push('/admin/bookings')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-left">
+            <button @click="router.push('/admin/bookings')" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-center">
               <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -142,7 +142,7 @@
               </div>
             </button>
 
-            <button @click="activeSection = 'Inventory'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-left">
+            <button @click="activeSection = 'Inventory'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-center">
               <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
@@ -154,7 +154,7 @@
               </div>
             </button>
 
-            <button @click="activeSection = 'Staff Management'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-left">
+            <button @click="activeSection = 'Staff Management'" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center gap-3 hover:border-emerald-300 hover:bg-emerald-50/40 transition text-center">
               <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z" />
@@ -435,6 +435,11 @@ const navItems = computed(() =>
   userRole.value === 'Staff'
     ? allNavItems.filter(item => staffAllowedSections.includes(item.name))
     : allNavItems
+)
+
+
+const sectionLabel = computed(() =>
+  activeSection.value === 'Dashboard' ? 'Pangunahing Pahina' : activeSection.value
 )
 </script>
 
