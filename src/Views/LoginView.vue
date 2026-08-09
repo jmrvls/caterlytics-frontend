@@ -16,7 +16,7 @@
         
         <!-- Center Visual Mockup Area -->
         <div class="my-auto flex justify-center items-center">
-          <img src="/src/Assets/login-bg.png" alt="Catering Display" class="rounded-2xl max-h-[500px] w-[120%] object-contain scale-110"/>
+          <img src="/src/assets/login-bg.png" alt="Catering Display" class="rounded-2xl max-h-[500px] w-[120%] object-contain scale-110"/>
         </div>
         
         <!-- Bottom Section -->
@@ -58,7 +58,7 @@
           <div class="space-y-1.5">
             <div class="flex justify-between items-center">
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Password</label>
-              <a href="#" class="text-xs font-bold text-emerald-600 hover:underline">Forgot password?</a>
+              <router-link to="/forgot-password" class="text-xs font-bold text-emerald-600 hover:underline">Forgot password?</router-link>
             </div>
             
             <div class="relative">

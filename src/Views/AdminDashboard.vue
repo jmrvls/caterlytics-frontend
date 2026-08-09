@@ -18,15 +18,6 @@
         </button>
       </div>
 
-      <div v-if="userRole !== 'Staff'" class="px-3 mt-2">
-        <button class="w-full flex items-center justify-center gap-3 px-3 py-2.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700 transition">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          <span v-if="isSidebarOpen" class="whitespace-nowrap">New Booking</span>
-        </button>
-      </div>
-
       <nav class="flex-1 px-3 mt-6 space-y-1 overflow-y-auto">
         <p v-if="isSidebarOpen" class="text-xs font-semibold text-gray-400 px-3 mb-2 uppercase tracking-wide">Menu</p>
 
@@ -660,7 +651,7 @@ const navItems = computed(() =>
     : allNavItems
 )
 
-// Tagalog label lang para sa pamagat sa taas ng page
+
 const sectionLabel = computed(() =>
   activeSection.value === 'Dashboard' ? 'Pangunahing Pahina' : activeSection.value
 )

@@ -133,6 +133,21 @@ export async function deleteBooking(id) {
   return { message: 'Booking deleted successfully' };
 }
 
+// Client role only - cancel one's own booking. RLS (client cancel own
+// booking policy) enforces that a Client can only touch their own
+// bookings, only while Pending/Confirmed, and can only move to Cancelled.
+export async function cancelMyBooking(id) {
+  const { data, error } = await supabase
+    .from('tbl_bookings')
+    .update({ booking_status: 'Cancelled' })
+    .eq('booking_id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error('Failed to cancel booking. Please try again.');
+  return data;
+}
+
 // Client role only - own bookings
 export async function getMyBookings() {
   const { data: { user } } = await supabase.auth.getUser();

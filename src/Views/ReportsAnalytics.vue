@@ -18,15 +18,6 @@
         </button>
       </div>
 
-      <div class="px-3 mt-2">
-        <button @click="printReport" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700 transition">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a1 1 0 001-1v-4a1 1 0 00-1-1H9a1 1 0 00-1 1v4a1 1 0 001 1zm8-12V5a1 1 0 00-1-1H8a1 1 0 00-1 1v4h10z" />
-          </svg>
-          <span v-if="isSidebarOpen" class="whitespace-nowrap">Print Report</span>
-        </button>
-      </div>
-
       <nav class="flex-1 px-3 mt-6 space-y-1 overflow-y-auto">
         <p v-if="isSidebarOpen" class="text-xs font-semibold text-gray-400 px-3 mb-2 uppercase tracking-wide">Menu</p>
 
@@ -69,11 +60,11 @@
             <p class="text-sm text-gray-500 mt-1 print:hidden">Sales, booking, and inventory overview.</p>
             <p class="hidden print:block text-xs text-gray-500 mt-1">Generated {{ generatedOn }}</p>
           </div>
-          <button @click="printReport" class="print:hidden flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
+          <button @click="exportPDF" class="print:hidden flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a1 1 0 001-1v-4a1 1 0 00-1-1H9a1 1 0 00-1 1v4a1 1 0 001 1zm8-12V5a1 1 0 00-1-1H8a1 1 0 00-1 1v4h10z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            Print / Export PDF
+            Export PDF
           </button>
         </div>
 
@@ -141,19 +132,32 @@
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Billed</h3>
-                <p class="text-2xl font-black text-gray-900 mt-1">₱{{ formatPrice(totalBilled) }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Sum of all payment records in this range.</p>
-              </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Revenue Collected</h3>
                 <p class="text-2xl font-black text-emerald-600 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
                 <p class="text-[11px] text-gray-400 mt-2 leading-snug">Actual amount paid, from the Payments module.</p>
               </div>
               <div class="bg-white p-5 rounded-2xl border border-gray-100">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Expenses</h3>
+                <p class="text-2xl font-black text-red-500 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
+                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Recorded business costs in this range.</p>
+              </div>
+              <div class="bg-white p-5 rounded-2xl border border-gray-100">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Gross Profit</h3>
+                <p class="text-2xl font-black mt-1" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
+                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Revenue Collected − direct costs (Ingredients &amp; Supplies).</p>
+              </div>
+              <div class="bg-white p-5 rounded-2xl border border-gray-100">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Outstanding Balance</h3>
-                <p class="text-2xl font-black text-red-500 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
+                <p class="text-2xl font-black text-amber-500 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
                 <p class="text-[11px] text-gray-400 mt-2 leading-snug">Still owed by clients across their bookings.</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div class="bg-white p-5 rounded-2xl border border-gray-100">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Billed</h3>
+                <p class="text-2xl font-black text-gray-900 mt-1">₱{{ formatPrice(totalBilled) }}</p>
+                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Sum of all payment records in this range.</p>
               </div>
               <div class="bg-white p-5 rounded-2xl border border-gray-100">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Low Stock Items</h3>
@@ -289,10 +293,134 @@
             </div>
           </div>
 
+          <!-- ============ EXPENSES TAB ============ -->
+          <div v-else-if="activeTab === 'Expenses'">
+            <div class="flex items-center justify-between mb-4 print:hidden">
+              <p class="text-sm text-gray-500">Track business costs to compute Gross Profit.</p>
+              <button @click="openExpenseForm" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New Expense
+              </button>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="font-bold text-gray-800">Expenses ({{ filteredExpenses.length }})</h3>
+                <p class="text-sm font-bold text-red-500">Total: ₱{{ formatPrice(totalExpenses) }}</p>
+              </div>
+              <div v-if="filteredExpenses.length === 0" class="text-center py-14 text-gray-400 text-sm">
+                No expenses recorded in this range.
+              </div>
+              <table v-else class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                  <tr>
+                    <th class="text-left px-6 py-3 font-semibold">Date</th>
+                    <th class="text-left px-6 py-3 font-semibold">Description</th>
+                    <th class="text-left px-6 py-3 font-semibold">Category</th>
+                    <th class="text-left px-6 py-3 font-semibold">Amount</th>
+                    <th class="text-right px-6 py-3 font-semibold print:hidden">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr v-for="e in filteredExpenses" :key="e.expense_id">
+                    <td class="px-6 py-3.5 text-gray-600">{{ formatDate(e.expense_date) }}</td>
+                    <td class="px-6 py-3.5 font-medium text-gray-800">{{ e.description }}</td>
+                    <td class="px-6 py-3.5">
+                      <span
+                        :class="['Ingredients', 'Supplies'].includes(e.category) ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'"
+                        class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                        :title="['Ingredients', 'Supplies'].includes(e.category) ? 'Counted in Gross Profit (direct cost)' : 'Operating cost — not counted in Gross Profit'"
+                      >{{ e.category }}</span>
+                    </td>
+                    <td class="px-6 py-3.5 text-red-500 font-medium">₱{{ formatPrice(e.amount) }}</td>
+                    <td class="px-6 py-3.5 text-right print:hidden">
+                      <button @click="confirmDeleteExpense(e)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50" title="Delete expense">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </template>
 
       </div>
     </main>
+
+    <!-- ============ NEW EXPENSE MODAL ============ -->
+    <div v-if="showExpenseForm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">New Expense</h3>
+
+        <div v-if="expenseFormError" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+          {{ expenseFormError }}
+        </div>
+
+        <form @submit.prevent="handleAddExpense" class="space-y-4">
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Description</label>
+            <input type="text" v-model="newExpense.description" placeholder="e.g. Bagoong at toyo, market" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Category</label>
+              <select v-model="newExpense.category" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+                <option value="Ingredients">Ingredients</option>
+                <option value="Supplies">Supplies</option>
+                <option value="Salaries">Salaries</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Amount (₱)</label>
+              <input type="number" min="0" step="0.01" v-model.number="newExpense.amount" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Date</label>
+            <input type="date" v-model="newExpense.expense_date" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button type="button" @click="closeExpenseForm" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+              Cancel
+            </button>
+            <button type="submit" :disabled="isSavingExpense" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+              {{ isSavingExpense ? 'Saving...' : 'Save Expense' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ DELETE EXPENSE CONFIRM MODAL ============ -->
+    <div v-if="expenseToDelete" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Expense?</h3>
+        <p class="text-sm text-gray-500 mb-5">
+          This will permanently remove <span class="font-semibold text-gray-700">"{{ expenseToDelete.description }}"</span> (₱{{ formatPrice(expenseToDelete.amount) }}).
+        </p>
+        <div class="flex gap-3">
+          <button @click="expenseToDelete = null" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+            Cancel
+          </button>
+          <button @click="handleDeleteExpense" :disabled="isDeletingExpense" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+            {{ isDeletingExpense ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -303,6 +431,9 @@ import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPackages } from '../services/packageService'
 import { getAllPayments } from '../services/paymentService'
+import { getAllExpenses, createExpense, deleteExpense } from '../services/expenseService'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const router = useRouter()
 
@@ -318,8 +449,9 @@ const bookings = ref([])
 const inventory = ref([])
 const packages = ref([])
 const payments = ref([])
+const expenses = ref([])
 
-const tabs = ['Overview', 'Bookings Report', 'Inventory Report']
+const tabs = ['Overview', 'Bookings Report', 'Inventory Report', 'Expenses']
 const activeTab = ref('Overview')
 
 const dateFrom = ref('')
@@ -355,11 +487,12 @@ async function fetchReportData() {
   isLoading.value = true
   pageError.value = ''
   try {
-    const [b, i, p, pay] = await Promise.all([getAllBookings(), getAllInventory(), getAllPackages(), getAllPayments()])
+    const [b, i, p, pay, exp] = await Promise.all([getAllBookings(), getAllInventory(), getAllPackages(), getAllPayments(), getAllExpenses()])
     bookings.value = b
     inventory.value = i
     packages.value = p
     payments.value = pay
+    expenses.value = exp
   } catch (error) {
     pageError.value = 'Failed to load report data. Please refresh the page.'
     console.error(error)
@@ -435,6 +568,38 @@ const revenueCollected = computed(() =>
 const outstandingBalance = computed(() =>
   filteredPayments.value.reduce((sum, p) => sum + Number(p.balance || 0), 0)
 )
+
+// ---------- Expenses & Gross Profit ----------
+// Expenses are filtered by their own expense_date, same date-range picker
+// used everywhere else on this page.
+const filteredExpenses = computed(() => {
+  return expenses.value.filter((e) => {
+    if (dateFrom.value && e.expense_date < dateFrom.value) return false
+    if (dateTo.value && e.expense_date > dateTo.value) return false
+    return true
+  })
+})
+
+const totalExpenses = computed(() =>
+  filteredExpenses.value.reduce((sum, e) => sum + Number(e.amount || 0), 0)
+)
+
+// Cost of Goods Sold (COGS): only the expense categories that are direct
+// costs of producing the catering service (Ingredients, Supplies).
+// Salaries, Transportation, Utilities, and Other are operating costs and
+// are excluded from Gross Profit, per standard accounting definition.
+const COGS_CATEGORIES = ['Ingredients', 'Supplies']
+
+const costOfGoodsSold = computed(() =>
+  filteredExpenses.value
+    .filter((e) => COGS_CATEGORIES.includes(e.category))
+    .reduce((sum, e) => sum + Number(e.amount || 0), 0)
+)
+
+// Gross Profit = Revenue Collected − direct costs of the catering service
+// (COGS) only. This is real data (from Payments and Expenses), not an
+// estimate.
+const grossProfit = computed(() => revenueCollected.value - costOfGoodsSold.value)
 
 // ---------- Fallback estimate (only used for bookings with no payment
 // record yet, so the Bookings Report table still shows a useful number
@@ -512,9 +677,168 @@ const sortedInventory = computed(() => {
   })
 })
 
-// ---------- Print / export ----------
-function printReport() {
-  window.print()
+// ---------- Expense management ----------
+const emptyExpenseForm = () => ({
+  description: '',
+  category: 'Ingredients',
+  amount: null,
+  expense_date: new Date().toISOString().split('T')[0]
+})
+const newExpense = ref(emptyExpenseForm())
+const showExpenseForm = ref(false)
+const isSavingExpense = ref(false)
+const expenseFormError = ref('')
+
+const expenseToDelete = ref(null)
+const isDeletingExpense = ref(false)
+
+function openExpenseForm() {
+  newExpense.value = emptyExpenseForm()
+  expenseFormError.value = ''
+  showExpenseForm.value = true
+}
+
+function closeExpenseForm() {
+  showExpenseForm.value = false
+}
+
+async function handleAddExpense() {
+  expenseFormError.value = ''
+  isSavingExpense.value = true
+  try {
+    await createExpense(newExpense.value)
+    showExpenseForm.value = false
+    await fetchReportData()
+  } catch (error) {
+    expenseFormError.value = error.message || 'Something went wrong. Please try again.'
+  } finally {
+    isSavingExpense.value = false
+  }
+}
+
+function confirmDeleteExpense(expense) {
+  expenseToDelete.value = expense
+}
+
+async function handleDeleteExpense() {
+  if (!expenseToDelete.value) return
+  isDeletingExpense.value = true
+  try {
+    await deleteExpense(expenseToDelete.value.expense_id)
+    expenses.value = expenses.value.filter((e) => e.expense_id !== expenseToDelete.value.expense_id)
+    expenseToDelete.value = null
+  } catch (error) {
+    pageError.value = error.message || 'Failed to delete expense.'
+    console.error(error)
+  } finally {
+    isDeletingExpense.value = false
+  }
+}
+
+// ---------- Export: real generated PDF (not browser print) ----------
+function exportPDF() {
+  const doc = new jsPDF()
+  const rangeLabel = (dateFrom.value || dateTo.value)
+    ? `${dateFrom.value || 'Start'} to ${dateTo.value || 'Present'}`
+    : 'All time'
+
+  // Letterhead
+  doc.setFontSize(18)
+  doc.setFont(undefined, 'bold')
+  doc.setTextColor(5, 150, 105)
+  doc.text('Caterlytics', 14, 18)
+
+  doc.setFontSize(10)
+  doc.setFont(undefined, 'normal')
+  doc.setTextColor(100)
+  doc.text('Catering-Service Management & Inventory System', 14, 24)
+  doc.text(`${activeTab.value} Report  •  Range: ${rangeLabel}`, 14, 30)
+  doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 14, 35)
+
+  doc.setDrawColor(220)
+  doc.line(14, 39, 196, 39)
+
+  let startY = 46
+
+  if (activeTab.value === 'Overview') {
+    autoTable(doc, {
+      startY,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Total Billed', `PHP ${formatPrice(totalBilled.value)}`],
+        ['Revenue Collected', `PHP ${formatPrice(revenueCollected.value)}`],
+        ['Total Expenses', `PHP ${formatPrice(totalExpenses.value)}`],
+        ['Gross Profit', `PHP ${formatPrice(grossProfit.value)}`],
+        ['Outstanding Balance', `PHP ${formatPrice(outstandingBalance.value)}`],
+        ['Low Stock Items', `${lowStockItems.value.length} of ${inventory.value.length} tracked item(s)`],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [5, 150, 105] },
+    })
+  } else if (activeTab.value === 'Bookings Report') {
+    autoTable(doc, {
+      startY,
+      head: [['Client', 'Event Date', 'Location', 'Guests', 'Package', 'Total Billed', 'Paid', 'Balance', 'Status']],
+      body: filteredBookings.value.map((b) => {
+        const pay = paymentByBookingId.value.get(b.booking_id)
+        return [
+          b.client_name,
+          formatDate(b.event_date),
+          b.event_location,
+          String(b.guest_count),
+          b.package_name || '—',
+          pay ? `PHP ${formatPrice(pay.total_amount)}` : `~PHP ${formatPrice(estimateBookingAmount(b))}`,
+          pay ? `PHP ${formatPrice(pay.amount_paid)}` : '—',
+          pay ? `PHP ${formatPrice(pay.balance)}` : '—',
+          pay ? pay.payment_status : 'No record',
+        ]
+      }),
+      theme: 'grid',
+      headStyles: { fillColor: [5, 150, 105] },
+      styles: { fontSize: 8 },
+    })
+  } else if (activeTab.value === 'Inventory Report') {
+    autoTable(doc, {
+      startY,
+      head: [['Item', 'Quantity', 'Low Stock Threshold', 'Status']],
+      body: inventory.value.map((i) => [
+        i.item_name,
+        String(i.quantity),
+        String(i.low_stock_threshold),
+        isLowStock(i) ? 'Low Stock' : 'Sufficient',
+      ]),
+      theme: 'grid',
+      headStyles: { fillColor: [5, 150, 105] },
+    })
+  } else if (activeTab.value === 'Expenses') {
+    autoTable(doc, {
+      startY,
+      head: [['Date', 'Description', 'Category', 'Amount']],
+      body: filteredExpenses.value.map((e) => [
+        formatDate(e.expense_date),
+        e.description,
+        e.category,
+        `PHP ${formatPrice(e.amount)}`,
+      ]),
+      foot: [['', '', 'Total', `PHP ${formatPrice(totalExpenses.value)}`]],
+      theme: 'grid',
+      headStyles: { fillColor: [5, 150, 105] },
+      footStyles: { fillColor: [243, 244, 246], textColor: [17, 24, 39], fontStyle: 'bold' },
+    })
+  }
+
+  // Page numbers
+  const pageCount = doc.internal.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(150)
+    doc.text(`Page ${i} of ${pageCount}`, 196, 290, { align: 'right' })
+  }
+
+  const tabSlug = activeTab.value.toLowerCase().replace(/\s+/g, '-')
+  const dateSlug = new Date().toISOString().split('T')[0]
+  doc.save(`caterlytics-${tabSlug}-${dateSlug}.pdf`)
 }
 
 // ---------- Nav / auth ----------

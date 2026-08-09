@@ -37,9 +37,7 @@ export async function loginUser(username, password) {
   };
 }
 
-export async function registerUser(username, password, full_name) {
-  const email = usernameToEmail(username);
-
+export async function registerUser(username, email, password, full_name) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -67,4 +65,21 @@ export async function registerUser(username, password, full_name) {
 
 export async function logoutUser() {
   await supabase.auth.signOut();
+}
+
+
+export async function requestPasswordReset(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+
+  if (error) throw new Error(error.message);
+  return { message: 'Password reset email sent.' };
+}
+
+
+export async function updatePassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw new Error(error.message);
+  return { message: 'Password updated successfully.' };
 }

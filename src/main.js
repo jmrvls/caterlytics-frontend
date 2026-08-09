@@ -6,6 +6,8 @@ import App from './App.vue'
 // Views
 import LoginView from './Views/LoginView.vue'
 import RegisterView from './Views/RegisterView.vue'
+import ForgotPasswordView from './Views/ForgotPasswordView.vue'
+import ResetPasswordView from './Views/ResetPasswordView.vue'
 import AdminDashboard from './Views/AdminDashboard.vue'
 import BookingManagement from './Views/BookingManagement.vue'
 import PackageManagement from './Views/PackageManagement.vue'
@@ -18,6 +20,8 @@ import ClientDashboard from './Views/ClientDashboard.vue'
 const routes = [
   { path: '/', component: LoginView },
   { path: '/register', component: RegisterView },
+  { path: '/forgot-password', component: ForgotPasswordView },
+  { path: '/reset-password', component: ResetPasswordView },
   { path: '/admin/dashboard', component: AdminDashboard, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/bookings', component: BookingManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/packages', component: PackageManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
@@ -51,7 +55,8 @@ router.beforeEach((to) => {
   }
 
   if (to.meta.roles && !to.meta.roles.includes(user.role)) {
-   
+    // Send the user back to a page they do have access to instead
+    // of letting them in.
     if (user.role === 'Staff') {
       return '/admin/payments'
     } else if (user.role === 'Client') {

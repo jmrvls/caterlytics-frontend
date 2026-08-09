@@ -18,15 +18,6 @@
         </button>
       </div>
 
-      <div class="px-3 mt-2">
-        <button @click="openCreateModal" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-full border border-gray-300 hover:bg-gray-50 text-sm font-medium text-gray-700 transition">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          <span v-if="isSidebarOpen" class="whitespace-nowrap">New Package</span>
-        </button>
-      </div>
-
       <nav class="flex-1 px-3 mt-6 space-y-1 overflow-y-auto">
         <p v-if="isSidebarOpen" class="text-xs font-semibold text-gray-400 px-3 mb-2 uppercase tracking-wide">Menu</p>
 
@@ -169,29 +160,6 @@
             <input type="number" min="0" step="0.01" v-model.number="form.price_per_head" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
           </div>
 
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Ingredients (for Auto Deduct Stock)</label>
-              <button type="button" @click="addIngredientRow" class="text-xs font-semibold text-emerald-600 hover:underline">+ Add ingredient</button>
-            </div>
-            <p class="text-xs text-gray-400 mb-2">Amount used per guest. Stock will auto-deduct when a booking with this package is confirmed.</p>
-
-            <div v-if="formIngredients.length === 0" class="text-xs text-gray-400 italic">No ingredients linked yet.</div>
-
-            <div v-for="(row, idx) in formIngredients" :key="idx" class="flex gap-2 mb-2">
-              <select v-model="row.item_id" class="flex-1 p-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option :value="null" disabled>Select item</option>
-                <option v-for="item in inventoryItems" :key="item.item_id" :value="item.item_id">{{ item.item_name }}</option>
-              </select>
-              <input type="number" min="0" step="0.01" v-model.number="row.quantity_per_guest" placeholder="Qty/guest" class="w-28 p-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-              <button type="button" @click="formIngredients.splice(idx, 1)" class="p-2 text-gray-400 hover:text-red-600">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
           <div class="flex gap-3 pt-2">
             <button type="button" @click="closeFormModal" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
               Cancel
@@ -235,11 +203,8 @@ import {
   getAllPackages,
   createPackage,
   updatePackage,
-  deletePackage,
-  getPackageIngredients,
-  setPackageIngredients
+  deletePackage
 } from '../services/packageService'
-import { getAllInventory } from '../services/inventoryService'
 
 const router = useRouter()
 
@@ -271,13 +236,6 @@ const emptyForm = () => ({
 })
 const form = ref(emptyForm())
 
-const inventoryItems = ref([])
-const formIngredients = ref([])
-
-function addIngredientRow() {
-  formIngredients.value.push({ item_id: null, quantity_per_guest: null })
-}
-
 onMounted(() => {
   const storedUser = localStorage.getItem('user')
   if (!storedUser) {
@@ -289,27 +247,12 @@ onMounted(() => {
     router.push('/')
     return
   }
-  // Per the manuscript's Use Case Diagram, Staff only has access to
-  // Login/Authentication and Manage Payments -- Packages is Owner/Manager-only.
-  if (user.role === 'Staff') {
-    router.push('/admin/dashboard')
-    return
-  }
   userName.value = user.full_name
   userRole.value = user.role
   userInitial.value = user.full_name.charAt(0).toUpperCase()
 
   fetchPackages()
-  fetchInventoryItems()
 })
-
-async function fetchInventoryItems() {
-  try {
-    inventoryItems.value = await getAllInventory()
-  } catch (error) {
-    console.error('Failed to fetch inventory items:', error)
-  }
-}
 
 async function fetchPackages() {
   isLoading.value = true
@@ -343,12 +286,11 @@ function openCreateModal() {
   isEditing.value = false
   editingId.value = null
   form.value = emptyForm()
-  formIngredients.value = []
   modalError.value = ''
   showFormModal.value = true
 }
 
-async function openEditModal(pkg) {
+function openEditModal(pkg) {
   isEditing.value = true
   editingId.value = pkg.package_id
   form.value = {
@@ -357,18 +299,7 @@ async function openEditModal(pkg) {
     price_per_head: pkg.price_per_head
   }
   modalError.value = ''
-  formIngredients.value = []
   showFormModal.value = true
-
-  try {
-    const existing = await getPackageIngredients(pkg.package_id)
-    formIngredients.value = existing.map((row) => ({
-      item_id: row.item_id,
-      quantity_per_guest: row.quantity_per_guest
-    }))
-  } catch (error) {
-    console.error('Failed to load package ingredients:', error)
-  }
 }
 
 function closeFormModal() {
@@ -379,13 +310,11 @@ async function handleSavePackage() {
   modalError.value = ''
   isSaving.value = true
   try {
-    let savedPackage
     if (isEditing.value) {
-      savedPackage = await updatePackage(editingId.value, form.value)
+      await updatePackage(editingId.value, form.value)
     } else {
-      savedPackage = await createPackage(form.value)
+      await createPackage(form.value)
     }
-    await setPackageIngredients(savedPackage.package_id, formIngredients.value)
     showFormModal.value = false
     fetchPackages()
   } catch (error) {
@@ -436,7 +365,9 @@ const allNavItems = [
   { name: 'Reports', path: '/admin/reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
 ]
 
-
+// Staff (per the manuscript's Use Case Diagram) only has access to
+// Login/Authentication and Manage Payments -- so their sidebar only
+// shows Dashboard (general landing view) and Payments.
 const staffAllowedSections = ['Dashboard', 'Payments']
 
 const navItems = computed(() =>

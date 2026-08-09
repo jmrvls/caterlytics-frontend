@@ -196,15 +196,14 @@ const activeTab = ref('Book Catering')
 
 const packages = ref([])
 const myBookings = ref([])
+const bookingToCancel = ref(null)
+const isCancelling = ref(false)
 
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const successMessage = ref('')
 const pageError = ref('')
 const conflictWarning = ref('')
-
-const bookingToCancel = ref(null)
-const isCancelling = ref(false)
 
 const todayStr = new Date().toISOString().split('T')[0]
 
@@ -254,6 +253,27 @@ async function loadMyBookings() {
     console.error(error)
   } finally {
     isLoading.value = false
+  }
+}
+
+function confirmCancel(booking) {
+  bookingToCancel.value = booking
+}
+
+async function handleCancelBooking() {
+  if (!bookingToCancel.value) return
+  isCancelling.value = true
+  try {
+    await cancelMyBooking(bookingToCancel.value.booking_id)
+    const cancelled = bookingToCancel.value
+    const target = myBookings.value.find((b) => b.booking_id === cancelled.booking_id)
+    if (target) target.booking_status = 'Cancelled'
+    bookingToCancel.value = null
+  } catch (error) {
+    pageError.value = error.message || 'Failed to cancel booking.'
+    console.error(error)
+  } finally {
+    isCancelling.value = false
   }
 }
 

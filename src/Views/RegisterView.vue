@@ -9,7 +9,7 @@
         </div>
 
         <div class="my-auto flex justify-center items-center">
-          <img src="/src/Assets/login-bg.png" alt="Catering Display" class="rounded-2xl max-h-[500px] w-[120%] object-contain scale-110"/>
+          <img src="/src/assets/login-bg.png" alt="Catering Display" class="rounded-2xl max-h-[500px] w-[120%] object-contain scale-110"/>
         </div>
 
         <div class="space-y-6">
@@ -54,6 +54,12 @@
           <div class="space-y-1.5">
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Username</label>
             <input type="text" v-model="form.username" placeholder="Choose a username" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Email</label>
+            <input type="email" v-model="form.email" placeholder="you@example.com" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+            <p class="text-xs text-gray-400">Used to send you a reset link if you ever forget your password.</p>
           </div>
 
           <div class="space-y-1.5">
@@ -125,6 +131,7 @@ const successMessage = ref('')
 const form = ref({
   full_name: '',
   username: '',
+  email: '',
   password: '',
   confirmPassword: ''
 })
@@ -141,7 +148,7 @@ const handleRegister = async () => {
   isLoading.value = true
 
   try {
-    await registerUser(form.value.username, form.value.password, form.value.full_name)
+    await registerUser(form.value.username, form.value.email, form.value.password, form.value.full_name)
 
     successMessage.value = 'Account created! Redirecting to login...'
 
