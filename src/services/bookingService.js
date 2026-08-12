@@ -62,7 +62,7 @@ export async function updateBookingStatus(id, status) {
   // the *first* time it becomes Confirmed (not on every subsequent edit).
   const { data: currentBooking, error: fetchError } = await supabase
     .from('tbl_bookings')
-    .select('booking_status, package_name, guest_count')
+    .select('booking_status, package_name, package_id, guest_count')
     .eq('booking_id', id)
     .single();
 
@@ -86,7 +86,7 @@ export async function updateBookingStatus(id, status) {
 
   let stockWarning = null;
   if (status === 'Confirmed' && currentBooking.booking_status !== 'Confirmed') {
-    const failedItems = await deductStockForBooking(currentBooking.package_name, currentBooking.guest_count);
+    const failedItems = await deductStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id);
     if (failedItems.length > 0) {
       stockWarning = `Stock deduction failed for: ${failedItems.join(', ')}. Please adjust inventory manually.`;
     }
@@ -98,14 +98,25 @@ export async function updateBookingStatus(id, status) {
 // Auto Deduct Stock: matches the booking's package to its ingredient list
 // (tbl_package_ingredients) and subtracts quantity_per_guest x guest_count
 // from tbl_inventory for each ingredient.
-async function deductStockForBooking(packageName, guestCount) {
+async function deductStockForBooking(packageName, guestCount, packageId) {
   const failedItems = [];
 
-  const { data: pkg } = await supabase
-    .from('tbl_menu_packages')
-    .select('package_id')
-    .eq('package_name', packageName)
-    .maybeSingle();
+  let pkg = null;
+  if (packageId) {
+    const { data } = await supabase
+      .from('tbl_menu_packages')
+      .select('package_id')
+      .eq('package_id', packageId)
+      .maybeSingle();
+    pkg = data;
+  } else {
+    const { data } = await supabase
+      .from('tbl_menu_packages')
+      .select('package_id')
+      .eq('package_name', packageName)
+      .maybeSingle();
+    pkg = data;
+  }
 
   if (!pkg) return failedItems;
 
