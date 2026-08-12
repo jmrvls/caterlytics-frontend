@@ -67,28 +67,11 @@ export async function getPackageIngredients(packageId) {
 // Replace the full ingredient list for a package with a new one.
 // ingredients = [{ item_id, quantity_per_guest }, ...]
 export async function setPackageIngredients(packageId, ingredients) {
-  const { error: deleteError } = await supabase
-    .from('tbl_package_ingredients')
-    .delete()
-    .eq('package_id', packageId);
+  const { data, error } = await supabase.rpc('set_package_ingredients', {
+    p_package_id: packageId,
+    p_ingredients: ingredients,
+  });
 
-  if (deleteError) throw deleteError;
-
-  const rows = ingredients
-    .filter((i) => i.item_id && Number(i.quantity_per_guest) > 0)
-    .map((i) => ({
-      package_id: packageId,
-      item_id: i.item_id,
-      quantity_per_guest: i.quantity_per_guest,
-    }));
-
-  if (rows.length === 0) return [];
-
-  const { data, error } = await supabase
-    .from('tbl_package_ingredients')
-    .insert(rows)
-    .select();
-
-  if (error) throw error;
-  return data;
+  if (error) throw new Error('Failed to update package ingredients.');
+  return data || [];
 }

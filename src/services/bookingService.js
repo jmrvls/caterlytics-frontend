@@ -35,7 +35,8 @@ export async function createBooking(bookingData) {
       event_time: bookingData.event_time,
       event_location: bookingData.event_location,
       guest_count: bookingData.guest_count,
-      package_name: bookingData.package_name,
+      package_name: bookingData.package_name || null,
+      package_id: bookingData.package_id || null,
       booking_status: bookingData.booking_status || 'Pending',
       created_by: user.id,
     })
@@ -83,44 +84,50 @@ export async function updateBookingStatus(id, status) {
     throw error;
   }
 
+  let stockWarning = null;
   if (status === 'Confirmed' && currentBooking.booking_status !== 'Confirmed') {
-    await deductStockForBooking(currentBooking.package_name, currentBooking.guest_count);
+    const failedItems = await deductStockForBooking(currentBooking.package_name, currentBooking.guest_count);
+    if (failedItems.length > 0) {
+      stockWarning = `Stock deduction failed for: ${failedItems.join(', ')}. Please adjust inventory manually.`;
+    }
   }
 
-  return data;
+  return { ...data, stockWarning };
 }
 
 // Auto Deduct Stock: matches the booking's package to its ingredient list
 // (tbl_package_ingredients) and subtracts quantity_per_guest x guest_count
 // from tbl_inventory for each ingredient.
 async function deductStockForBooking(packageName, guestCount) {
-  try {
-    const { data: pkg } = await supabase
-      .from('tbl_menu_packages')
-      .select('package_id')
-      .eq('package_name', packageName)
-      .maybeSingle();
+  const failedItems = [];
 
-    // Custom/unrecognized package name -> nothing to deduct against, skip.
-    if (!pkg) return;
+  const { data: pkg } = await supabase
+    .from('tbl_menu_packages')
+    .select('package_id')
+    .eq('package_name', packageName)
+    .maybeSingle();
 
-    const { data: ingredients } = await supabase
-      .from('tbl_package_ingredients')
-      .select('item_id, quantity_per_guest')
-      .eq('package_id', pkg.package_id);
+  if (!pkg) return failedItems;
 
-    if (!ingredients || ingredients.length === 0) return;
+  const { data: ingredients } = await supabase
+    .from('tbl_package_ingredients')
+    .select('item_id, quantity_per_guest, tbl_inventory(item_name)')
+    .eq('package_id', pkg.package_id);
 
-    for (const ing of ingredients) {
-      const totalNeeded = Number(ing.quantity_per_guest) * Number(guestCount || 1);
-      if (totalNeeded > 0) {
+  if (!ingredients || ingredients.length === 0) return failedItems;
+
+  for (const ing of ingredients) {
+    const totalNeeded = Number(ing.quantity_per_guest) * Number(guestCount || 1);
+    if (totalNeeded > 0) {
+      try {
         await adjustInventoryStock(ing.item_id, -totalNeeded);
+      } catch (err) {
+        failedItems.push(ing.tbl_inventory?.item_name || `item_id ${ing.item_id}`);
       }
     }
-  } catch (err) {
-    // Don't block booking confirmation if stock deduction fails for some reason.
-    console.error('Auto Deduct Stock failed:', err);
   }
+
+  return failedItems;
 }
 
 export async function deleteBooking(id) {

@@ -45,6 +45,11 @@
           <p class="text-sm text-gray-500 font-medium">Please enter your account details to log in.</p>
         </div>
 
+        <!-- Error Banner -->
+        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl">
+          {{ errorMessage }}
+        </div>
+
         <!-- Log In Form -->
         <form @submit.prevent="handleLogin" class="space-y-5">
 
@@ -95,8 +100,8 @@
           </div>
 
           <!-- Form Submission Controller -->
-          <button type="submit" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md shadow-emerald-100 mt-2">
-            Sign In to System
+          <button type="submit" :disabled="isLoading" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md shadow-emerald-100 mt-2 disabled:opacity-50">
+            {{ isLoading ? 'Signing in...' : 'Sign In to System' }}
           </button>
         </form>
 

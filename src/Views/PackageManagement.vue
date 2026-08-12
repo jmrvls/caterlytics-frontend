@@ -111,6 +111,11 @@
                 </svg>
               </div>
               <div class="flex items-center gap-1">
+                <button @click="openIngredientsModal(pkg)" class="p-1.5 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50" title="Manage ingredients">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
+                  </svg>
+                </button>
                 <button @click="openEditModal(pkg)" class="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50" title="Edit package">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -136,6 +141,76 @@
 
       </div>
     </main>
+
+    <!-- ============ MANAGE INGREDIENTS MODAL ============ -->
+    <div v-if="showIngredientsModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-900">Ingredients — {{ ingredientsPackage?.package_name }}</h3>
+        <p class="text-sm text-gray-500 mt-1 mb-4">
+          Set how much of each inventory item this package uses <span class="font-semibold">per guest</span>. Stock is auto-deducted using this once a booking is confirmed.
+        </p>
+
+        <div v-if="ingredientsError" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+          {{ ingredientsError }}
+        </div>
+
+        <div v-if="isLoadingIngredients" class="text-center py-10 text-gray-400 text-sm">
+          Loading ingredients...
+        </div>
+
+        <div v-else class="space-y-3">
+          <div v-if="inventoryItems.length === 0" class="text-sm text-gray-400 bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
+            No inventory items yet. Add stock items in the Inventory page first.
+          </div>
+
+          <div v-for="(row, index) in ingredientRows" :key="row.key" class="flex items-center gap-2">
+            <select
+              v-model.number="row.item_id"
+              class="flex-1 p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option :value="null" disabled>Select item...</option>
+              <option v-for="item in inventoryItems" :key="item.item_id" :value="item.item_id">
+                {{ item.item_name }}
+              </option>
+            </select>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              v-model.number="row.quantity_per_guest"
+              placeholder="Qty / guest"
+              class="w-32 p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <button type="button" @click="removeIngredientRow(index)" class="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0" title="Remove">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            @click="addIngredientRow"
+            :disabled="inventoryItems.length === 0"
+            class="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 text-gray-500 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Ingredient
+          </button>
+        </div>
+
+        <div class="flex gap-3 pt-6">
+          <button type="button" @click="closeIngredientsModal" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="button" @click="handleSaveIngredients" :disabled="isSavingIngredients" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            {{ isSavingIngredients ? 'Saving...' : 'Save Ingredients' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ============ CREATE / EDIT PACKAGE MODAL ============ -->
     <div v-if="showFormModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -203,8 +278,11 @@ import {
   getAllPackages,
   createPackage,
   updatePackage,
-  deletePackage
+  deletePackage,
+  getPackageIngredients,
+  setPackageIngredients
 } from '../services/packageService'
+import { getAllInventory } from '../services/inventoryService'
 
 const router = useRouter()
 
@@ -228,6 +306,15 @@ const modalError = ref('')
 const packageToDelete = ref(null)
 const isDeleting = ref(false)
 const deleteError = ref('')
+
+const showIngredientsModal = ref(false)
+const ingredientsPackage = ref(null)
+const inventoryItems = ref([])
+const ingredientRows = ref([])
+const isLoadingIngredients = ref(false)
+const isSavingIngredients = ref(false)
+const ingredientsError = ref('')
+let ingredientRowKey = 0
 
 const emptyForm = () => ({
   package_name: '',
@@ -342,6 +429,71 @@ async function handleDelete() {
     console.error(error)
   } finally {
     isDeleting.value = false
+  }
+}
+
+async function openIngredientsModal(pkg) {
+  ingredientsPackage.value = pkg
+  ingredientsError.value = ''
+  showIngredientsModal.value = true
+  isLoadingIngredients.value = true
+
+  try {
+    const [items, currentIngredients] = await Promise.all([
+      getAllInventory(),
+      getPackageIngredients(pkg.package_id)
+    ])
+    inventoryItems.value = items
+    ingredientRows.value = currentIngredients.map((ing) => ({
+      key: ingredientRowKey++,
+      item_id: ing.item_id,
+      quantity_per_guest: ing.quantity_per_guest
+    }))
+  } catch (error) {
+    ingredientsError.value = 'Failed to load ingredients. Please try again.'
+    console.error(error)
+  } finally {
+    isLoadingIngredients.value = false
+  }
+}
+
+function closeIngredientsModal() {
+  showIngredientsModal.value = false
+  ingredientsPackage.value = null
+  ingredientRows.value = []
+}
+
+function addIngredientRow() {
+  ingredientRows.value.push({ key: ingredientRowKey++, item_id: null, quantity_per_guest: null })
+}
+
+function removeIngredientRow(index) {
+  ingredientRows.value.splice(index, 1)
+}
+
+async function handleSaveIngredients() {
+  ingredientsError.value = ''
+
+  const incomplete = ingredientRows.value.some(
+    (row) => row.item_id && (!row.quantity_per_guest || row.quantity_per_guest <= 0)
+  )
+  if (incomplete) {
+    ingredientsError.value = 'Each selected item needs a quantity per guest greater than 0.'
+    return
+  }
+
+  isSavingIngredients.value = true
+  try {
+    await setPackageIngredients(
+      ingredientsPackage.value.package_id,
+      ingredientRows.value.map((row) => ({ item_id: row.item_id, quantity_per_guest: row.quantity_per_guest }))
+    )
+    showIngredientsModal.value = false
+  } catch (error) {
+    ingredientsError.value = 'Failed to save ingredients. Please try again.'
+    console.error(error)
+  } finally {
+    isSavingIngredients.value = false
   }
 }
 

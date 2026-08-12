@@ -42,24 +42,12 @@ export async function updateInventoryItem(id, itemData) {
 }
 
 export async function adjustInventoryStock(id, adjustment) {
-  const { data: current, error: fetchError } = await supabase
-    .from('tbl_inventory')
-    .select('quantity')
-    .eq('item_id', id)
-    .single();
+  const { data, error } = await supabase.rpc('adjust_inventory_stock', {
+    p_item_id: id,
+    p_adjustment: adjustment,
+  });
 
-  if (fetchError) throw fetchError;
-
-  const newQuantity = current.quantity + adjustment;
-
-  const { data, error } = await supabase
-    .from('tbl_inventory')
-    .update({ quantity: newQuantity })
-    .eq('item_id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
+  if (error) throw new Error('Failed to update stock. Item may not exist or stock is insufficient.');
   return data;
 }
 

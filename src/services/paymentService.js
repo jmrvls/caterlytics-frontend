@@ -40,36 +40,12 @@ export async function createPayment(paymentData) {
 
 // Record an additional payment (e.g. client pays another installment)
 export async function recordPayment(paymentId, additionalAmount) {
-  const { data: existing, error: fetchError } = await supabase
-    .from('tbl_payments')
-    .select('total_amount, amount_paid')
-    .eq('payment_id', paymentId)
-    .single();
+  const { data, error } = await supabase.rpc('record_payment', {
+    p_payment_id: paymentId,
+    p_additional_amount: additionalAmount,
+  });
 
-  if (fetchError || !existing) throw new Error('Payment record not found.');
-
-  const newAmountPaid = Number(existing.amount_paid) + Number(additionalAmount);
-  if (newAmountPaid > Number(existing.total_amount)) {
-    throw new Error('Payment exceeds total amount due.');
-  }
-
-  const newStatus =
-    newAmountPaid >= Number(existing.total_amount) ? 'Paid'
-    : newAmountPaid > 0 ? 'Partial'
-    : 'Unpaid';
-
-  const { data, error } = await supabase
-    .from('tbl_payments')
-    .update({
-      amount_paid: newAmountPaid,
-      payment_status: newStatus,
-      payment_date: new Date().toISOString().slice(0, 10),
-    })
-    .eq('payment_id', paymentId)
-    .select()
-    .single();
-
-  if (error) throw new Error('Failed to record payment.');
+  if (error) throw new Error(error.message || 'Failed to record payment.');
   return { message: 'Payment recorded', payment: data };
 }
 
