@@ -20,6 +20,57 @@ export async function getAllPayments() {
   return data || [];
 }
 
+// Paginated fetch for the Payment Management table (Load More pattern).
+// getAllPayments() is left untouched for Reports, which needs the full
+// dataset to compute correct totals.
+export async function getPaymentsPage({ offset = 0, limit = 50 } = {}) {
+  const { data, error, count } = await supabase
+    .from('tbl_payments')
+    .select(`
+      payment_id,
+      booking_id,
+      total_amount,
+      amount_paid,
+      balance,
+      payment_status,
+      payment_date,
+      tbl_bookings ( client_name, event_date, package_name )
+    `, { count: 'exact' })
+    .order('payment_id', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) throw new Error('Failed to fetch payments.');
+  return { rows: data || [], total: count ?? 0 };
+}
+
+// Lightweight query (single narrow column, not full rows with joins) so the
+// status tabs/counters stay accurate even when the table itself hasn't
+// fully loaded yet.
+export async function getPaymentStatusCounts() {
+  const { data, error } = await supabase
+    .from('tbl_payments')
+    .select('payment_status');
+
+  if (error) throw new Error('Failed to fetch payment counts.');
+  const counts = {};
+  for (const row of data || []) {
+    counts[row.payment_status] = (counts[row.payment_status] || 0) + 1;
+  }
+  return counts;
+}
+
+// Lightweight query (single narrow column) used to determine which
+// bookings already have a payment record, independent of how many
+// payment rows have been loaded into the paginated table view.
+export async function getAllPaymentBookingIds() {
+  const { data, error } = await supabase
+    .from('tbl_payments')
+    .select('booking_id');
+
+  if (error) throw new Error('Failed to fetch payment records.');
+  return (data || []).map((row) => row.booking_id);
+}
+
 // Create a payment record for a booking (usually done once, when booking is confirmed)
 export async function createPayment(paymentData) {
   const { data, error } = await supabase

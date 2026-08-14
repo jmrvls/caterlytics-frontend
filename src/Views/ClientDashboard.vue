@@ -1,22 +1,51 @@
 <template>
-  <div class="min-h-screen bg-gray-50 font-sans">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans">
 
     <!-- TOP NAV -->
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
       <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain" />
-          <span class="font-bold text-gray-800">Caterlytics</span>
+          <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
         </div>
-        <div class="flex items-center gap-4">
-          <div class="text-right hidden sm:block">
-            <p class="text-sm font-semibold text-gray-800 leading-none">{{ userName }}</p>
-            <p class="text-xs text-gray-400 mt-0.5">Client</p>
+        <div class="flex items-center gap-3 relative">
+          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+
+          <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-2 cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+            <div class="text-right hidden sm:block">
+              <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-none">{{ userName }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Client</p>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm overflow-hidden">
+              <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="w-full h-full object-cover" />
+              <span v-else>{{ userInitial }}</span>
+            </div>
           </div>
-          <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">
-            {{ userInitial }}
+
+          <!-- Click-outside backdrop -->
+          <div v-if="showAccountMenu" @click="showAccountMenu = false" class="fixed inset-0 z-40"></div>
+
+          <!-- Account menu, opens downward from the top nav -->
+          <div v-if="showAccountMenu" class="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+            <button @click="router.push('/settings')" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Settings
+            </button>
+            <button @click="handleLogout" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Log Out
+            </button>
           </div>
-          <button @click="handleLogout" class="text-xs font-semibold text-red-500 hover:text-red-600">Log Out</button>
         </div>
       </div>
     </header>
@@ -24,16 +53,16 @@
     <main class="max-w-5xl mx-auto px-6 py-8">
 
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ userName }}</h1>
-        <p class="text-sm text-gray-500 mt-1">Book a catering package or check the status of your reservations.</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome, {{ userName }}</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Book a catering package or check the status of your reservations.</p>
       </div>
 
       <!-- TABS -->
-      <div class="flex gap-1 bg-white p-1 rounded-xl border border-gray-100 mb-6 w-fit">
+      <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-6 w-fit">
         <button
           v-for="tab in tabs" :key="tab"
           @click="activeTab = tab"
-          :class="activeTab === tab ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:bg-gray-50'"
+          :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
           class="px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
           {{ tab }}
@@ -41,48 +70,48 @@
       </div>
 
       <!-- Global success / error banners -->
-      <div v-if="successMessage" class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium p-3 rounded-xl mb-4">
+      <div v-if="successMessage" class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-medium p-3 rounded-xl mb-4">
         {{ successMessage }}
       </div>
-      <div v-if="pageError" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+      <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
         {{ pageError }}
       </div>
 
       <!-- ============ BOOK CATERING TAB ============ -->
-      <div v-if="activeTab === 'Book Catering'" class="bg-white rounded-2xl border border-gray-100 p-6">
-        <h3 class="font-bold text-gray-800 mb-4">New Booking Request</h3>
+      <div v-if="activeTab === 'Book Catering'" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">New Booking Request</h3>
 
         <form @submit.prevent="submitBooking" class="space-y-5">
 
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Booked Under</label>
-            <input type="text" :value="userName" disabled class="w-full mt-1 p-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-500" />
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Booked Under</label>
+            <input type="text" :value="userName" disabled class="w-full mt-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 dark:text-gray-400" />
           </div>
 
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Email (for booking confirmation)</label>
-            <input type="email" v-model="form.client_email" required placeholder="you@example.com" class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Email (for booking confirmation)</label>
+            <input type="email" v-model="form.client_email" required placeholder="you@example.com" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Event Date</label>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Date</label>
               <input
                 type="date"
                 v-model="form.event_date"
                 @change="handleDateCheck"
                 required
                 :min="todayStr"
-                class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
               />
             </div>
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Event Time</label>
-              <input type="time" v-model="form.event_time" required class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Time</label>
+              <input type="time" v-model="form.event_time" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
             </div>
           </div>
 
-          <div v-if="conflictWarning" class="bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium p-3 rounded-xl flex gap-2">
+          <div v-if="conflictWarning" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-xl flex gap-2">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
             </svg>
@@ -90,18 +119,18 @@
           </div>
 
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Event Location</label>
-            <input type="text" v-model="form.event_location" required placeholder="e.g. Barangay Hall, Roxas City" class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Location</label>
+            <input type="text" v-model="form.event_location" required placeholder="e.g. Barangay Hall, Roxas City" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Number of Guests</label>
-              <input type="number" v-model.number="form.guest_count" required min="1" class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
+              <input type="number" v-model.number="form.guest_count" required min="1" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
             </div>
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Catering Package</label>
-              <select v-model="form.package_name" class="w-full mt-1 p-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Package</label>
+              <select v-model="form.package_name" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
                 <option value="">Select a package (optional)</option>
                 <option v-for="p in packages" :key="p.package_id" :value="p.package_name">
                   {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head
@@ -110,10 +139,10 @@
             </div>
           </div>
 
-          <div v-if="selectedPackage" class="bg-gray-50 border border-gray-100 rounded-xl p-4">
-            <p class="text-sm font-semibold text-gray-800">{{ selectedPackage.package_name }}</p>
-            <p class="text-xs text-gray-500 mt-1">{{ selectedPackage.description }}</p>
-            <p class="text-sm font-bold text-emerald-600 mt-2">
+          <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+            <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ selectedPackage.package_name }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ selectedPackage.description }}</p>
+            <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-2">
               Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0)) }}
             </p>
           </div>
@@ -126,27 +155,27 @@
 
       <!-- ============ MY BOOKINGS TAB ============ -->
       <div v-else-if="activeTab === 'My Bookings'">
-        <div v-if="isLoading" class="bg-white rounded-2xl border border-gray-100 text-center py-14 text-gray-400">
+        <div v-if="isLoading" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500">
           Loading your bookings...
         </div>
-        <div v-else-if="myBookings.length === 0" class="bg-white rounded-2xl border border-gray-100 text-center py-14">
-          <p class="text-gray-400 text-sm">You haven't made any bookings yet.</p>
-          <button @click="activeTab = 'Book Catering'" class="mt-3 text-emerald-600 font-semibold text-sm hover:underline">
+        <div v-else-if="myBookings.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14">
+          <p class="text-gray-400 dark:text-gray-500 text-sm">You haven't made any bookings yet.</p>
+          <button @click="activeTab = 'Book Catering'" class="mt-3 text-emerald-600 dark:text-emerald-400 font-semibold text-sm hover:underline">
             Book your first event
           </button>
         </div>
         <div v-else class="grid gap-4">
-          <div v-for="b in myBookings" :key="b.booking_id" class="bg-white rounded-2xl border border-gray-100 p-5 flex items-center justify-between">
+          <div v-for="b in myBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 flex items-center justify-between">
             <div>
-              <p class="font-bold text-gray-800">{{ b.package_name || 'Custom Booking' }}</p>
-              <p class="text-sm text-gray-500 mt-0.5">{{ formatDate(b.event_date) }} at {{ b.event_time }} — {{ b.event_location }}</p>
-              <p class="text-xs text-gray-400 mt-1">{{ b.guest_count }} guests</p>
+              <p class="font-bold text-gray-800 dark:text-gray-100">{{ b.package_name || 'Custom Booking' }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(b.event_date) }} at {{ b.event_time }} — {{ b.event_location }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ b.guest_count }} guests</p>
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
               <button
                 v-if="['Pending', 'Confirmed'].includes(b.booking_status)"
                 @click="confirmCancel(b)"
-                class="text-xs font-semibold text-red-500 hover:text-red-600 hover:underline"
+                class="text-xs font-semibold text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:underline"
               >
                 Cancel
               </button>
@@ -160,13 +189,13 @@
 
       <!-- ============ CANCEL CONFIRM MODAL ============ -->
       <div v-if="bookingToCancel" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-          <h3 class="text-lg font-bold text-gray-900 mb-2">Cancel this booking?</h3>
-          <p class="text-sm text-gray-500 mb-5">
-            Ito ay para sa <span class="font-semibold text-gray-700">{{ formatDate(bookingToCancel.event_date) }}</span> sa {{ bookingToCancel.event_location }}. Hindi na ito puwedeng ibalik pagkatapos.
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Cancel this booking?</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+            Ito ay para sa <span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDate(bookingToCancel.event_date) }}</span> sa {{ bookingToCancel.event_location }}. Hindi na ito puwedeng ibalik pagkatapos.
           </p>
           <div class="flex gap-3">
-            <button @click="bookingToCancel = null" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+            <button @click="bookingToCancel = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Keep Booking
             </button>
             <button @click="handleCancelBooking" :disabled="isCancelling" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
@@ -183,6 +212,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getMyAvatarUrl } from '../services/profileService'
 import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking } from '../services/bookingService'
 import { getAllPackages } from '../services/packageService'
 
@@ -190,6 +220,8 @@ const router = useRouter()
 
 const userName = ref('')
 const userInitial = ref('U')
+const showAccountMenu = ref(false)
+const userAvatarUrl = ref('')
 
 const tabs = ['Book Catering', 'My Bookings']
 const activeTab = ref('Book Catering')
@@ -231,6 +263,12 @@ onMounted(() => {
   }
   userName.value = user.full_name
   userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userAvatarUrl.value = user.avatar_url || '' // show cached picture immediately, no flicker
+  getMyAvatarUrl(user.user_id).then((url) => {
+    userAvatarUrl.value = url || ''
+    const cached = JSON.parse(localStorage.getItem('user') || '{}')
+    localStorage.setItem('user', JSON.stringify({ ...cached, avatar_url: url || '' }))
+  })
 
   loadPackages()
   loadMyBookings()
@@ -319,11 +357,11 @@ async function submitBooking() {
 }
 function statusBadgeClass(status) {
   switch (status) {
-    case 'Confirmed': return 'bg-emerald-50 text-emerald-700'
-    case 'Pending': return 'bg-amber-50 text-amber-700'
-    case 'Completed': return 'bg-blue-50 text-blue-700'
-    case 'Cancelled': return 'bg-red-50 text-red-700'
-    default: return 'bg-gray-100 text-gray-600'
+    case 'Confirmed': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+    case 'Pending': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+    case 'Completed': return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+    case 'Cancelled': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
   }
 }
 

@@ -1,44 +1,45 @@
 <template>
   <!-- Main Container: Split-screen layout -->
-  <div class="min-h-screen flex w-full font-sans bg-white">
-    
+  <div class="min-h-screen flex w-full font-sans bg-gradient-to-br from-emerald-50 via-white to-gray-50">
+
     <!-- LEFT SIDE: Manuscript & Institution Details -->
-    <div class="hidden lg:flex w-1/2 items-center justify-center p-16 bg-gray-50 border-r border-gray-200 relative">
-      <div class="max-w-xl w-full flex flex-col justify-between h-full py-12">
-        <!-- System Branding Logo -->
-        <div class="flex items-center mb-8">
-          <img 
-            src="/src/assets/logofinal.png" 
-            alt="Logo" 
-            class="w-20 h-20 object-contain -translate-x-4"
-          />
-        </div>
-        
-        <!-- Center Visual Mockup Area -->
-        <div class="my-auto flex justify-center items-center">
-          <img src="/src/assets/login-bg.png" alt="Catering Display" class="rounded-2xl max-h-[500px] w-[120%] object-contain scale-110"/>
-        </div>
-        
-        <!-- Bottom Section -->
-        <div class="space-y-6">
-          <h2 class="text-5xl font-black text-gray-900 leading-none tracking-tight">
-            Manage <br />
-            the events <br />
-            <span class="text-emerald-600">you love.</span>
-          </h2>
-          
-          <p class="text-xs font-bold text-gray-400 uppercase tracking-widest pt-4 leading-relaxed">
-            Presented to the Faculty of the Computer Science Department of <br />
-            Hercor College Inc., Lawaan, Roxas City, Capiz, Philippines
-          </p>
-        </div>
+    <div class="hidden lg:flex w-1/2 relative overflow-hidden bg-gray-50 border-r border-gray-200">
+
+      <!-- System Branding Logo: flush to top-left corner -->
+      <img
+        src="/src/assets/logofinal.png"
+        alt="Logo"
+        class="absolute top-6 left-6 w-16 h-16 object-contain z-20"
+      />
+
+      <!-- Center Visual Mockup Area: fills the entire panel edge-to-edge -->
+      <div class="absolute inset-0 flex items-center justify-center p-10">
+        <img
+          src="/src/assets/login-bg.png"
+          alt="Catering Display"
+          class="w-full h-full object-contain"
+        />
+      </div>
+
+      <!-- Bottom Section: flush to bottom-left corner -->
+      <div class="absolute bottom-10 left-8 right-8 z-20">
+        <h2 class="text-5xl font-black text-gray-900 leading-none tracking-tight">
+          Manage <br />
+          the events <br />
+          <span class="text-emerald-600">you love.</span>
+        </h2>
+
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest pt-4 leading-relaxed">
+          Presented to the Faculty of the Computer Science Department of <br />
+          Hercor College Inc., Lawaan, Roxas City, Capiz, Philippines
+        </p>
       </div>
     </div>
 
     <!-- RIGHT SIDE: System Authentic Log In Form Section -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
-      <div class="w-full max-w-md space-y-8">
-        
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white lg:bg-transparent">
+      <div class="w-full space-y-8 lg:bg-white lg:p-10 lg:rounded-3xl lg:shadow-xl lg:shadow-gray-100" style="max-width: clamp(360px, 32vw, 480px)">
+
         <!-- Form Header Messaging -->
         <div class="space-y-2">
           <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">Welcome Back</h3>
@@ -65,18 +66,18 @@
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Password</label>
               <router-link to="/forgot-password" class="text-xs font-bold text-emerald-600 hover:underline">Forgot password?</router-link>
             </div>
-            
+
             <div class="relative">
-              <input 
-                :type="showPassword ? 'text' : 'password'" 
-                v-model="form.password" 
-                placeholder="" 
-                class="w-full p-3.5 pr-12 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" 
-                required 
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                v-model="form.password"
+                placeholder=""
+                class="w-full p-3.5 pr-12 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                required
               />
-              <button 
-                type="button" 
-                @click="showPassword = !showPassword" 
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
                 class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-emerald-600 focus:outline-none"
               >
                 <!-- Eye Open Icon (Show) -->
@@ -86,7 +87,7 @@
                 </svg>
                 <!-- Eye Slash Icon (Hide) -->
                 <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a8.962 8.962 0 012.122-.363c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21f-9-9" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a8.962 8.962 0 012.122-.363c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21l-9-9" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
                 </svg>
               </button>
@@ -106,11 +107,11 @@
         </form>
 
         <!-- Dynamic Registration Anchor Link -->
-       <div class="text-center pt-2">
-     <p class="text-sm text-gray-500 font-medium">
-           New client? <router-link to="/register" class="text-emerald-600 font-bold hover:underline">Create an online booking account</router-link>
-     </p>
-     </div>
+        <div class="text-center pt-2">
+          <p class="text-sm text-gray-500 font-medium">
+            New client? <router-link to="/register" class="text-emerald-600 font-bold hover:underline">Create an online booking account</router-link>
+          </p>
+        </div>
 
         <!-- Copyright Footnote Section -->
         <div class="text-center pt-6 border-t border-gray-100">
@@ -119,7 +120,7 @@
 
       </div>
     </div>
-    
+
   </div>
 </template>
 
@@ -143,7 +144,7 @@ const handleLogin = async () => {
   errorMessage.value = ''
   isLoading.value = true
 
- try {
+  try {
     const result = await loginUser(form.value.username, form.value.password)
 
     localStorage.setItem('token', result.token)
@@ -155,11 +156,11 @@ const handleLogin = async () => {
       router.push('/admin/dashboard')
     }
 
- } catch (error) {
-  errorMessage.value = error.message || 'Something went wrong. Please try again.'
-} finally {
-  isLoading.value = false
-}
+  } catch (error) {
+    errorMessage.value = error.message || 'Something went wrong. Please try again.'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 

@@ -1,17 +1,17 @@
 <template>
-  <div class="min-h-screen flex bg-gray-50 font-sans">
+  <div class="min-h-screen flex bg-gray-50 dark:bg-gray-900 font-sans">
 
     <!-- SIDEBAR -->
     <aside
       :class="isSidebarOpen ? 'w-64' : 'w-20'"
-      class="bg-white border-r border-gray-200 flex flex-col transition-all duration-300 h-screen sticky top-0 print:hidden"
+      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 h-screen sticky top-0 print:hidden"
     >
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-2 overflow-hidden">
           <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
-          <span v-if="isSidebarOpen" class="font-bold text-gray-800 whitespace-nowrap">Caterlytics</span>
+          <span v-if="isSidebarOpen" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
         </div>
-        <button @click="isSidebarOpen = !isSidebarOpen" class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+        <button @click="isSidebarOpen = !isSidebarOpen" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -19,12 +19,12 @@
       </div>
 
       <nav class="flex-1 px-3 mt-6 space-y-1 overflow-y-auto">
-        <p v-if="isSidebarOpen" class="text-xs font-semibold text-gray-400 px-3 mb-2 uppercase tracking-wide">Menu</p>
+        <p v-if="isSidebarOpen" class="text-xs font-semibold text-gray-400 dark:text-gray-500 px-3 mb-2 uppercase tracking-wide">Menu</p>
 
         <a v-for="item in navItems" :key="item.name"
           href="#"
           @click.prevent="goTo(item)"
-          :class="item.name === 'Reports' ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-600 hover:bg-gray-100'"
+          :class="item.name === 'Reports' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
           class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition"
         >
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -34,19 +34,48 @@
         </a>
       </nav>
 
-      <div class="border-t border-gray-200 p-3">
-        <div class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-          <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-            {{ userInitial }}
+      <div class="border-t border-gray-200 dark:border-gray-700 p-3 relative">
+        <!-- Click-outside backdrop -->
+        <div v-if="showAccountMenu" @click="showAccountMenu = false" class="fixed inset-0 z-40"></div>
+
+        <!-- Account menu (Settings + Log Out) -->
+        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+          <button @click="router.push('/settings')" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Settings
+          </button>
+          <button @click="handleLogout" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Log Out
+          </button>
+        </div>
+
+        <!-- Gear icon: its own row, above the profile -->
+        <div v-if="isSidebarOpen" class="flex justify-end px-1 mb-1">
+          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Profile: click toggles the account menu -->
+        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+          <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
+            <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="w-full h-full object-cover" />
+            <span v-else>{{ userInitial }}</span>
           </div>
           <div v-if="isSidebarOpen" class="overflow-hidden">
-            <p class="text-sm font-semibold text-gray-800 truncate">{{ userName }}</p>
-            <p class="text-xs text-gray-400 truncate">{{ userRole }}</p>
+            <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ userName }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ userRole }}</p>
           </div>
         </div>
-        <button v-if="isSidebarOpen" @click="handleLogout" class="w-full text-left text-xs text-red-500 hover:text-red-600 px-2 mt-2 font-medium">
-          Log Out
-        </button>
       </div>
     </aside>
 
@@ -56,9 +85,9 @@
 
         <div class="flex items-center justify-between mb-6 print:mb-4">
           <div>
-            <h1 class="text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-            <p class="text-sm text-gray-500 mt-1 print:hidden">Sales, booking, and inventory overview.</p>
-            <p class="hidden print:block text-xs text-gray-500 mt-1">Generated {{ generatedOn }}</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports & Analytics</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 print:hidden">Sales, booking, and inventory overview.</p>
+            <p class="hidden print:block text-xs text-gray-500 dark:text-gray-400 mt-1">Generated {{ generatedOn }}</p>
           </div>
           <button @click="exportPDF" class="print:hidden flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,11 +98,11 @@
         </div>
 
         <!-- TABS -->
-        <div class="flex gap-1 bg-white p-1 rounded-xl border border-gray-100 mb-4 w-fit print:hidden">
+        <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-4 w-fit print:hidden">
           <button
             v-for="tab in tabs" :key="tab"
             @click="activeTab = tab"
-            :class="activeTab === tab ? 'bg-emerald-600 text-white' : 'text-gray-500 hover:bg-gray-50'"
+            :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
             class="px-4 py-2 rounded-lg text-sm font-semibold transition"
           >
             {{ tab }}
@@ -81,27 +110,27 @@
         </div>
 
         <!-- DATE FILTER (affects Overview + Bookings tabs) -->
-        <div v-if="activeTab !== 'Inventory Report'" class="bg-white p-4 rounded-2xl border border-gray-100 mb-4 flex flex-wrap items-end gap-4 print:hidden">
+        <div v-if="activeTab !== 'Inventory Report'" class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 mb-4 flex flex-wrap items-end gap-4 print:hidden">
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">From</label>
-            <input type="date" v-model="dateFrom" class="block mt-1 p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">From</label>
+            <input type="date" v-model="dateFrom" class="block mt-1 p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">To</label>
-            <input type="date" v-model="dateTo" class="block mt-1 p-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">To</label>
+            <input type="date" v-model="dateTo" class="block mt-1 p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
-          <button v-if="dateFrom || dateTo" @click="dateFrom = ''; dateTo = ''" class="text-xs font-semibold text-gray-500 hover:text-red-600">
+          <button v-if="dateFrom || dateTo" @click="dateFrom = ''; dateTo = ''" class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400">
             Clear filter
           </button>
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
           {{ pageError }}
         </div>
 
         <!-- Loading -->
-        <div v-if="isLoading" class="bg-white rounded-2xl border border-gray-100 text-center py-14 text-gray-400">
+        <div v-if="isLoading" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500">
           Loading report data...
         </div>
 
@@ -112,84 +141,84 @@
 
             <!-- Summary Cards -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Bookings</h3>
-                <p class="text-2xl font-black text-gray-900 mt-1">{{ filteredBookings.length }}</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Bookings</h3>
+                <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ filteredBookings.length }}</p>
               </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Confirmed</h3>
-                <p class="text-2xl font-black text-emerald-600 mt-1">{{ countByStatus('Confirmed') }}</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Confirmed</h3>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ countByStatus('Confirmed') }}</p>
               </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Completed</h3>
-                <p class="text-2xl font-black text-blue-600 mt-1">{{ countByStatus('Completed') }}</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Completed</h3>
+                <p class="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{{ countByStatus('Completed') }}</p>
               </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Cancelled</h3>
-                <p class="text-2xl font-black text-red-500 mt-1">{{ countByStatus('Cancelled') }}</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Cancelled</h3>
+                <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">{{ countByStatus('Cancelled') }}</p>
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Revenue Collected</h3>
-                <p class="text-2xl font-black text-emerald-600 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Actual amount paid, from the Payments module.</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Revenue Collected</h3>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Actual amount paid, from the Payments module.</p>
               </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Expenses</h3>
-                <p class="text-2xl font-black text-red-500 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Recorded business costs in this range.</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Expenses</h3>
+                <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Recorded business costs in this range.</p>
               </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Gross Profit</h3>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Gross Profit</h3>
                 <p class="text-2xl font-black mt-1" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Revenue Collected − direct costs (Ingredients &amp; Supplies).</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Revenue Collected − direct costs (Ingredients &amp; Supplies).</p>
               </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Outstanding Balance</h3>
-                <p class="text-2xl font-black text-amber-500 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Still owed by clients across their bookings.</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Outstanding Balance</h3>
+                <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Still owed by clients across their bookings.</p>
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Total Billed</h3>
-                <p class="text-2xl font-black text-gray-900 mt-1">₱{{ formatPrice(totalBilled) }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Sum of all payment records in this range.</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Billed</h3>
+                <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(totalBilled) }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Sum of all payment records in this range.</p>
               </div>
-              <div class="bg-white p-5 rounded-2xl border border-gray-100">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide">Low Stock Items</h3>
-                <p class="text-2xl font-black text-amber-500 mt-1">{{ lowStockItems.length }}</p>
-                <p class="text-[11px] text-gray-400 mt-2 leading-snug">Out of {{ inventory.length }} tracked item(s) in inventory.</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Low Stock Items</h3>
+                <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">{{ lowStockItems.length }}</p>
+                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Out of {{ inventory.length }} tracked item(s) in inventory.</p>
               </div>
             </div>
 
             <!-- Booking status breakdown (simple bar chart, no chart lib needed) -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-5 mb-6">
-              <h3 class="font-bold text-gray-800 mb-4">Bookings by Status</h3>
-              <div v-if="filteredBookings.length === 0" class="text-sm text-gray-400 py-6 text-center">No bookings in this range.</div>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 mb-6">
+              <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Bookings by Status</h3>
+              <div v-if="filteredBookings.length === 0" class="text-sm text-gray-400 dark:text-gray-500 py-6 text-center">No bookings in this range.</div>
               <div v-else class="space-y-3">
                 <div v-for="s in statusBreakdown" :key="s.status" class="flex items-center gap-3">
-                  <span class="w-24 text-xs font-semibold text-gray-600 flex-shrink-0">{{ s.status }}</span>
-                  <div class="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <span class="w-24 text-xs font-semibold text-gray-600 dark:text-gray-300 flex-shrink-0">{{ s.status }}</span>
+                  <div class="flex-1 h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                     <div class="h-full rounded-full transition-all" :class="s.barClass" :style="{ width: s.pct + '%' }"></div>
                   </div>
-                  <span class="w-8 text-xs font-bold text-gray-700 text-right flex-shrink-0">{{ s.count }}</span>
+                  <span class="w-8 text-xs font-bold text-gray-700 dark:text-gray-200 text-right flex-shrink-0">{{ s.count }}</span>
                 </div>
               </div>
             </div>
 
             <!-- Monthly bookings trend -->
-            <div class="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 class="font-bold text-gray-800 mb-4">Bookings per Month</h3>
-              <div v-if="monthlyTrend.length === 0" class="text-sm text-gray-400 py-6 text-center">No bookings in this range.</div>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5">
+              <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Bookings per Month</h3>
+              <div v-if="monthlyTrend.length === 0" class="text-sm text-gray-400 dark:text-gray-500 py-6 text-center">No bookings in this range.</div>
               <div v-else class="flex items-end gap-3 h-40">
                 <div v-for="m in monthlyTrend" :key="m.label" class="flex-1 flex flex-col items-center justify-end h-full">
-                  <span class="text-xs font-bold text-gray-700 mb-1">{{ m.count }}</span>
+                  <span class="text-xs font-bold text-gray-700 dark:text-gray-200 mb-1">{{ m.count }}</span>
                   <div class="w-full bg-emerald-500 rounded-t-lg transition-all" :style="{ height: m.pct + '%' }"></div>
-                  <span class="text-[11px] text-gray-400 mt-2">{{ m.label }}</span>
+                  <span class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">{{ m.label }}</span>
                 </div>
               </div>
             </div>
@@ -197,15 +226,15 @@
 
           <!-- ============ BOOKINGS REPORT TAB ============ -->
           <div v-else-if="activeTab === 'Bookings Report'">
-            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="font-bold text-gray-800">Booking Records ({{ filteredBookings.length }})</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-bold text-gray-800 dark:text-gray-100">Booking Records ({{ filteredBookings.length }})</h3>
               </div>
-              <div v-if="filteredBookings.length === 0" class="text-center py-14 text-gray-400 text-sm">
+              <div v-if="filteredBookings.length === 0" class="text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
                 No bookings found for the selected date range.
               </div>
               <table v-else class="w-full text-sm">
-                <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
                   <tr>
                     <th class="text-left px-6 py-3 font-semibold">Client</th>
                     <th class="text-left px-6 py-3 font-semibold">Event Date</th>
@@ -218,17 +247,17 @@
                     <th class="text-left px-6 py-3 font-semibold">Status</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                   <tr v-for="b in filteredBookings" :key="b.booking_id">
-                    <td class="px-6 py-3.5 font-medium text-gray-800">{{ b.client_name }}</td>
-                    <td class="px-6 py-3.5 text-gray-600">{{ formatDate(b.event_date) }}</td>
-                    <td class="px-6 py-3.5 text-gray-600">{{ b.event_location }}</td>
-                    <td class="px-6 py-3.5 text-gray-600">{{ b.guest_count }}</td>
-                    <td class="px-6 py-3.5 text-gray-600">{{ b.package_name || '—' }}</td>
+                    <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
+                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
+                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.event_location }}</td>
+                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
+                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
                     <template v-if="paymentByBookingId.get(b.booking_id)">
-                      <td class="px-6 py-3.5 text-gray-600">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).total_amount) }}</td>
-                      <td class="px-6 py-3.5 text-emerald-600 font-medium">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).amount_paid) }}</td>
-                      <td class="px-6 py-3.5 text-red-500">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).balance) }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).total_amount) }}</td>
+                      <td class="px-6 py-3.5 text-emerald-600 dark:text-emerald-400 font-medium">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).amount_paid) }}</td>
+                      <td class="px-6 py-3.5 text-red-500 dark:text-red-400">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).balance) }}</td>
                       <td class="px-6 py-3.5">
                         <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
                           {{ paymentByBookingId.get(b.booking_id).payment_status }}
@@ -236,11 +265,11 @@
                       </td>
                     </template>
                     <template v-else>
-                      <td class="px-6 py-3.5 text-gray-400 italic" colspan="3">
+                      <td class="px-6 py-3.5 text-gray-400 dark:text-gray-500 italic" colspan="3">
                         No payment record yet (est. ₱{{ formatPrice(estimateBookingAmount(b)) }})
                       </td>
                       <td class="px-6 py-3.5">
-                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">No record</span>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">No record</span>
                       </td>
                     </template>
                   </tr>
@@ -251,22 +280,22 @@
 
           <!-- ============ INVENTORY REPORT TAB ============ -->
           <div v-else-if="activeTab === 'Inventory Report'">
-            <div v-if="lowStockItems.length > 0" class="bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium p-3 rounded-xl mb-4 flex items-center gap-2">
+            <div v-if="lowStockItems.length > 0" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-xl mb-4 flex items-center gap-2">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
               <span>{{ lowStockItems.length }} item(s) at or below their low-stock threshold.</span>
             </div>
 
-            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div class="px-6 py-4 border-b border-gray-100">
-                <h3 class="font-bold text-gray-800">Inventory Levels ({{ inventory.length }})</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                <h3 class="font-bold text-gray-800 dark:text-gray-100">Inventory Levels ({{ inventory.length }})</h3>
               </div>
-              <div v-if="inventory.length === 0" class="text-center py-14 text-gray-400 text-sm">
+              <div v-if="inventory.length === 0" class="text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
                 No inventory items recorded yet.
               </div>
               <table v-else class="w-full text-sm">
-                <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
                   <tr>
                     <th class="text-left px-6 py-3 font-semibold">Item</th>
                     <th class="text-left px-6 py-3 font-semibold">Quantity</th>
@@ -274,14 +303,14 @@
                     <th class="text-left px-6 py-3 font-semibold">Status</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                   <tr v-for="i in sortedInventory" :key="i.item_id">
-                    <td class="px-6 py-3.5 font-medium text-gray-800">{{ i.item_name }}</td>
-                    <td class="px-6 py-3.5 text-gray-600">{{ i.quantity }}</td>
-                    <td class="px-6 py-3.5 text-gray-600">{{ i.low_stock_threshold }}</td>
+                    <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ i.item_name }}</td>
+                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }}</td>
+                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
                     <td class="px-6 py-3.5">
                       <span
-                        :class="isLowStock(i) ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'"
+                        :class="isLowStock(i) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'"
                         class="px-2.5 py-1 rounded-full text-xs font-semibold"
                       >
                         {{ isLowStock(i) ? 'Low Stock' : 'Sufficient' }}
@@ -296,7 +325,7 @@
           <!-- ============ EXPENSES TAB ============ -->
           <div v-else-if="activeTab === 'Expenses'">
             <div class="flex items-center justify-between mb-4 print:hidden">
-              <p class="text-sm text-gray-500">Track business costs to compute Gross Profit.</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Track business costs to compute Gross Profit.</p>
               <button @click="openExpenseForm" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -305,16 +334,16 @@
               </button>
             </div>
 
-            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="font-bold text-gray-800">Expenses ({{ filteredExpenses.length }})</h3>
-                <p class="text-sm font-bold text-red-500">Total: ₱{{ formatPrice(totalExpenses) }}</p>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-bold text-gray-800 dark:text-gray-100">Expenses ({{ filteredExpenses.length }})</h3>
+                <p class="text-sm font-bold text-red-500 dark:text-red-400">Total: ₱{{ formatPrice(totalExpenses) }}</p>
               </div>
-              <div v-if="filteredExpenses.length === 0" class="text-center py-14 text-gray-400 text-sm">
+              <div v-if="filteredExpenses.length === 0" class="text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
                 No expenses recorded in this range.
               </div>
               <table v-else class="w-full text-sm">
-                <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
                   <tr>
                     <th class="text-left px-6 py-3 font-semibold">Date</th>
                     <th class="text-left px-6 py-3 font-semibold">Description</th>
@@ -323,20 +352,25 @@
                     <th class="text-right px-6 py-3 font-semibold print:hidden">Actions</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                   <tr v-for="e in filteredExpenses" :key="e.expense_id">
-                    <td class="px-6 py-3.5 text-gray-600">{{ formatDate(e.expense_date) }}</td>
-                    <td class="px-6 py-3.5 font-medium text-gray-800">{{ e.description }}</td>
+                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(e.expense_date) }}</td>
+                    <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ e.description }}</td>
                     <td class="px-6 py-3.5">
                       <span
-                        :class="['Ingredients', 'Supplies'].includes(e.category) ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'"
+                        :class="['Ingredients', 'Supplies'].includes(e.category) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
                         class="px-2.5 py-1 rounded-full text-xs font-semibold"
                         :title="['Ingredients', 'Supplies'].includes(e.category) ? 'Counted in Gross Profit (direct cost)' : 'Operating cost — not counted in Gross Profit'"
                       >{{ e.category }}</span>
                     </td>
-                    <td class="px-6 py-3.5 text-red-500 font-medium">₱{{ formatPrice(e.amount) }}</td>
+                    <td class="px-6 py-3.5 text-red-500 dark:text-red-400 font-medium">₱{{ formatPrice(e.amount) }}</td>
                     <td class="px-6 py-3.5 text-right print:hidden">
-                      <button @click="confirmDeleteExpense(e)" class="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50" title="Delete expense">
+                      <button @click="openEditExpenseForm(e)" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Edit expense">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button @click="confirmDeleteExpense(e)" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete expense">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -355,23 +389,23 @@
 
     <!-- ============ NEW EXPENSE MODAL ============ -->
     <div v-if="showExpenseForm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">New Expense</h3>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{{ editingExpenseId ? 'Edit Expense' : 'New Expense' }}</h3>
 
-        <div v-if="expenseFormError" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="expenseFormError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
           {{ expenseFormError }}
         </div>
 
-        <form @submit.prevent="handleAddExpense" class="space-y-4">
+        <form @submit.prevent="handleSaveExpense" class="space-y-4">
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Description</label>
-            <input type="text" v-model="newExpense.description" placeholder="e.g. Bagoong at toyo, market" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Description</label>
+            <input type="text" v-model="newExpense.description" placeholder="e.g. Bagoong at toyo, market" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Category</label>
-              <select v-model="newExpense.category" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Category</label>
+              <select v-model="newExpense.category" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required>
                 <option value="Ingredients">Ingredients</option>
                 <option value="Supplies">Supplies</option>
                 <option value="Salaries">Salaries</option>
@@ -381,22 +415,22 @@
               </select>
             </div>
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Amount (₱)</label>
-              <input type="number" min="0" step="0.01" v-model.number="newExpense.amount" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Amount (₱)</label>
+              <input type="number" min="0" step="0.01" v-model.number="newExpense.amount" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
             </div>
           </div>
 
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Date</label>
-            <input type="date" v-model="newExpense.expense_date" class="w-full mt-1 p-3 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" required />
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Date</label>
+            <input type="date" v-model="newExpense.expense_date" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="button" @click="closeExpenseForm" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+            <button type="button" @click="closeExpenseForm" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
             </button>
             <button type="submit" :disabled="isSavingExpense" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
-              {{ isSavingExpense ? 'Saving...' : 'Save Expense' }}
+              {{ isSavingExpense ? 'Saving...' : (editingExpenseId ? 'Update Expense' : 'Save Expense') }}
             </button>
           </div>
         </form>
@@ -405,13 +439,13 @@
 
     <!-- ============ DELETE EXPENSE CONFIRM MODAL ============ -->
     <div v-if="expenseToDelete" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-        <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Expense?</h3>
-        <p class="text-sm text-gray-500 mb-5">
-          This will permanently remove <span class="font-semibold text-gray-700">"{{ expenseToDelete.description }}"</span> (₱{{ formatPrice(expenseToDelete.amount) }}).
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Expense?</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          This will permanently remove <span class="font-semibold text-gray-700 dark:text-gray-200">"{{ expenseToDelete.description }}"</span> (₱{{ formatPrice(expenseToDelete.amount) }}).
         </p>
         <div class="flex gap-3">
-          <button @click="expenseToDelete = null" class="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">
+          <button @click="expenseToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             Cancel
           </button>
           <button @click="handleDeleteExpense" :disabled="isDeletingExpense" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
@@ -427,20 +461,23 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getMyAvatarUrl } from '../services/profileService'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPackages } from '../services/packageService'
 import { getAllPayments } from '../services/paymentService'
-import { getAllExpenses, createExpense, deleteExpense } from '../services/expenseService'
+import { getAllExpenses, createExpense, updateExpense, deleteExpense } from '../services/expenseService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 const router = useRouter()
 
 const isSidebarOpen = ref(true)
+const showAccountMenu = ref(false)
 const userName = ref('User')
 const userRole = ref('Staff')
 const userInitial = ref('U')
+const userAvatarUrl = ref('')
 
 const isLoading = ref(false)
 const pageError = ref('')
@@ -479,6 +516,12 @@ onMounted(() => {
   userName.value = user.full_name
   userRole.value = user.role
   userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userAvatarUrl.value = user.avatar_url || '' // show cached picture immediately, no flicker
+  getMyAvatarUrl(user.user_id).then((url) => {
+    userAvatarUrl.value = url || ''
+    const cached = JSON.parse(localStorage.getItem('user') || '{}')
+    localStorage.setItem('user', JSON.stringify({ ...cached, avatar_url: url || '' }))
+  })
 
   fetchReportData()
 })
@@ -516,20 +559,20 @@ function countByStatus(status) {
 
 function statusBadgeClass(status) {
   switch (status) {
-    case 'Confirmed': return 'bg-emerald-50 text-emerald-700'
-    case 'Pending': return 'bg-amber-50 text-amber-700'
-    case 'Completed': return 'bg-blue-50 text-blue-700'
-    case 'Cancelled': return 'bg-red-50 text-red-700'
-    default: return 'bg-gray-100 text-gray-600'
+    case 'Confirmed': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+    case 'Pending': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+    case 'Completed': return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+    case 'Cancelled': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
   }
 }
 
 function paymentStatusBadgeClass(status) {
   switch (status) {
-    case 'Paid': return 'bg-emerald-50 text-emerald-700'
-    case 'Partial': return 'bg-amber-50 text-amber-700'
-    case 'Unpaid': return 'bg-red-50 text-red-700'
-    default: return 'bg-gray-100 text-gray-600'
+    case 'Paid': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+    case 'Partial': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+    case 'Unpaid': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
   }
 }
 
@@ -688,12 +731,26 @@ const newExpense = ref(emptyExpenseForm())
 const showExpenseForm = ref(false)
 const isSavingExpense = ref(false)
 const expenseFormError = ref('')
+const editingExpenseId = ref(null)
 
 const expenseToDelete = ref(null)
 const isDeletingExpense = ref(false)
 
 function openExpenseForm() {
+  editingExpenseId.value = null
   newExpense.value = emptyExpenseForm()
+  expenseFormError.value = ''
+  showExpenseForm.value = true
+}
+
+function openEditExpenseForm(expense) {
+  editingExpenseId.value = expense.expense_id
+  newExpense.value = {
+    description: expense.description,
+    category: expense.category,
+    amount: expense.amount,
+    expense_date: expense.expense_date
+  }
   expenseFormError.value = ''
   showExpenseForm.value = true
 }
@@ -702,12 +759,17 @@ function closeExpenseForm() {
   showExpenseForm.value = false
 }
 
-async function handleAddExpense() {
+async function handleSaveExpense() {
   expenseFormError.value = ''
   isSavingExpense.value = true
   try {
-    await createExpense(newExpense.value)
+    if (editingExpenseId.value) {
+      await updateExpense(editingExpenseId.value, newExpense.value)
+    } else {
+      await createExpense(newExpense.value)
+    }
     showExpenseForm.value = false
+    editingExpenseId.value = null
     await fetchReportData()
   } catch (error) {
     expenseFormError.value = error.message || 'Something went wrong. Please try again.'

@@ -19,7 +19,7 @@ export async function loginUser(username, password) {
 
   const { data: profile, error: profileError } = await supabase
     .from('tbl_profiles')
-    .select('username, full_name, role')
+    .select('username, full_name, role, avatar_url')
     .eq('id', data.user.id)
     .single();
 
@@ -33,6 +33,7 @@ export async function loginUser(username, password) {
       username: profile.username,
       full_name: profile.full_name,
       role: profile.role,
+      avatar_url: profile.avatar_url || '',
     },
   };
 }

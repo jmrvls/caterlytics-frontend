@@ -11,6 +11,36 @@ export async function getAllBookings() {
   return data || [];
 }
 
+// Paginated fetch for the Booking Management table (Load More pattern).
+// Keeps getAllBookings() untouched for Reports/Dashboard/conflict-check,
+// which need the complete dataset to compute correct totals.
+export async function getBookingsPage({ offset = 0, limit = 50 } = {}) {
+  const { data, error, count } = await supabase
+    .from('tbl_bookings')
+    .select('*', { count: 'exact' })
+    .order('event_date', { ascending: true })
+    .range(offset, offset + limit - 1);
+
+  if (error) throw error;
+  return { rows: data || [], total: count ?? 0 };
+}
+
+// Lightweight query (single narrow column, not full rows) so the status
+// tabs/counters stay accurate even when the table itself hasn't fully
+// loaded yet.
+export async function getBookingStatusCounts() {
+  const { data, error } = await supabase
+    .from('tbl_bookings')
+    .select('booking_status');
+
+  if (error) throw error;
+  const counts = {};
+  for (const row of data || []) {
+    counts[row.booking_status] = (counts[row.booking_status] || 0) + 1;
+  }
+  return counts;
+}
+
 export async function createBooking(bookingData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('You must be logged in.');
@@ -59,7 +89,8 @@ export async function createBooking(bookingData) {
 
 export async function updateBookingStatus(id, status) {
   // Look at the booking's current status first, so we only deduct stock
-  // the *first* time it becomes Confirmed (not on every subsequent edit).
+  // the *first* time it becomes Confirmed (not on every subsequent edit),
+  // and so we know whether stock needs to be restored on cancellation.
   const { data: currentBooking, error: fetchError } = await supabase
     .from('tbl_bookings')
     .select('booking_status, package_name, package_id, guest_count')
@@ -86,19 +117,28 @@ export async function updateBookingStatus(id, status) {
 
   let stockWarning = null;
   if (status === 'Confirmed' && currentBooking.booking_status !== 'Confirmed') {
-    const failedItems = await deductStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id);
+    // Booking is being confirmed: deduct ingredients from inventory.
+    const failedItems = await adjustStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id, -1);
     if (failedItems.length > 0) {
       stockWarning = `Stock deduction failed for: ${failedItems.join(', ')}. Please adjust inventory manually.`;
+    }
+  } else if (status === 'Cancelled' && currentBooking.booking_status === 'Confirmed') {
+    // A previously-Confirmed booking is being cancelled: give the
+    // deducted ingredients back to inventory.
+    const failedItems = await adjustStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id, 1);
+    if (failedItems.length > 0) {
+      stockWarning = `Stock restoration failed for: ${failedItems.join(', ')}. Please adjust inventory manually.`;
     }
   }
 
   return { ...data, stockWarning };
 }
 
-// Auto Deduct Stock: matches the booking's package to its ingredient list
-// (tbl_package_ingredients) and subtracts quantity_per_guest x guest_count
-// from tbl_inventory for each ingredient.
-async function deductStockForBooking(packageName, guestCount, packageId) {
+// Auto Deduct/Restore Stock: matches the booking's package to its ingredient
+// list (tbl_package_ingredients) and adds/subtracts quantity_per_guest x
+// guest_count to/from tbl_inventory for each ingredient.
+// direction: -1 to deduct (booking confirmed), +1 to restore (booking cancelled).
+async function adjustStockForBooking(packageName, guestCount, packageId, direction) {
   const failedItems = [];
 
   let pkg = null;
@@ -131,7 +171,7 @@ async function deductStockForBooking(packageName, guestCount, packageId) {
     const totalNeeded = Number(ing.quantity_per_guest) * Number(guestCount || 1);
     if (totalNeeded > 0) {
       try {
-        await adjustInventoryStock(ing.item_id, -totalNeeded);
+        await adjustInventoryStock(ing.item_id, direction * totalNeeded);
       } catch (err) {
         failedItems.push(ing.tbl_inventory?.item_name || `item_id ${ing.item_id}`);
       }
@@ -155,6 +195,14 @@ export async function deleteBooking(id) {
 // booking policy) enforces that a Client can only touch their own
 // bookings, only while Pending/Confirmed, and can only move to Cancelled.
 export async function cancelMyBooking(id) {
+  const { data: currentBooking, error: fetchError } = await supabase
+    .from('tbl_bookings')
+    .select('booking_status, package_name, package_id, guest_count')
+    .eq('booking_id', id)
+    .single();
+
+  if (fetchError) throw new Error('Failed to cancel booking. Please try again.');
+
   const { data, error } = await supabase
     .from('tbl_bookings')
     .update({ booking_status: 'Cancelled' })
@@ -163,6 +211,12 @@ export async function cancelMyBooking(id) {
     .single();
 
   if (error) throw new Error('Failed to cancel booking. Please try again.');
+
+  // If it was already Confirmed (stock was deducted), give it back.
+  if (currentBooking.booking_status === 'Confirmed') {
+    await adjustStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id, 1);
+  }
+
   return data;
 }
 

@@ -2,28 +2,36 @@
   <div class="min-h-screen flex w-full font-sans bg-white">
 
     <!-- LEFT SIDE -->
-    <div class="hidden lg:flex w-1/2 items-center justify-center p-16 bg-gray-50 border-r border-gray-200 relative">
-      <div class="max-w-xl w-full flex flex-col justify-between h-full py-12">
-        <div class="flex items-center mb-8">
-          <img src="/src/assets/logofinal.png" alt="Logo" class="w-20 h-20 object-contain -translate-x-4" />
-        </div>
+    <div class="hidden lg:flex w-1/2 relative overflow-hidden bg-gray-50 border-r border-gray-200">
 
-        <div class="my-auto flex justify-center items-center">
-          <img src="/src/assets/login-bg.png" alt="Catering Display" class="rounded-2xl max-h-[500px] w-[120%] object-contain scale-110"/>
-        </div>
+      <!-- System Branding Logo: flush to top-left corner -->
+      <img
+        src="/src/assets/logofinal.png"
+        alt="Logo"
+        class="absolute top-6 left-6 w-16 h-16 object-contain z-20"
+      />
 
-        <div class="space-y-6">
-          <h2 class="text-5xl font-black text-gray-900 leading-none tracking-tight">
-            Join us <br />
-            and start <br />
-            <span class="text-emerald-600">booking today.</span>
-          </h2>
+      <!-- Center Visual Mockup Area: fills the entire panel edge-to-edge -->
+      <div class="absolute inset-0 flex items-center justify-center p-10">
+        <img
+          src="/src/assets/login-bg.png"
+          alt="Catering Display"
+          class="w-full h-full object-contain"
+        />
+      </div>
 
-          <p class="text-xs font-bold text-gray-400 uppercase tracking-widest pt-4 leading-relaxed">
-            Presented to the Faculty of the Computer Science Department of <br />
-            Hercor College Inc., Lawaan, Roxas City, Capiz, Philippines
-          </p>
-        </div>
+      <!-- Bottom Section: flush to bottom-left corner -->
+      <div class="absolute bottom-10 left-8 right-8 z-20">
+        <h2 class="text-5xl font-black text-gray-900 leading-none tracking-tight">
+          Join us <br />
+          and start <br />
+          <span class="text-emerald-600">booking today.</span>
+        </h2>
+
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest pt-4 leading-relaxed">
+          Presented to the Faculty of the Computer Science Department of <br />
+          Hercor College Inc., Lawaan, Roxas City, Capiz, Philippines
+        </p>
       </div>
     </div>
 

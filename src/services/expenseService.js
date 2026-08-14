@@ -31,6 +31,23 @@ export async function createExpense(expenseData) {
   return data;
 }
 
+export async function updateExpense(id, expenseData) {
+  const { data, error } = await supabase
+    .from('tbl_expenses')
+    .update({
+      description: expenseData.description,
+      category: expenseData.category || 'Other',
+      amount: expenseData.amount,
+      expense_date: expenseData.expense_date,
+    })
+    .eq('expense_id', id)
+    .select()
+    .single();
+
+  if (error) throw new Error('Failed to update expense.');
+  return data;
+}
+
 export async function deleteExpense(id) {
   const { error } = await supabase
     .from('tbl_expenses')

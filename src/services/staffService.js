@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 export async function getUsers() {
   const { data, error } = await supabase
     .from('tbl_profiles')
-    .select('id, username, full_name, role, contact_number, availability')
+    .select('id, username, full_name, role, contact_number, availability, avatar_url')
     .neq('role', 'Client')
     .order('username', { ascending: true });
 
@@ -33,6 +33,11 @@ export async function updateStaffUser(id, { full_name, role, contact_number, ava
     .select()
     .single();
 
-  if (error) throw new Error('Failed to update staff member.');
+  if (error) {
+    if (error.code === 'PGRST116') {
+      throw new Error("You don't have permission to edit staff profiles. Only Admin accounts can do this.");
+    }
+    throw new Error('Failed to update staff member.');
+  }
   return data;
 }

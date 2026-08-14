@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import './style.css'
 import App from './App.vue'
+import { initTheme } from './theme'
 
 // Views
 import LoginView from './Views/LoginView.vue'
@@ -15,6 +16,9 @@ import InventoryManagement from './Views/InventoryManagement.vue'
 import PaymentManagement from './Views/PaymentManagement.vue'
 import ReportsAnalytics from './Views/ReportsAnalytics.vue'
 import ClientDashboard from './Views/ClientDashboard.vue'
+import SettingsView from './Views/SettingsView.vue'
+
+initTheme()
 
 // Routes
 const routes = [
@@ -28,7 +32,8 @@ const routes = [
   { path: '/admin/inventory', component: InventoryManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/payments', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/reports', component: ReportsAnalytics, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
-  { path: '/client/bookings', component: ClientDashboard, meta: { requiresAuth: true, roles: ['Client'] } }
+  { path: '/client/bookings', component: ClientDashboard, meta: { requiresAuth: true, roles: ['Client'] } },
+  { path: '/settings', component: SettingsView, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager', 'Client'] } }
 ]
 
 const router = createRouter({
