@@ -52,7 +52,7 @@ export async function createBooking(bookingData) {
   if (conflict.conflict) {
     const existing = conflict.existingBookings[0];
     throw new Error(
-      `May existing booking na sa ${bookingData.event_date} (${existing.client_name}). Pumili ng ibang petsa.`
+      `There's already a booking on ${bookingData.event_date} (${existing.client_name}). Please choose another date.`
     );
   }
 
@@ -79,7 +79,7 @@ export async function createBooking(bookingData) {
     // unique index (tbl_bookings_no_double_booking) is the final backstop.
     if (error.code === '23505') {
       throw new Error(
-        `Na-book na pala ng iba yung ${bookingData.event_date} habang nagsu-submit ka. Pumili ng ibang petsa.`
+        `Someone else just booked ${bookingData.event_date} while you were submitting. Please choose another date.`
       );
     }
     throw error;
@@ -109,7 +109,7 @@ export async function updateBookingStatus(id, status) {
   if (error) {
     if (error.code === '23505') {
       throw new Error(
-        'May ibang booking na sa parehong petsa. Hindi mo pwedeng gawing Pending/Confirmed ito.'
+        'Another booking already exists on the same date. This one can\'t be set to Pending/Confirmed.'
       );
     }
     throw error;

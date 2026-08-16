@@ -1,17 +1,33 @@
 <template>
   <div class="min-h-screen flex bg-gray-50 dark:bg-gray-900 font-sans">
 
+    <!-- MOBILE TOP BAR -->
+    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3 print:hidden">
+      <div class="flex items-center gap-2">
+        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
+        <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
+      </div>
+      <button @click="isMobileSidebarOpen = true" class="p-2 rounded-none text-gray-600 dark:text-gray-300">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- MOBILE BACKDROP -->
+    <div v-if="isMobileSidebarOpen" @click="isMobileSidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden"></div>
+
     <!-- SIDEBAR -->
     <aside
-      :class="isSidebarOpen ? 'w-64' : 'w-20'"
-      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 h-screen sticky top-0"
+      :class="[isSidebarOpen ? 'w-64' : 'w-20', isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']"
+      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 h-screen fixed lg:sticky top-0 left-0 z-50 lg:z-auto"
     >
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-2 overflow-hidden">
           <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
           <span v-if="isSidebarOpen" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
         </div>
-        <button @click="isSidebarOpen = !isSidebarOpen" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
+        <button @click="isMobileSidebarOpen ? (isMobileSidebarOpen = false) : (isSidebarOpen = !isSidebarOpen)" class="p-1.5 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -25,7 +41,7 @@
           href="#"
           @click.prevent="goTo(item)"
           :class="item.name === 'Inventory' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.iconPath" />
@@ -39,7 +55,7 @@
         <div v-if="showAccountMenu" @click="showAccountMenu = false" class="fixed inset-0 z-40"></div>
 
         <!-- Account menu (Settings + Log Out) -->
-        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none shadow-lg overflow-hidden z-50">
           <button @click="router.push('/settings')" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -57,7 +73,7 @@
 
         <!-- Gear icon: its own row, above the profile -->
         <div v-if="isSidebarOpen" class="flex justify-end px-1 mb-1">
-          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -66,7 +82,7 @@
         </div>
 
         <!-- Profile: click toggles the account menu -->
-        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
           <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
             <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="w-full h-full object-cover" />
             <span v-else>{{ userInitial }}</span>
@@ -80,7 +96,7 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 p-8 overflow-x-hidden">
+    <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
         <div class="flex items-center justify-between mb-6">
@@ -88,7 +104,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Inventory</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Track stock levels and get notified when supplies run low.</p>
           </div>
-          <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
+          <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -98,22 +114,22 @@
 
         <!-- Summary Cards -->
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+          <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
             <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Items</h3>
             <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ items.length }}</p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+          <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
             <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Low Stock</h3>
             <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">{{ lowStockItems.length }}</p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
+          <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
             <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Healthy Stock</h3>
             <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ items.length - lowStockItems.length }}</p>
           </div>
         </div>
 
         <!-- Low Stock Alert -->
-        <div v-if="lowStockItems.length > 0" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm font-medium p-4 rounded-xl mb-4 flex gap-2">
+        <div v-if="lowStockItems.length > 0" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm font-medium p-4 rounded-none mb-4 flex gap-2">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
           </svg>
@@ -121,7 +137,7 @@
         </div>
 
         <!-- Search -->
-        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 mb-4">
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-none border border-gray-100 dark:border-gray-700 mb-4">
           <div class="relative">
             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
@@ -130,65 +146,113 @@
               v-model="searchQuery"
               type="text"
               placeholder="Search items..."
-              class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+              class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
             />
           </div>
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ pageError }}
         </div>
 
-        <!-- Inventory Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
-              <tr>
-                <th class="text-left px-6 py-3 font-semibold">Item</th>
-                <th class="text-left px-6 py-3 font-semibold">Quantity</th>
-                <th class="text-left px-6 py-3 font-semibold">Low Stock Threshold</th>
-                <th class="text-left px-6 py-3 font-semibold">Status</th>
-                <th class="text-right px-6 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-              <tr v-if="isLoading">
-                <td colspan="5" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading inventory...</td>
-              </tr>
-              <tr v-else-if="filteredItems.length === 0">
-                <td colspan="5" class="text-center py-10 text-gray-400 dark:text-gray-500">
-                  {{ items.length === 0 ? 'No items yet. Click "New Item" to add one.' : 'No items match your search.' }}
-                </td>
-              </tr>
-              <tr v-for="i in filteredItems" :key="i.item_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
-                <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ i.item_name }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
-                <td class="px-6 py-3.5">
-                  <span :class="isLow(i) ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                    {{ isLow(i) ? 'Low Stock' : 'OK' }}
-                  </span>
-                </td>
-                <td class="px-6 py-3.5">
-                  <div class="flex items-center justify-end gap-2">
-                    <button @click="adjustStock(i, -1)" class="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" title="Deduct 1">−</button>
-                    <button @click="adjustStock(i, 1)" class="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" title="Add 1">+</button>
-                    <button @click="openEditModal(i)" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Edit">
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                    <button @click="confirmDelete(i)" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete">
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Inventory — mobile card list (phone-friendly, replaces the table below md) -->
+        <div class="md:hidden space-y-3">
+          <div v-if="isLoading" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">Loading inventory...</div>
+          <div v-else-if="filteredItems.length === 0" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
+            {{ items.length === 0 ? 'No items yet. Tap "New Item" to add one.' : 'No items match your search.' }}
+          </div>
+          <div
+            v-for="i in filteredItems" :key="i.item_id"
+            class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-none p-4"
+          >
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ i.item_name }}</p>
+              <span :class="isLow(i) ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+                {{ isLow(i) ? 'Low Stock' : 'OK' }}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <button @click="adjustStock(i, -1)" class="w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 active:bg-gray-50 dark:active:bg-gray-700 text-lg" title="Deduct 1">−</button>
+                <span class="text-lg font-bold text-gray-800 dark:text-gray-100 min-w-[2ch] text-center">{{ i.quantity }}</span>
+                <button @click="adjustStock(i, 1)" class="w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 active:bg-gray-50 dark:active:bg-gray-700 text-lg" title="Add 1">+</button>
+              </div>
+              <p class="text-xs text-gray-400 dark:text-gray-500">Threshold: {{ i.low_stock_threshold }}</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                @click="openEditModal(i)"
+                class="flex-1 py-2.5 rounded-none text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 active:bg-emerald-100 dark:active:bg-emerald-900/40"
+              >
+                Edit
+              </button>
+              <button
+                @click="confirmDelete(i)"
+                class="w-11 h-11 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 active:bg-red-50 dark:active:bg-red-900/30 active:text-red-600"
+                title="Delete"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventory Table — desktop / tablet -->
+        <div class="hidden md:block bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left px-6 py-3 font-semibold">Item</th>
+                  <th class="text-left px-6 py-3 font-semibold">Quantity</th>
+                  <th class="text-left px-6 py-3 font-semibold">Low Stock Threshold</th>
+                  <th class="text-left px-6 py-3 font-semibold">Status</th>
+                  <th class="text-right px-6 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                <tr v-if="isLoading">
+                  <td colspan="5" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading inventory...</td>
+                </tr>
+                <tr v-else-if="filteredItems.length === 0">
+                  <td colspan="5" class="text-center py-10 text-gray-400 dark:text-gray-500">
+                    {{ items.length === 0 ? 'No items yet. Click "New Item" to add one.' : 'No items match your search.' }}
+                  </td>
+                </tr>
+                <tr v-for="i in filteredItems" :key="i.item_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
+                  <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ i.item_name }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
+                  <td class="px-6 py-3.5">
+                    <span :class="isLow(i) ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                      {{ isLow(i) ? 'Low Stock' : 'OK' }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-3.5">
+                    <div class="flex items-center justify-end gap-2">
+                      <button @click="adjustStock(i, -1)" class="w-7 h-7 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" title="Deduct 1">−</button>
+                      <button @click="adjustStock(i, 1)" class="w-7 h-7 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" title="Add 1">+</button>
+                      <button @click="openEditModal(i)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Edit">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button @click="confirmDelete(i)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -196,34 +260,34 @@
 
     <!-- ============ CREATE / EDIT MODAL ============ -->
     <div v-if="showFormModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{{ editingItem ? 'Edit Item' : 'New Item' }}</h3>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ modalError }}
         </div>
 
         <form @submit.prevent="handleSaveItem" class="space-y-4">
           <div>
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Item Name</label>
-            <input type="text" v-model="form.item_name" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+            <input type="text" v-model="form.item_name" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Quantity</label>
-              <input type="number" min="0" v-model.number="form.quantity" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+              <input type="number" min="0" v-model.number="form.quantity" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
             </div>
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Low Stock Threshold</label>
-              <input type="number" min="0" v-model.number="form.low_stock_threshold" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+              <input type="number" min="0" v-model.number="form.low_stock_threshold" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
             </div>
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="button" @click="closeFormModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <button type="button" @click="closeFormModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
             </button>
-            <button type="submit" :disabled="isSaving" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            <button type="submit" :disabled="isSaving" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
               {{ isSaving ? 'Saving...' : (editingItem ? 'Save Changes' : 'Create Item') }}
             </button>
           </div>
@@ -233,16 +297,16 @@
 
     <!-- ============ DELETE CONFIRM MODAL ============ -->
     <div v-if="itemToDelete" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Item?</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
           This will permanently remove <span class="font-semibold text-gray-700 dark:text-gray-200">{{ itemToDelete.item_name }}</span> from inventory.
         </p>
         <div class="flex gap-3">
-          <button @click="itemToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button @click="itemToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             Cancel
           </button>
-          <button @click="handleDelete" :disabled="isDeleting" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+          <button @click="handleDelete" :disabled="isDeleting" class="flex-1 bg-red-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </button>
         </div>
@@ -267,6 +331,7 @@ import {
 const router = useRouter()
 
 const isSidebarOpen = ref(true)
+const isMobileSidebarOpen = ref(false)
 const showAccountMenu = ref(false)
 const userName = ref('User')
 const userRole = ref('Staff')
@@ -404,6 +469,7 @@ async function handleDelete() {
 }
 
 function goTo(item) {
+  isMobileSidebarOpen.value = false
   router.push(item.path)
 }
 

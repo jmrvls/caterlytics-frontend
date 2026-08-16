@@ -41,3 +41,18 @@ export async function updateStaffUser(id, { full_name, role, contact_number, ava
   }
   return data;
 }
+
+// Permanently delete a staff/admin/owner account (Admin only; enforced
+// again server-side by the edge function). Deleting the auth user cascades
+// to tbl_profiles via ON DELETE CASCADE.
+export async function deleteStaffUser(userId) {
+  const { data, error } = await supabase.functions.invoke('delete-staff-user', {
+    body: { user_id: userId },
+  });
+
+  if (error) {
+    const detail = data?.error || error.context?.error || error.message;
+    throw new Error(detail || 'Failed to delete account.');
+  }
+  return data;
+}

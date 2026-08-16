@@ -1,17 +1,33 @@
 <template>
   <div class="min-h-screen flex bg-gray-50 dark:bg-gray-900 font-sans">
 
+    <!-- MOBILE TOP BAR -->
+    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3 print:hidden">
+      <div class="flex items-center gap-2">
+        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
+        <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
+      </div>
+      <button @click="isMobileSidebarOpen = true" class="p-2 rounded-none text-gray-600 dark:text-gray-300">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- MOBILE BACKDROP -->
+    <div v-if="isMobileSidebarOpen" @click="isMobileSidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden"></div>
+
     <!-- SIDEBAR -->
     <aside
-      :class="isSidebarOpen ? 'w-64' : 'w-20'"
-      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 h-screen sticky top-0 print:hidden"
+      :class="[isSidebarOpen ? 'w-64' : 'w-20', isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']"
+      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 h-screen fixed lg:sticky top-0 left-0 z-50 lg:z-auto print:hidden"
     >
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-2 overflow-hidden">
           <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
           <span v-if="isSidebarOpen" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
         </div>
-        <button @click="isSidebarOpen = !isSidebarOpen" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
+        <button @click="isMobileSidebarOpen ? (isMobileSidebarOpen = false) : (isSidebarOpen = !isSidebarOpen)" class="p-1.5 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -25,7 +41,7 @@
           href="#"
           @click.prevent="goTo(item)"
           :class="item.name === 'Reports' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.iconPath" />
@@ -39,7 +55,7 @@
         <div v-if="showAccountMenu" @click="showAccountMenu = false" class="fixed inset-0 z-40"></div>
 
         <!-- Account menu (Settings + Log Out) -->
-        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none shadow-lg overflow-hidden z-50">
           <button @click="router.push('/settings')" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -57,7 +73,7 @@
 
         <!-- Gear icon: its own row, above the profile -->
         <div v-if="isSidebarOpen" class="flex justify-end px-1 mb-1">
-          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -66,7 +82,7 @@
         </div>
 
         <!-- Profile: click toggles the account menu -->
-        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
           <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
             <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="w-full h-full object-cover" />
             <span v-else>{{ userInitial }}</span>
@@ -80,7 +96,7 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 p-8 overflow-x-hidden print:p-0">
+    <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden print:p-0 w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
         <div class="flex items-center justify-between mb-6 print:mb-4">
@@ -89,7 +105,7 @@
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 print:hidden">Sales, booking, and inventory overview.</p>
             <p class="hidden print:block text-xs text-gray-500 dark:text-gray-400 mt-1">Generated {{ generatedOn }}</p>
           </div>
-          <button @click="exportPDF" class="print:hidden flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
+          <button @click="exportPDF" class="print:hidden flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -98,26 +114,26 @@
         </div>
 
         <!-- TABS -->
-        <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-4 w-fit print:hidden">
+        <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-none border border-gray-100 dark:border-gray-700 mb-4 w-fit print:hidden">
           <button
             v-for="tab in tabs" :key="tab"
             @click="activeTab = tab"
             :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
-            class="px-4 py-2 rounded-lg text-sm font-semibold transition"
+            class="px-4 py-2 rounded-none text-sm font-semibold transition"
           >
             {{ tab }}
           </button>
         </div>
 
         <!-- DATE FILTER (affects Overview + Bookings tabs) -->
-        <div v-if="activeTab !== 'Inventory Report'" class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 mb-4 flex flex-wrap items-end gap-4 print:hidden">
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">From</label>
-            <input type="date" v-model="dateFrom" class="block mt-1 p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+        <div v-if="activeTab !== 'Inventory Report'" class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700 mb-4 flex flex-wrap items-end gap-4 print:hidden">
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">From</label>
+            <input type="date" v-model="dateFrom" class="block p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">To</label>
-            <input type="date" v-model="dateTo" class="block mt-1 p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">To</label>
+            <input type="date" v-model="dateTo" class="block p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
           <button v-if="dateFrom || dateTo" @click="dateFrom = ''; dateTo = ''" class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400">
             Clear filter
@@ -125,12 +141,12 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ pageError }}
         </div>
 
         <!-- Loading -->
-        <div v-if="isLoading" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500">
+        <div v-if="isLoading" class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500">
           Loading report data...
         </div>
 
@@ -140,63 +156,63 @@
           <div v-if="activeTab === 'Overview'">
 
             <!-- Summary Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Bookings</h3>
-                <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ filteredBookings.length }}</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6 mt-4">
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Bookings</h3>
+                <p class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ filteredBookings.length }}</p>
               </div>
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Confirmed</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ countByStatus('Confirmed') }}</p>
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Confirmed</h3>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</p>
               </div>
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Completed</h3>
-                <p class="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{{ countByStatus('Completed') }}</p>
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Completed</h3>
+                <p class="text-2xl font-black text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</p>
               </div>
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Cancelled</h3>
-                <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">{{ countByStatus('Cancelled') }}</p>
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Cancelled</h3>
+                <p class="text-2xl font-black text-red-500 dark:text-red-400">{{ countByStatus('Cancelled') }}</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Revenue Collected</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 mt-4">
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Revenue Collected</h3>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(revenueCollected) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Actual amount paid, from the Payments module.</p>
               </div>
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Expenses</h3>
-                <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Expenses</h3>
+                <p class="text-2xl font-black text-red-500 dark:text-red-400">₱{{ formatPrice(totalExpenses) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Recorded business costs in this range.</p>
               </div>
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Gross Profit</h3>
-                <p class="text-2xl font-black mt-1" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Gross Profit</h3>
+                <p class="text-2xl font-black" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Revenue Collected − direct costs (Ingredients &amp; Supplies).</p>
               </div>
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Outstanding Balance</h3>
-                <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Outstanding Balance</h3>
+                <p class="text-2xl font-black text-amber-500 dark:text-amber-400">₱{{ formatPrice(outstandingBalance) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Still owed by clients across their bookings.</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Billed</h3>
-                <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(totalBilled) }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 mt-4">
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Billed</h3>
+                <p class="text-2xl font-black text-gray-900 dark:text-gray-100">₱{{ formatPrice(totalBilled) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Sum of all payment records in this range.</p>
               </div>
-              <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Low Stock Items</h3>
-                <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">{{ lowStockItems.length }}</p>
+              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Low Stock Items</h3>
+                <p class="text-2xl font-black text-amber-500 dark:text-amber-400">{{ lowStockItems.length }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Out of {{ inventory.length }} tracked item(s) in inventory.</p>
               </div>
             </div>
 
             <!-- Booking status breakdown (simple bar chart, no chart lib needed) -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-5 mb-6">
               <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Bookings by Status</h3>
               <div v-if="filteredBookings.length === 0" class="text-sm text-gray-400 dark:text-gray-500 py-6 text-center">No bookings in this range.</div>
               <div v-else class="space-y-3">
@@ -211,7 +227,7 @@
             </div>
 
             <!-- Monthly bookings trend -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5">
+            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-5">
               <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Bookings per Month</h3>
               <div v-if="monthlyTrend.length === 0" class="text-sm text-gray-400 dark:text-gray-500 py-6 text-center">No bookings in this range.</div>
               <div v-else class="flex items-end gap-3 h-40">
@@ -226,99 +242,156 @@
 
           <!-- ============ BOOKINGS REPORT TAB ============ -->
           <div v-else-if="activeTab === 'Bookings Report'">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
               <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <h3 class="font-bold text-gray-800 dark:text-gray-100">Booking Records ({{ filteredBookings.length }})</h3>
               </div>
               <div v-if="filteredBookings.length === 0" class="text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
                 No bookings found for the selected date range.
               </div>
-              <table v-else class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
-                  <tr>
-                    <th class="text-left px-6 py-3 font-semibold">Client</th>
-                    <th class="text-left px-6 py-3 font-semibold">Event Date</th>
-                    <th class="text-left px-6 py-3 font-semibold">Location</th>
-                    <th class="text-left px-6 py-3 font-semibold">Guests</th>
-                    <th class="text-left px-6 py-3 font-semibold">Package</th>
-                    <th class="text-left px-6 py-3 font-semibold">Total Billed</th>
-                    <th class="text-left px-6 py-3 font-semibold">Paid</th>
-                    <th class="text-left px-6 py-3 font-semibold">Balance</th>
-                    <th class="text-left px-6 py-3 font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                  <tr v-for="b in filteredBookings" :key="b.booking_id">
-                    <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
-                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
-                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.event_location }}</td>
-                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
-                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
-                    <template v-if="paymentByBookingId.get(b.booking_id)">
-                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).total_amount) }}</td>
-                      <td class="px-6 py-3.5 text-emerald-600 dark:text-emerald-400 font-medium">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).amount_paid) }}</td>
-                      <td class="px-6 py-3.5 text-red-500 dark:text-red-400">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).balance) }}</td>
-                      <td class="px-6 py-3.5">
-                        <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+              <div v-else>
+                <!-- Mobile card list -->
+                <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                  <div v-for="b in filteredBookings" :key="b.booking_id" class="px-4 py-3.5">
+                    <div class="flex items-start justify-between gap-2 mb-1.5">
+                      <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ b.client_name }}</p>
+                      <template v-if="paymentByBookingId.get(b.booking_id)">
+                        <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
                           {{ paymentByBookingId.get(b.booking_id).payment_status }}
                         </span>
-                      </td>
-                    </template>
-                    <template v-else>
-                      <td class="px-6 py-3.5 text-gray-400 dark:text-gray-500 italic" colspan="3">
-                        No payment record yet (est. ₱{{ formatPrice(estimateBookingAmount(b)) }})
-                      </td>
-                      <td class="px-6 py-3.5">
-                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">No record</span>
-                      </td>
-                    </template>
-                  </tr>
-                </tbody>
-              </table>
+                      </template>
+                      <span v-else class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">No record</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ formatDate(b.event_date) }} · {{ b.event_location }} · {{ b.guest_count }} guests · {{ b.package_name || '—' }}</p>
+                    <div v-if="paymentByBookingId.get(b.booking_id)" class="grid grid-cols-3 gap-2 text-center">
+                      <div class="bg-gray-50 dark:bg-gray-900 py-1.5 rounded-none">
+                        <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Total</p>
+                        <p class="text-xs font-bold text-gray-800 dark:text-gray-100">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).total_amount) }}</p>
+                      </div>
+                      <div class="bg-gray-50 dark:bg-gray-900 py-1.5 rounded-none">
+                        <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Paid</p>
+                        <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).amount_paid) }}</p>
+                      </div>
+                      <div class="bg-gray-50 dark:bg-gray-900 py-1.5 rounded-none">
+                        <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Balance</p>
+                        <p class="text-xs font-bold text-red-500 dark:text-red-400">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).balance) }}</p>
+                      </div>
+                    </div>
+                    <p v-else class="text-xs text-gray-400 dark:text-gray-500 italic">No payment record yet (est. ₱{{ formatPrice(estimateBookingAmount(b)) }})</p>
+                  </div>
+                </div>
+
+                <!-- Desktop / tablet table -->
+                <div class="hidden sm:block overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
+                    <tr>
+                      <th class="text-left px-6 py-3 font-semibold">Client</th>
+                      <th class="text-left px-6 py-3 font-semibold">Event Date</th>
+                      <th class="text-left px-6 py-3 font-semibold">Location</th>
+                      <th class="text-left px-6 py-3 font-semibold">Guests</th>
+                      <th class="text-left px-6 py-3 font-semibold">Package</th>
+                      <th class="text-left px-6 py-3 font-semibold">Total Billed</th>
+                      <th class="text-left px-6 py-3 font-semibold">Paid</th>
+                      <th class="text-left px-6 py-3 font-semibold">Balance</th>
+                      <th class="text-left px-6 py-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tr v-for="b in filteredBookings" :key="b.booking_id">
+                      <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.event_location }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
+                      <template v-if="paymentByBookingId.get(b.booking_id)">
+                        <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).total_amount) }}</td>
+                        <td class="px-6 py-3.5 text-emerald-600 dark:text-emerald-400 font-medium">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).amount_paid) }}</td>
+                        <td class="px-6 py-3.5 text-red-500 dark:text-red-400">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).balance) }}</td>
+                        <td class="px-6 py-3.5">
+                          <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                            {{ paymentByBookingId.get(b.booking_id).payment_status }}
+                          </span>
+                        </td>
+                      </template>
+                      <template v-else>
+                        <td class="px-6 py-3.5 text-gray-400 dark:text-gray-500 italic" colspan="3">
+                          No payment record yet (est. ₱{{ formatPrice(estimateBookingAmount(b)) }})
+                        </td>
+                        <td class="px-6 py-3.5">
+                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">No record</span>
+                        </td>
+                      </template>
+                    </tr>
+                  </tbody>
+                </table>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- ============ INVENTORY REPORT TAB ============ -->
           <div v-else-if="activeTab === 'Inventory Report'">
-            <div v-if="lowStockItems.length > 0" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-xl mb-4 flex items-center gap-2">
+            <div v-if="lowStockItems.length > 0" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-none mb-4 flex items-center gap-2">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
               <span>{{ lowStockItems.length }} item(s) at or below their low-stock threshold.</span>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
               <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                 <h3 class="font-bold text-gray-800 dark:text-gray-100">Inventory Levels ({{ inventory.length }})</h3>
               </div>
               <div v-if="inventory.length === 0" class="text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
                 No inventory items recorded yet.
               </div>
-              <table v-else class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
-                  <tr>
-                    <th class="text-left px-6 py-3 font-semibold">Item</th>
-                    <th class="text-left px-6 py-3 font-semibold">Quantity</th>
-                    <th class="text-left px-6 py-3 font-semibold">Low Stock Threshold</th>
-                    <th class="text-left px-6 py-3 font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                  <tr v-for="i in sortedInventory" :key="i.item_id">
-                    <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ i.item_name }}</td>
-                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }}</td>
-                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
-                    <td class="px-6 py-3.5">
-                      <span
-                        :class="isLowStock(i) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'"
-                        class="px-2.5 py-1 rounded-full text-xs font-semibold"
-                      >
-                        {{ isLowStock(i) ? 'Low Stock' : 'Sufficient' }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div v-else>
+                <!-- Mobile card list -->
+                <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                  <div v-for="i in sortedInventory" :key="i.item_id" class="px-4 py-3.5 flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ i.item_name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Qty: {{ i.quantity }} · Threshold: {{ i.low_stock_threshold }}</p>
+                    </div>
+                    <span
+                      :class="isLowStock(i) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'"
+                      class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold"
+                    >
+                      {{ isLowStock(i) ? 'Low Stock' : 'Sufficient' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Desktop / tablet table -->
+                <div class="hidden sm:block overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
+                    <tr>
+                      <th class="text-left px-6 py-3 font-semibold">Item</th>
+                      <th class="text-left px-6 py-3 font-semibold">Quantity</th>
+                      <th class="text-left px-6 py-3 font-semibold">Low Stock Threshold</th>
+                      <th class="text-left px-6 py-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tr v-for="i in sortedInventory" :key="i.item_id">
+                      <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ i.item_name }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
+                      <td class="px-6 py-3.5">
+                        <span
+                          :class="isLowStock(i) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'"
+                          class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                        >
+                          {{ isLowStock(i) ? 'Low Stock' : 'Sufficient' }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -326,7 +399,7 @@
           <div v-else-if="activeTab === 'Expenses'">
             <div class="flex items-center justify-between mb-4 print:hidden">
               <p class="text-sm text-gray-500 dark:text-gray-400">Track business costs to compute Gross Profit.</p>
-              <button @click="openExpenseForm" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
+              <button @click="openExpenseForm" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
@@ -334,7 +407,7 @@
               </button>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
               <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <h3 class="font-bold text-gray-800 dark:text-gray-100">Expenses ({{ filteredExpenses.length }})</h3>
                 <p class="text-sm font-bold text-red-500 dark:text-red-400">Total: ₱{{ formatPrice(totalExpenses) }}</p>
@@ -342,43 +415,79 @@
               <div v-if="filteredExpenses.length === 0" class="text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
                 No expenses recorded in this range.
               </div>
-              <table v-else class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
-                  <tr>
-                    <th class="text-left px-6 py-3 font-semibold">Date</th>
-                    <th class="text-left px-6 py-3 font-semibold">Description</th>
-                    <th class="text-left px-6 py-3 font-semibold">Category</th>
-                    <th class="text-left px-6 py-3 font-semibold">Amount</th>
-                    <th class="text-right px-6 py-3 font-semibold print:hidden">Actions</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                  <tr v-for="e in filteredExpenses" :key="e.expense_id">
-                    <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(e.expense_date) }}</td>
-                    <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ e.description }}</td>
-                    <td class="px-6 py-3.5">
-                      <span
-                        :class="['Ingredients', 'Supplies'].includes(e.category) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
-                        class="px-2.5 py-1 rounded-full text-xs font-semibold"
-                        :title="['Ingredients', 'Supplies'].includes(e.category) ? 'Counted in Gross Profit (direct cost)' : 'Operating cost — not counted in Gross Profit'"
-                      >{{ e.category }}</span>
-                    </td>
-                    <td class="px-6 py-3.5 text-red-500 dark:text-red-400 font-medium">₱{{ formatPrice(e.amount) }}</td>
-                    <td class="px-6 py-3.5 text-right print:hidden">
-                      <button @click="openEditExpenseForm(e)" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Edit expense">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button @click="confirmDeleteExpense(e)" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete expense">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              <div v-else>
+                <!-- Mobile card list -->
+                <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                  <div v-for="e in filteredExpenses" :key="e.expense_id" class="px-4 py-3.5">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                      <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ e.description }}</p>
+                      <p class="shrink-0 text-sm font-bold text-red-500 dark:text-red-400">₱{{ formatPrice(e.amount) }}</p>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(e.expense_date) }}</span>
+                        <span
+                          :class="['Ingredients', 'Supplies'].includes(e.category) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
+                          class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                        >{{ e.category }}</span>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button @click="openEditExpenseForm(e)" class="p-2 rounded-none text-gray-400 dark:text-gray-500 active:text-emerald-600 active:bg-emerald-50 dark:active:bg-emerald-900/30" title="Edit expense">
+                          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button @click="confirmDeleteExpense(e)" class="p-2 rounded-none text-gray-400 dark:text-gray-500 active:text-red-600 active:bg-red-50 dark:active:bg-red-900/30" title="Delete expense">
+                          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Desktop / tablet table -->
+                <div class="hidden sm:block overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
+                    <tr>
+                      <th class="text-left px-6 py-3 font-semibold">Date</th>
+                      <th class="text-left px-6 py-3 font-semibold">Description</th>
+                      <th class="text-left px-6 py-3 font-semibold">Category</th>
+                      <th class="text-left px-6 py-3 font-semibold">Amount</th>
+                      <th class="text-right px-6 py-3 font-semibold print:hidden">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tr v-for="e in filteredExpenses" :key="e.expense_id">
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(e.expense_date) }}</td>
+                      <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ e.description }}</td>
+                      <td class="px-6 py-3.5">
+                        <span
+                          :class="['Ingredients', 'Supplies'].includes(e.category) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
+                          class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                          :title="['Ingredients', 'Supplies'].includes(e.category) ? 'Counted in Gross Profit (direct cost)' : 'Operating cost — not counted in Gross Profit'"
+                        >{{ e.category }}</span>
+                      </td>
+                      <td class="px-6 py-3.5 text-red-500 dark:text-red-400 font-medium">₱{{ formatPrice(e.amount) }}</td>
+                      <td class="px-6 py-3.5 text-right print:hidden">
+                        <button @click="openEditExpenseForm(e)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Edit expense">
+                          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button @click="confirmDeleteExpense(e)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete expense">
+                          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -389,23 +498,23 @@
 
     <!-- ============ NEW EXPENSE MODAL ============ -->
     <div v-if="showExpenseForm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{{ editingExpenseId ? 'Edit Expense' : 'New Expense' }}</h3>
 
-        <div v-if="expenseFormError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="expenseFormError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ expenseFormError }}
         </div>
 
-        <form @submit.prevent="handleSaveExpense" class="space-y-4">
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Description</label>
-            <input type="text" v-model="newExpense.description" placeholder="e.g. Bagoong at toyo, market" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+        <form @submit.prevent="handleSaveExpense" class="space-y-5">
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Description</label>
+            <input type="text" v-model="newExpense.description" placeholder="e.g. Bagoong at toyo, market" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Category</label>
-              <select v-model="newExpense.category" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="relative">
+              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Category</label>
+              <select v-model="newExpense.category" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
                 <option value="Ingredients">Ingredients</option>
                 <option value="Supplies">Supplies</option>
                 <option value="Salaries">Salaries</option>
@@ -414,22 +523,22 @@
                 <option value="Other">Other</option>
               </select>
             </div>
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Amount (₱)</label>
-              <input type="number" min="0" step="0.01" v-model.number="newExpense.amount" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+            <div class="relative">
+              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Amount (₱)</label>
+              <input type="number" min="0" step="0.01" v-model.number="newExpense.amount" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
             </div>
           </div>
 
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Date</label>
-            <input type="date" v-model="newExpense.expense_date" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Date</label>
+            <input type="date" v-model="newExpense.expense_date" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="button" @click="closeExpenseForm" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <button type="button" @click="closeExpenseForm" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
             </button>
-            <button type="submit" :disabled="isSavingExpense" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            <button type="submit" :disabled="isSavingExpense" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
               {{ isSavingExpense ? 'Saving...' : (editingExpenseId ? 'Update Expense' : 'Save Expense') }}
             </button>
           </div>
@@ -439,16 +548,16 @@
 
     <!-- ============ DELETE EXPENSE CONFIRM MODAL ============ -->
     <div v-if="expenseToDelete" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Expense?</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
           This will permanently remove <span class="font-semibold text-gray-700 dark:text-gray-200">"{{ expenseToDelete.description }}"</span> (₱{{ formatPrice(expenseToDelete.amount) }}).
         </p>
         <div class="flex gap-3">
-          <button @click="expenseToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button @click="expenseToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             Cancel
           </button>
-          <button @click="handleDeleteExpense" :disabled="isDeletingExpense" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+          <button @click="handleDeleteExpense" :disabled="isDeletingExpense" class="flex-1 bg-red-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
             {{ isDeletingExpense ? 'Deleting...' : 'Delete' }}
           </button>
         </div>
@@ -473,6 +582,7 @@ import autoTable from 'jspdf-autotable'
 const router = useRouter()
 
 const isSidebarOpen = ref(true)
+const isMobileSidebarOpen = ref(false)
 const showAccountMenu = ref(false)
 const userName = ref('User')
 const userRole = ref('Staff')
@@ -905,6 +1015,7 @@ function exportPDF() {
 
 // ---------- Nav / auth ----------
 function goTo(item) {
+  isMobileSidebarOpen.value = false
   router.push(item.path)
 }
 

@@ -3,7 +3,7 @@
 
     <!-- TOP NAV -->
     <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-      <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain" />
           <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
@@ -50,7 +50,7 @@
       </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-6 py-8">
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
       <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome, {{ userName }}</h1>
@@ -165,10 +165,10 @@
           </button>
         </div>
         <div v-else class="grid gap-4">
-          <div v-for="b in myBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 flex items-center justify-between">
-            <div>
+          <div v-for="b in myBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="min-w-0">
               <p class="font-bold text-gray-800 dark:text-gray-100">{{ b.package_name || 'Custom Booking' }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(b.event_date) }} at {{ b.event_time }} — {{ b.event_location }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">{{ formatDate(b.event_date) }} at {{ b.event_time }} — {{ b.event_location }}</p>
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ b.guest_count }} guests</p>
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
@@ -192,7 +192,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
           <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Cancel this booking?</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
-            Ito ay para sa <span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDate(bookingToCancel.event_date) }}</span> sa {{ bookingToCancel.event_location }}. Hindi na ito puwedeng ibalik pagkatapos.
+            This is for <span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDate(bookingToCancel.event_date) }}</span> at {{ bookingToCancel.event_location }}. This can't be undone once cancelled.
           </p>
           <div class="flex gap-3">
             <button @click="bookingToCancel = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -321,7 +321,7 @@ async function handleDateCheck() {
   try {
     const result = await checkDateConflict(form.value.event_date)
     if (result.conflict) {
-      conflictWarning.value = 'May naunang booking na sa petsang ito. Pumili ng ibang date bago mag-submit.'
+      conflictWarning.value = 'This date already has a booking. Please choose another date before submitting.'
     }
   } catch (error) {
     console.error('Conflict check failed:', error)

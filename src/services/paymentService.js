@@ -34,7 +34,7 @@ export async function getPaymentsPage({ offset = 0, limit = 50 } = {}) {
       balance,
       payment_status,
       payment_date,
-      tbl_bookings ( client_name, event_date, package_name )
+      tbl_bookings ( client_name, event_date, event_location, guest_count, package_name )
     `, { count: 'exact' })
     .order('payment_id', { ascending: false })
     .range(offset, offset + limit - 1);

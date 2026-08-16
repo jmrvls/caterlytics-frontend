@@ -1,17 +1,33 @@
 <template>
   <div class="min-h-screen flex bg-gray-50 dark:bg-gray-900 font-sans">
 
+    <!-- MOBILE TOP BAR -->
+    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3 print:hidden">
+      <div class="flex items-center gap-2">
+        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
+        <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
+      </div>
+      <button @click="isMobileSidebarOpen = true" class="p-2 rounded-none text-gray-600 dark:text-gray-300">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- MOBILE BACKDROP -->
+    <div v-if="isMobileSidebarOpen" @click="isMobileSidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden"></div>
+
     <!-- SIDEBAR -->
     <aside
-      :class="isSidebarOpen ? 'w-64' : 'w-20'"
-      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 h-screen sticky top-0"
+      :class="[isSidebarOpen ? 'w-64' : 'w-20', isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']"
+      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 h-screen fixed lg:sticky top-0 left-0 z-50 lg:z-auto"
     >
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-2 overflow-hidden">
           <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
           <span v-if="isSidebarOpen" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
         </div>
-        <button @click="isSidebarOpen = !isSidebarOpen" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
+        <button @click="isMobileSidebarOpen ? (isMobileSidebarOpen = false) : (isSidebarOpen = !isSidebarOpen)" class="p-1.5 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -25,7 +41,7 @@
           href="#"
           @click.prevent="goTo(item)"
           :class="item.name === 'Event Bookings' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.iconPath" />
@@ -39,7 +55,7 @@
         <div v-if="showAccountMenu" @click="showAccountMenu = false" class="fixed inset-0 z-40"></div>
 
         <!-- Account menu (Settings + Log Out) -->
-        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none shadow-lg overflow-hidden z-50">
           <button @click="router.push('/settings')" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -57,7 +73,7 @@
 
         <!-- Gear icon: its own row, above the profile -->
         <div v-if="isSidebarOpen" class="flex justify-end px-1 mb-1">
-          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -66,7 +82,7 @@
         </div>
 
         <!-- Profile: click toggles the account menu -->
-        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
           <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
             <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="w-full h-full object-cover" />
             <span v-else>{{ userInitial }}</span>
@@ -80,7 +96,7 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 p-8 overflow-x-hidden">
+    <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
         <div class="flex items-center justify-between mb-6">
@@ -88,7 +104,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Event Bookings</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage reservations and prevent scheduling conflicts.</p>
           </div>
-          <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
+          <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -97,27 +113,28 @@
         </div>
 
         <!-- Summary Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total</h3>
-            <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ bookings.length }}</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6 mt-4">
+          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total</h3>
+            <p class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ bookings.length }}</p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Pending</h3>
-            <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">{{ countByStatus('Pending') }}</p>
+          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Pending</h3>
+            <p class="text-2xl font-black text-amber-500 dark:text-amber-400">{{ countByStatus('Pending') }}</p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Confirmed</h3>
-            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ countByStatus('Confirmed') }}</p>
+          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Confirmed</h3>
+            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Completed</h3>
-            <p class="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{{ countByStatus('Completed') }}</p>
+          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Completed</h3>
+            <p class="text-2xl font-black text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</p>
           </div>
         </div>
 
+
         <!-- Filters -->
-        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 mb-4 flex flex-col sm:flex-row gap-3">
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-none border border-gray-100 dark:border-gray-700 mb-4 flex flex-col sm:flex-row gap-3">
           <div class="relative flex-1">
             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
@@ -126,10 +143,10 @@
               v-model="searchQuery"
               type="text"
               placeholder="Search by client name..."
-              class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+              class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
             />
           </div>
-          <select v-model="statusFilter" class="px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+          <select v-model="statusFilter" class="px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
             <option value="">All Statuses</option>
             <option value="Pending">Pending</option>
             <option value="Confirmed">Confirmed</option>
@@ -139,70 +156,133 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ pageError }}
         </div>
 
-        <!-- Bookings Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
-              <tr>
-                <th class="text-left px-6 py-3 font-semibold">Client</th>
-                <th class="text-left px-6 py-3 font-semibold">Event Date</th>
-                <th class="text-left px-6 py-3 font-semibold">Time</th>
-                <th class="text-left px-6 py-3 font-semibold">Location</th>
-                <th class="text-left px-6 py-3 font-semibold">Guests</th>
-                <th class="text-left px-6 py-3 font-semibold">Package</th>
-                <th class="text-left px-6 py-3 font-semibold">Status</th>
-                <th class="text-right px-6 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-              <tr v-if="isLoading">
-                <td colspan="8" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading bookings...</td>
-              </tr>
-              <tr v-else-if="filteredBookings.length === 0">
-                <td colspan="8" class="text-center py-10 text-gray-400 dark:text-gray-500">
-                  {{ bookings.length === 0 ? 'No bookings yet. Click "New Booking" to create one.' : 'No bookings match your filters.' }}
-                </td>
-              </tr>
-              <tr v-for="b in filteredBookings" :key="b.booking_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
-                <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatTime(b.event_time) }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.event_location }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
-                <td class="px-6 py-3.5">
-                  <span :class="statusBadgeClass(b.booking_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                    {{ b.booking_status }}
-                  </span>
-                </td>
-                <td class="px-6 py-3.5">
-                  <div class="flex items-center justify-end gap-2">
-                    <select
-                      :value="b.booking_status"
-                      @change="handleStatusChange(b, $event.target.value)"
-                      class="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Confirmed">Confirmed</option>
-                      <option value="Completed">Completed</option>
-                      <option value="Cancelled">Cancelled</option>
-                    </select>
-                    <button @click="confirmDelete(b)" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete booking">
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Bookings — mobile card list (phone-friendly, replaces the table below md) -->
+        <div class="md:hidden space-y-3">
+          <div v-if="isLoading" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
+          <div v-else-if="filteredBookings.length === 0" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
+            {{ bookings.length === 0 ? 'No bookings yet. Tap "New Booking" to create one.' : 'No bookings match your filters.' }}
+          </div>
+          <div
+            v-for="b in filteredBookings" :key="b.booking_id"
+            class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-none p-4"
+          >
+            <div class="flex items-start justify-between gap-3 mb-2">
+              <div class="min-w-0">
+                <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ b.client_name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(b.event_date) }} · {{ formatTime(b.event_time) }}</p>
+              </div>
+              <span :class="statusBadgeClass(b.booking_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+                {{ b.booking_status }}
+              </span>
+            </div>
+
+            <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1 mb-3">
+              <p class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <span class="truncate">{{ b.event_location }}</span>
+              </p>
+              <p class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-4a4 4 0 10-4-4m4 4a4 4 0 01-4-4" /></svg>
+                {{ b.guest_count }} guests · {{ b.package_name || 'No package' }}
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <select
+                :value="b.booking_status"
+                @change="handleStatusChange(b, $event.target.value)"
+                class="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded-none px-3 py-2.5 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+              >
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+              <button
+                @click="confirmDelete(b)"
+                class="w-11 h-11 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 active:bg-red-50 dark:active:bg-red-900/30 active:text-red-600"
+                title="Delete booking"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="hasMoreBookings && !isLoading" class="flex justify-center pt-1">
+            <button @click="loadMoreBookings" :disabled="isLoadingMore" class="px-5 py-2.5 rounded-none border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 active:bg-gray-50 dark:active:bg-gray-700 disabled:opacity-50">
+              {{ isLoadingMore ? 'Loading...' : `Load More (${bookings.length} of ${totalBookings})` }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Bookings Table — desktop / tablet -->
+        <div class="hidden md:block bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left px-6 py-3 font-semibold">Client</th>
+                  <th class="text-left px-6 py-3 font-semibold">Event Date</th>
+                  <th class="text-left px-6 py-3 font-semibold">Time</th>
+                  <th class="text-left px-6 py-3 font-semibold">Location</th>
+                  <th class="text-left px-6 py-3 font-semibold">Guests</th>
+                  <th class="text-left px-6 py-3 font-semibold">Package</th>
+                  <th class="text-left px-6 py-3 font-semibold">Status</th>
+                  <th class="text-right px-6 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                <tr v-if="isLoading">
+                  <td colspan="8" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading bookings...</td>
+                </tr>
+                <tr v-else-if="filteredBookings.length === 0">
+                  <td colspan="8" class="text-center py-10 text-gray-400 dark:text-gray-500">
+                    {{ bookings.length === 0 ? 'No bookings yet. Click "New Booking" to create one.' : 'No bookings match your filters.' }}
+                  </td>
+                </tr>
+                <tr v-for="b in filteredBookings" :key="b.booking_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
+                  <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatTime(b.event_time) }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.event_location }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
+                  <td class="px-6 py-3.5">
+                    <span :class="statusBadgeClass(b.booking_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                      {{ b.booking_status }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-3.5">
+                    <div class="flex items-center justify-end gap-2">
+                      <select
+                        :value="b.booking_status"
+                        @change="handleStatusChange(b, $event.target.value)"
+                        class="text-xs border border-gray-200 dark:border-gray-700 rounded-none px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                      <button @click="confirmDelete(b)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete booking">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <div v-if="hasMoreBookings && !isLoading" class="flex justify-center py-4 border-t border-gray-100 dark:border-gray-700">
-            <button @click="loadMoreBookings" :disabled="isLoadingMore" class="px-5 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+            <button @click="loadMoreBookings" :disabled="isLoadingMore" class="px-5 py-2 rounded-none border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
               {{ isLoadingMore ? 'Loading...' : `Load More (${bookings.length} of ${totalBookings})` }}
             </button>
           </div>
@@ -213,71 +293,71 @@
 
     <!-- ============ NEW BOOKING MODAL ============ -->
     <div v-if="showCreateModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">New Booking</h3>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ modalError }}
         </div>
 
-        <div v-if="conflictWarning" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-xl mb-4 flex gap-2">
+        <div v-if="conflictWarning" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-none mb-4 flex gap-2">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
           </svg>
           <span>{{ conflictWarning }}</span>
         </div>
 
-        <form @submit.prevent="handleCreateBooking" class="space-y-4">
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Client Name</label>
-            <input type="text" v-model="form.client_name" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+        <form @submit.prevent="handleCreateBooking" class="space-y-5">
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Client Name</label>
+            <input type="text" v-model="form.client_name" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
 
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Client Email (for confirmation)</label>
-            <input type="email" v-model="form.client_email" placeholder="client@example.com" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Client Email (for confirmation)</label>
+            <input type="email" v-model="form.client_email" placeholder="client@example.com" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Date</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="relative">
+              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Event Date</label>
               <input
                 type="date"
                 v-model="form.event_date"
                 @change="handleDateCheck"
                 :min="todayStr"
-                class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+                class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100"
                 required
               />
             </div>
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Time</label>
-              <input type="time" v-model="form.event_time" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+            <div class="relative">
+              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Event Time</label>
+              <input type="time" v-model="form.event_time" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
             </div>
           </div>
 
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Location</label>
-            <input type="text" v-model="form.event_location" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Event Location</label>
+            <input type="text" v-model="form.event_location" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Guest Count</label>
-              <input type="number" min="1" v-model.number="form.guest_count" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="relative">
+              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Guest Count</label>
+              <input type="number" min="1" v-model.number="form.guest_count" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
             </div>
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Package</label>
-              <input type="text" v-model="form.package_name" placeholder="e.g. Silver Package" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+            <div class="relative">
+              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Package</label>
+              <input type="text" v-model="form.package_name" placeholder="e.g. Silver Package" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
             </div>
           </div>
           <p class="text-xs text-gray-400 dark:text-gray-500 -mt-2">Manual entry for now — links to Package & Menu Management once that module is ready.</p>
 
           <div class="flex gap-3 pt-2">
-            <button type="button" @click="closeCreateModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <button type="button" @click="closeCreateModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
             </button>
-            <button type="submit" :disabled="isCreating" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            <button type="submit" :disabled="isCreating" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
               {{ isCreating ? 'Saving...' : 'Create Booking' }}
             </button>
           </div>
@@ -287,16 +367,16 @@
 
     <!-- ============ DELETE CONFIRM MODAL ============ -->
     <div v-if="bookingToDelete" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Booking?</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
           This will permanently remove the booking for <span class="font-semibold text-gray-700 dark:text-gray-200">{{ bookingToDelete.client_name }}</span> on {{ formatDate(bookingToDelete.event_date) }}.
         </p>
         <div class="flex gap-3">
-          <button @click="bookingToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button @click="bookingToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             Cancel
           </button>
-          <button @click="handleDelete" :disabled="isDeleting" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+          <button @click="handleDelete" :disabled="isDeleting" class="flex-1 bg-red-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </button>
         </div>
@@ -322,6 +402,7 @@ import {
 const router = useRouter()
 
 const isSidebarOpen = ref(true)
+const isMobileSidebarOpen = ref(false)
 const showAccountMenu = ref(false)
 const userName = ref('User')
 const userRole = ref('Staff')
@@ -482,7 +563,7 @@ async function handleDateCheck() {
     const result = await checkDateConflict(form.value.event_date)
     if (result.conflict) {
       const existing = result.existingBookings[0]
-      conflictWarning.value = `May existing booking na sa date na ito (${existing.client_name} at ${formatTime(existing.event_time)}). Pumili ng ibang petsa — hindi pwede ang parehong petsa.`
+      conflictWarning.value = `This date already has a booking (${existing.client_name} at ${formatTime(existing.event_time)}). Please choose a different date — the same date can't be booked twice.`
     }
   } catch (error) {
     console.error('Conflict check failed:', error)
@@ -546,6 +627,7 @@ async function handleDelete() {
 }
 
 function goTo(item) {
+  isMobileSidebarOpen.value = false
   router.push(item.path)
 }
 

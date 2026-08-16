@@ -1,17 +1,33 @@
 <template>
   <div class="min-h-screen flex bg-gray-50 dark:bg-gray-900 font-sans">
 
+    <!-- MOBILE TOP BAR -->
+    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3 print:hidden">
+      <div class="flex items-center gap-2">
+        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
+        <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
+      </div>
+      <button @click="isMobileSidebarOpen = true" class="p-2 rounded-none text-gray-600 dark:text-gray-300">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- MOBILE BACKDROP -->
+    <div v-if="isMobileSidebarOpen" @click="isMobileSidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden"></div>
+
     <!-- SIDEBAR -->
     <aside
-      :class="isSidebarOpen ? 'w-64' : 'w-20'"
-      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 h-screen sticky top-0"
+      :class="[isSidebarOpen ? 'w-64' : 'w-20', isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']"
+      class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 h-screen fixed lg:sticky top-0 left-0 z-50 lg:z-auto"
     >
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-2 overflow-hidden">
           <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
           <span v-if="isSidebarOpen" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
         </div>
-        <button @click="isSidebarOpen = !isSidebarOpen" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
+        <button @click="isMobileSidebarOpen ? (isMobileSidebarOpen = false) : (isSidebarOpen = !isSidebarOpen)" class="p-1.5 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
@@ -25,7 +41,7 @@
           href="#"
           @click.prevent="goTo(item)"
           :class="item.name === 'Payments' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.iconPath" />
@@ -39,7 +55,7 @@
         <div v-if="showAccountMenu" @click="showAccountMenu = false" class="fixed inset-0 z-40"></div>
 
         <!-- Account menu (Settings + Log Out) -->
-        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
+        <div v-if="showAccountMenu" class="absolute bottom-full left-2 mb-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none shadow-lg overflow-hidden z-50">
           <button @click="router.push('/settings')" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -57,7 +73,7 @@
 
         <!-- Gear icon: its own row, above the profile -->
         <div v-if="isSidebarOpen" class="flex justify-end px-1 mb-1">
-          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -66,7 +82,7 @@
         </div>
 
         <!-- Profile: click toggles the account menu -->
-        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+        <div @click="showAccountMenu = !showAccountMenu" class="flex items-center gap-3 px-2 py-2 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
           <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 overflow-hidden">
             <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="w-full h-full object-cover" />
             <span v-else>{{ userInitial }}</span>
@@ -80,7 +96,7 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 p-8 overflow-x-hidden">
+    <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
         <div class="flex items-center justify-between mb-6">
@@ -88,7 +104,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Payments</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Track down payments, balances, and payment status per booking.</p>
           </div>
-          <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">
+          <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -97,27 +113,27 @@
         </div>
 
         <!-- Summary Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Records</h3>
-            <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ payments.length }}</p>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6 mt-4">
+          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Records</h3>
+            <p class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ payments.length }}</p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Fully Paid</h3>
-            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ countByStatus('Paid') }}</p>
+          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Fully Paid</h3>
+            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ countByStatus('Paid') }}</p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Partial</h3>
-            <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">{{ countByStatus('Partial') }}</p>
+          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Partial</h3>
+            <p class="text-2xl font-black text-amber-500 dark:text-amber-400">{{ countByStatus('Partial') }}</p>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Unpaid</h3>
-            <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">{{ countByStatus('Unpaid') }}</p>
+          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
+            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Unpaid</h3>
+            <p class="text-2xl font-black text-red-500 dark:text-red-400">{{ countByStatus('Unpaid') }}</p>
           </div>
         </div>
 
         <!-- Search -->
-        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 mb-4">
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-none border border-gray-100 dark:border-gray-700 mb-4">
           <div class="relative">
             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
@@ -126,71 +142,155 @@
               v-model="searchQuery"
               type="text"
               placeholder="Search by client name..."
-              class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+              class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
             />
           </div>
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ pageError }}
         </div>
 
-        <!-- Payments Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
-              <tr>
-                <th class="text-left px-6 py-3 font-semibold">Client</th>
-                <th class="text-left px-6 py-3 font-semibold">Event Date</th>
-                <th class="text-left px-6 py-3 font-semibold">Total</th>
-                <th class="text-left px-6 py-3 font-semibold">Paid</th>
-                <th class="text-left px-6 py-3 font-semibold">Balance</th>
-                <th class="text-left px-6 py-3 font-semibold">Status</th>
-                <th class="text-right px-6 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-              <tr v-if="isLoading">
-                <td colspan="7" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading payments...</td>
-              </tr>
-              <tr v-else-if="filteredPayments.length === 0">
-                <td colspan="7" class="text-center py-10 text-gray-400 dark:text-gray-500">
-                  {{ payments.length === 0 ? 'No payment records yet. Click "New Payment" to add one.' : 'No records match your search.' }}
-                </td>
-              </tr>
-              <tr v-for="p in filteredPayments" :key="p.payment_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
-                <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ p.tbl_bookings?.client_name || '—' }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(p.tbl_bookings?.event_date) }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.total_amount).toLocaleString() }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.amount_paid).toLocaleString() }}</td>
-                <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.balance).toLocaleString() }}</td>
-                <td class="px-6 py-3.5">
-                  <span :class="statusStyle(p.payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                    {{ p.payment_status }}
-                  </span>
-                </td>
-                <td class="px-6 py-3.5">
-                  <div class="flex items-center justify-end gap-2">
-                    <button
-                      v-if="p.payment_status !== 'Paid'"
-                      @click="openRecordModal(p)"
-                      class="px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
-                    >
-                      Record Payment
-                    </button>
-                    <button @click="confirmDelete(p)" class="p-1.5 rounded-lg text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete">
-                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Payments — mobile card list (phone-friendly, replaces the table below md) -->
+        <div class="md:hidden space-y-3">
+          <div v-if="isLoading" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">Loading payments...</div>
+          <div v-else-if="filteredPayments.length === 0" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
+            {{ payments.length === 0 ? 'No payment records yet. Tap "New Payment" to add one.' : 'No records match your search.' }}
+          </div>
+          <div
+            v-for="p in filteredPayments" :key="p.payment_id"
+            class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-none p-4"
+          >
+            <div class="flex items-start justify-between gap-3 mb-3">
+              <div class="min-w-0">
+                <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ p.tbl_bookings?.client_name || '—' }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(p.tbl_bookings?.event_date) }}</p>
+              </div>
+              <span :class="statusStyle(p.payment_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+                {{ p.payment_status }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 mb-3 text-center">
+              <div class="bg-gray-50 dark:bg-gray-900 py-2 rounded-none">
+                <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total</p>
+                <p class="text-sm font-bold text-gray-800 dark:text-gray-100">₱{{ Number(p.total_amount).toLocaleString() }}</p>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-900 py-2 rounded-none">
+                <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Paid</p>
+                <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400">₱{{ Number(p.amount_paid).toLocaleString() }}</p>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-900 py-2 rounded-none">
+                <p class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Balance</p>
+                <p class="text-sm font-bold text-gray-800 dark:text-gray-100">₱{{ Number(p.balance).toLocaleString() }}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button
+                v-if="p.payment_status !== 'Paid'"
+                @click="openRecordModal(p)"
+                class="flex-1 py-2.5 rounded-none text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 active:bg-emerald-100 dark:active:bg-emerald-900/40"
+              >
+                Record Payment
+              </button>
+              <button
+                v-if="Number(p.amount_paid) > 0"
+                @click="generateReceipt(p)"
+                class="w-11 h-11 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 active:bg-emerald-50 dark:active:bg-emerald-900/30 active:text-emerald-600"
+                title="Generate Receipt"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
+              <button
+                @click="confirmDelete(p)"
+                class="w-11 h-11 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 active:bg-red-50 dark:active:bg-red-900/30 active:text-red-600"
+                title="Delete"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="hasMorePayments && !isLoading" class="flex justify-center pt-1">
+            <button @click="loadMorePayments" :disabled="isLoadingMore" class="px-5 py-2.5 rounded-none border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 active:bg-gray-50 dark:active:bg-gray-700 disabled:opacity-50">
+              {{ isLoadingMore ? 'Loading...' : `Load More (${payments.length} of ${totalPayments})` }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Payments Table — desktop / tablet -->
+        <div class="hidden md:block bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left px-6 py-3 font-semibold">Client</th>
+                  <th class="text-left px-6 py-3 font-semibold">Event Date</th>
+                  <th class="text-left px-6 py-3 font-semibold">Total</th>
+                  <th class="text-left px-6 py-3 font-semibold">Paid</th>
+                  <th class="text-left px-6 py-3 font-semibold">Balance</th>
+                  <th class="text-left px-6 py-3 font-semibold">Status</th>
+                  <th class="text-right px-6 py-3 font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                <tr v-if="isLoading">
+                  <td colspan="7" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading payments...</td>
+                </tr>
+                <tr v-else-if="filteredPayments.length === 0">
+                  <td colspan="7" class="text-center py-10 text-gray-400 dark:text-gray-500">
+                    {{ payments.length === 0 ? 'No payment records yet. Click "New Payment" to add one.' : 'No records match your search.' }}
+                  </td>
+                </tr>
+                <tr v-for="p in filteredPayments" :key="p.payment_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
+                  <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ p.tbl_bookings?.client_name || '—' }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(p.tbl_bookings?.event_date) }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.total_amount).toLocaleString() }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.amount_paid).toLocaleString() }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.balance).toLocaleString() }}</td>
+                  <td class="px-6 py-3.5">
+                    <span :class="statusStyle(p.payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                      {{ p.payment_status }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-3.5">
+                    <div class="flex items-center justify-end gap-2">
+                      <button
+                        v-if="p.payment_status !== 'Paid'"
+                        @click="openRecordModal(p)"
+                        class="px-3 py-1.5 rounded-none text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
+                      >
+                        Record Payment
+                      </button>
+                      <button
+                        v-if="Number(p.amount_paid) > 0"
+                        @click="generateReceipt(p)"
+                        class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                        title="Generate Receipt"
+                      >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </button>
+                      <button @click="confirmDelete(p)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <div v-if="hasMorePayments && !isLoading" class="flex justify-center py-4 border-t border-gray-100 dark:border-gray-700">
-            <button @click="loadMorePayments" :disabled="isLoadingMore" class="px-5 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+            <button @click="loadMorePayments" :disabled="isLoadingMore" class="px-5 py-2 rounded-none border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
               {{ isLoadingMore ? 'Loading...' : `Load More (${payments.length} of ${totalPayments})` }}
             </button>
           </div>
@@ -201,37 +301,37 @@
 
     <!-- ============ NEW PAYMENT MODAL ============ -->
     <div v-if="showCreateModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">New Payment Record</h3>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ modalError }}
         </div>
 
-        <form @submit.prevent="handleCreatePayment" class="space-y-4">
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Booking</label>
-            <select v-model.number="createForm.booking_id" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required>
+        <form @submit.prevent="handleCreatePayment" class="space-y-5">
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Booking</label>
+            <select v-model.number="createForm.booking_id" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
               <option value="" disabled>Select a booking</option>
               <option v-for="b in bookingsWithoutPayment" :key="b.booking_id" :value="b.booking_id">
                 {{ b.client_name }} — {{ formatDate(b.event_date) }}
               </option>
             </select>
           </div>
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Amount</label>
-            <input type="number" min="0" step="0.01" v-model.number="createForm.total_amount" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Total Amount</label>
+            <input type="number" min="0" step="0.01" v-model.number="createForm.total_amount" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Initial Down Payment (optional)</label>
-            <input type="number" min="0" step="0.01" v-model.number="createForm.amount_paid" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Initial Down Payment (optional)</label>
+            <input type="number" min="0" step="0.01" v-model.number="createForm.amount_paid" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
 
           <div class="flex gap-3 pt-2">
-            <button type="button" @click="showCreateModal = false" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <button type="button" @click="showCreateModal = false" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
             </button>
-            <button type="submit" :disabled="isSaving" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            <button type="submit" :disabled="isSaving" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
               {{ isSaving ? 'Saving...' : 'Create Record' }}
             </button>
           </div>
@@ -241,26 +341,26 @@
 
     <!-- ============ RECORD PAYMENT MODAL ============ -->
     <div v-if="recordingPayment" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Record Payment</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Remaining balance: <span class="font-semibold text-gray-700 dark:text-gray-200">₱{{ Number(recordingPayment.balance).toLocaleString() }}</span>
         </p>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ modalError }}
         </div>
 
-        <form @submit.prevent="handleRecordPayment" class="space-y-4">
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Amount Received</label>
-            <input type="number" min="0" step="0.01" :max="recordingPayment.balance" v-model.number="recordAmount" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+        <form @submit.prevent="handleRecordPayment" class="space-y-5">
+          <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Amount Received</label>
+            <input type="number" min="0" step="0.01" :max="recordingPayment.balance" v-model.number="recordAmount" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
           <div class="flex gap-3 pt-2">
-            <button type="button" @click="recordingPayment = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            <button type="button" @click="recordingPayment = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
             </button>
-            <button type="submit" :disabled="isSaving" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            <button type="submit" :disabled="isSaving" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
               {{ isSaving ? 'Saving...' : 'Record' }}
             </button>
           </div>
@@ -270,17 +370,17 @@
 
     <!-- ============ DELETE CONFIRM MODAL ============ -->
     <div v-if="paymentToDelete" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Payment Record?</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
           This will permanently remove the payment record for
           <span class="font-semibold text-gray-700 dark:text-gray-200">{{ paymentToDelete.tbl_bookings?.client_name }}</span>.
         </p>
         <div class="flex gap-3">
-          <button @click="paymentToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button @click="paymentToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             Cancel
           </button>
-          <button @click="handleDelete" :disabled="isDeleting" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+          <button @click="handleDelete" :disabled="isDeleting" class="flex-1 bg-red-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </button>
         </div>
@@ -296,10 +396,13 @@ import { useRouter } from 'vue-router'
 import { getMyAvatarUrl } from '../services/profileService'
 import { getPaymentsPage, getPaymentStatusCounts, getAllPaymentBookingIds, createPayment, recordPayment, deletePayment } from '../services/paymentService'
 import { getAllBookings } from '../services/bookingService'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const router = useRouter()
 
 const isSidebarOpen = ref(true)
+const isMobileSidebarOpen = ref(false)
 const showAccountMenu = ref(false)
 const userName = ref('User')
 const userRole = ref('Staff')
@@ -486,7 +589,82 @@ async function handleDelete() {
   }
 }
 
+// ---------- Generate Receipt (official receipt PDF, per payment record) ----------
+// No dedicated "receipts" table exists in the schema (see ERD, Figure 5), so
+// this is generated on-the-fly from the payment + booking data already on
+// hand. Receipt No. is derived from the stable payment_id so re-printing the
+// same payment always yields the same number.
+function generateReceipt(payment) {
+  const booking = payment.tbl_bookings || {}
+  const doc = new jsPDF()
+  const receiptNo = `OR-${String(payment.payment_id).padStart(6, '0')}`
+  const issuedOn = new Date().toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
+
+  // Letterhead
+  doc.setFontSize(18)
+  doc.setFont(undefined, 'bold')
+  doc.setTextColor(5, 150, 105)
+  doc.text('Caterlytics', 14, 18)
+
+  doc.setFontSize(10)
+  doc.setFont(undefined, 'normal')
+  doc.setTextColor(100)
+  doc.text('Catering-Service Management & Inventory System', 14, 24)
+
+  doc.setFontSize(14)
+  doc.setFont(undefined, 'bold')
+  doc.setTextColor(17, 24, 39)
+  doc.text('OFFICIAL RECEIPT', 196, 18, { align: 'right' })
+  doc.setFontSize(10)
+  doc.setFont(undefined, 'normal')
+  doc.setTextColor(100)
+  doc.text(receiptNo, 196, 24, { align: 'right' })
+  doc.text(`Issued: ${issuedOn}`, 196, 29, { align: 'right' })
+
+  doc.setDrawColor(220)
+  doc.line(14, 34, 196, 34)
+
+  // Client / event details
+  autoTable(doc, {
+    startY: 40,
+    theme: 'plain',
+    styles: { fontSize: 10, cellPadding: 1.5 },
+    body: [
+      ['Client Name', booking.client_name || '—'],
+      ['Event Date', formatDate(booking.event_date)],
+      ['Event Location', booking.event_location || '—'],
+      ['Guest Count', booking.guest_count != null ? String(booking.guest_count) : '—'],
+      ['Package', booking.package_name || '—'],
+    ],
+    columnStyles: { 0: { fontStyle: 'bold', textColor: [107, 114, 128], cellWidth: 45 } },
+  })
+
+  // Amount breakdown
+  autoTable(doc, {
+    startY: doc.lastAutoTable.finalY + 6,
+    head: [['Description', 'Amount']],
+    body: [
+      ['Total Package Cost', `PHP ${Number(payment.total_amount).toLocaleString()}`],
+      ['Amount Paid to Date', `PHP ${Number(payment.amount_paid).toLocaleString()}`],
+      ['Remaining Balance', `PHP ${Number(payment.balance).toLocaleString()}`],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [5, 150, 105] },
+    foot: [['Payment Status', payment.payment_status]],
+    footStyles: { fillColor: [243, 244, 246], textColor: [17, 24, 39], fontStyle: 'bold' },
+  })
+
+  const finalY = doc.lastAutoTable.finalY + 20
+  doc.setFontSize(9)
+  doc.setTextColor(150)
+  doc.text('This receipt was generated by the Caterlytics system and reflects the payment record on file.', 14, finalY)
+  doc.text(`Issued by: ${userName.value} (${userRole.value})`, 14, finalY + 5)
+
+  doc.save(`caterlytics-receipt-${receiptNo}.pdf`)
+}
+
 function goTo(item) {
+  isMobileSidebarOpen.value = false
   router.push(item.path)
 }
 

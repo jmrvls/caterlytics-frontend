@@ -3,7 +3,7 @@
 
     <!-- TOP NAV -->
     <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors">
-      <div class="max-w-3xl mx-auto px-6 py-4 flex items-center gap-3">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
         <button @click="goBack" class="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -13,7 +13,7 @@
       </div>
     </header>
 
-    <main class="max-w-3xl mx-auto px-6 py-8 space-y-6">
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
 
       <div v-if="successMessage" class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-medium p-3 rounded-xl">
         {{ successMessage }}
