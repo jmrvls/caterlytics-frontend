@@ -141,8 +141,9 @@
 
           <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
             <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ selectedPackage.package_name }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ selectedPackage.description }}</p>
-            <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-2">
+            <p v-if="selectedPackage.description" class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-3">Includes</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ selectedPackage.description }}</p>
+            <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
               Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0)) }}
             </p>
           </div>
@@ -188,6 +189,13 @@
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
               <button
+                v-if="b.booking_status === 'Pending'"
+                @click="openEditModal(b)"
+                class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:underline"
+              >
+                Edit
+              </button>
+              <button
                 v-if="['Pending', 'Confirmed'].includes(b.booking_status)"
                 @click="confirmCancel(b)"
                 class="text-xs font-semibold text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400 hover:underline"
@@ -220,6 +228,77 @@
         </div>
       </div>
 
+      <!-- ============ EDIT BOOKING MODAL ============ -->
+      <div v-if="bookingToEdit" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Edit Booking</h3>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">Only Pending bookings can be edited.</p>
+
+          <form @submit.prevent="handleSaveEdit" class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Date</label>
+                <input
+                  type="date"
+                  v-model="editForm.event_date"
+                  @change="handleEditDateCheck"
+                  required
+                  :min="todayStr"
+                  class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Time</label>
+                <input type="time" v-model="editForm.event_time" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+              </div>
+            </div>
+
+            <div v-if="editConflictWarning" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-xl">
+              {{ editConflictWarning }}
+            </div>
+
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Location</label>
+              <input type="text" v-model="editForm.event_location" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
+                <input type="number" v-model.number="editForm.guest_count" required min="1" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+              </div>
+              <div>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Package</label>
+                <select v-model="editForm.package_name" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+                  <option value="">Select a package (optional)</option>
+                  <option v-for="p in packages" :key="p.package_id" :value="p.package_name">
+                    {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="selectedEditPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ selectedEditPackage.package_name }}</p>
+              <p v-if="selectedEditPackage.description" class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-3">Includes</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ selectedEditPackage.description }}</p>
+              <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
+                Est. Total: ₱{{ formatPrice((selectedEditPackage.price_per_head || 0) * (editForm.guest_count || 0)) }}
+              </p>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button type="button" @click="bookingToEdit = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                Cancel
+              </button>
+              <button type="submit" :disabled="isSaving || !!editConflictWarning" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+                {{ isSaving ? 'Saving...' : 'Save Changes' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
     </main>
   </div>
 </template>
@@ -228,7 +307,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyAvatarUrl } from '../services/profileService'
-import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking } from '../services/bookingService'
+import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking, updateMyBooking } from '../services/bookingService'
 import { getAllPackages } from '../services/packageService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -248,6 +327,17 @@ const myBookings = ref([])
 const bookingToCancel = ref(null)
 const isCancelling = ref(false)
 
+const bookingToEdit = ref(null)
+const isSaving = ref(false)
+const editConflictWarning = ref('')
+const editForm = ref({
+  event_date: '',
+  event_time: '',
+  event_location: '',
+  guest_count: null,
+  package_name: ''
+})
+
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const successMessage = ref('')
@@ -266,6 +356,7 @@ const form = ref({
 })
 
 const selectedPackage = computed(() => packages.value.find((p) => p.package_name === form.value.package_name))
+const selectedEditPackage = computed(() => packages.value.find((p) => p.package_name === editForm.value.package_name))
 
 onMounted(() => {
   const storedUser = localStorage.getItem('user')
@@ -329,6 +420,57 @@ async function handleCancelBooking() {
     console.error(error)
   } finally {
     isCancelling.value = false
+  }
+}
+
+function openEditModal(booking) {
+  bookingToEdit.value = booking
+  editConflictWarning.value = ''
+  editForm.value = {
+    event_date: booking.event_date,
+    event_time: booking.event_time,
+    event_location: booking.event_location,
+    guest_count: booking.guest_count,
+    package_name: booking.package_name || ''
+  }
+}
+
+async function handleEditDateCheck() {
+  editConflictWarning.value = ''
+  if (!editForm.value.event_date || !bookingToEdit.value) return
+  if (editForm.value.event_date === bookingToEdit.value.event_date) return
+  try {
+    const result = await checkDateConflict(editForm.value.event_date)
+    if (result.conflict) {
+      editConflictWarning.value = 'This date already has a booking. Please choose another date before saving.'
+    }
+  } catch (error) {
+    console.error('Conflict check failed:', error)
+  }
+}
+
+async function handleSaveEdit() {
+  if (!bookingToEdit.value) return
+  isSaving.value = true
+  pageError.value = ''
+  try {
+    const updated = await updateMyBooking(bookingToEdit.value.booking_id, {
+      event_date: editForm.value.event_date,
+      event_time: editForm.value.event_time,
+      event_location: editForm.value.event_location,
+      guest_count: editForm.value.guest_count,
+      package_name: editForm.value.package_name || null,
+      package_id: selectedEditPackage.value?.package_id || null
+    })
+    const target = myBookings.value.find((b) => b.booking_id === updated.booking_id)
+    if (target) Object.assign(target, updated)
+    successMessage.value = 'Booking updated!'
+    bookingToEdit.value = null
+  } catch (error) {
+    pageError.value = error.message || 'Failed to update booking.'
+    console.error(error)
+  } finally {
+    isSaving.value = false
   }
 }
 

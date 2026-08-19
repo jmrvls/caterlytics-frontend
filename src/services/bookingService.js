@@ -220,6 +220,67 @@ export async function cancelMyBooking(id) {
   return data;
 }
 
+// Client role only - edit one's own booking, only while still Pending.
+// Once Confirmed, inventory has already been deducted against the
+// original guest_count/package, so editing is blocked past that point
+// (client must Cancel + rebook, which correctly restores stock).
+export async function updateMyBooking(id, updates) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('You must be logged in.');
+
+  const { data: currentBooking, error: fetchError } = await supabase
+    .from('tbl_bookings')
+    .select('booking_status, created_by, event_date')
+    .eq('booking_id', id)
+    .single();
+
+  if (fetchError) throw new Error('Failed to load booking.');
+  if (currentBooking.created_by !== user.id) {
+    throw new Error('You can only edit your own bookings.');
+  }
+  if (currentBooking.booking_status !== 'Pending') {
+    throw new Error('Only Pending bookings can be edited. Please cancel and rebook instead.');
+  }
+
+  // If the date is changing, re-check for conflicts (excluding this booking).
+  if (updates.event_date && updates.event_date !== currentBooking.event_date) {
+    const allBookings = await getAllBookings();
+    const conflict = allBookings.find(
+      (b) =>
+        b.booking_id !== id &&
+        b.event_date === updates.event_date &&
+        ['Pending', 'Confirmed'].includes(b.booking_status)
+    );
+    if (conflict) {
+      throw new Error(
+        `There's already a booking on ${updates.event_date} (${conflict.client_name}). Please choose another date.`
+      );
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('tbl_bookings')
+    .update({
+      event_date: updates.event_date,
+      event_time: updates.event_time,
+      event_location: updates.event_location,
+      guest_count: updates.guest_count,
+      package_name: updates.package_name || null,
+      package_id: updates.package_id || null,
+    })
+    .eq('booking_id', id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('Someone else just booked that date. Please choose another date.');
+    }
+    throw error;
+  }
+  return data;
+}
+
 // Client role only - own bookings
 export async function getMyBookings() {
   const { data: { user } } = await supabase.auth.getUser();

@@ -180,7 +180,7 @@
             </div>
 
             <h3 class="font-bold text-gray-900 dark:text-gray-100">{{ pkg.package_name }}</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex-1">{{ pkg.description || 'No description provided.' }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex-1 whitespace-pre-line">{{ pkg.description || 'No description provided.' }}</p>
 
             <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-baseline gap-1">
               <span class="text-xl font-black text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(pkg.price_per_head) }}</span>

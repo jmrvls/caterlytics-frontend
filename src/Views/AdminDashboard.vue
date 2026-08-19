@@ -125,7 +125,7 @@
 
           <!-- Quick Action -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <button @click="activeSection = 'Payments'" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
+            <button @click="router.push('/admin/payments')" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
               <div class="w-10 h-10 rounded-none bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
