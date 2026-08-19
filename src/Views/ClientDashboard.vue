@@ -170,6 +170,21 @@
               <p class="font-bold text-gray-800 dark:text-gray-100">{{ b.package_name || 'Custom Booking' }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">{{ formatDate(b.event_date) }} at {{ b.event_time }} — {{ b.event_location }}</p>
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ b.guest_count }} guests</p>
+
+              <div v-if="b.tbl_payments" class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span :class="paymentBadgeClass(b.tbl_payments.payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                  {{ b.tbl_payments.payment_status }}
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  Paid: ₱{{ formatPrice(b.tbl_payments.amount_paid) }} / ₱{{ formatPrice(b.tbl_payments.total_amount) }}
+                </span>
+                <span v-if="Number(b.tbl_payments.balance) > 0" class="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                  Balance: ₱{{ formatPrice(b.tbl_payments.balance) }}
+                </span>
+                <button @click="downloadReceipt(b)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                  Download Receipt
+                </button>
+              </div>
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
               <button
@@ -215,6 +230,8 @@ import { useRouter } from 'vue-router'
 import { getMyAvatarUrl } from '../services/profileService'
 import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking } from '../services/bookingService'
 import { getAllPackages } from '../services/packageService'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const router = useRouter()
 
@@ -363,6 +380,87 @@ function statusBadgeClass(status) {
     case 'Cancelled': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
     default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
   }
+}
+
+function paymentBadgeClass(status) {
+  switch (status) {
+    case 'Paid': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+    case 'Partial': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+    case 'Unpaid': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+  }
+}
+
+// Official receipt PDF, generated on-the-fly from the client's own booking +
+// payment record (same approach as the Admin/Staff receipt in
+// PaymentManagement.vue — no dedicated "receipts" table exists in the
+// schema, see ERD Figure 5). Receipt No. is derived from the stable
+// payment_id so re-downloading always yields the same number.
+function downloadReceipt(booking) {
+  const payment = booking.tbl_payments
+  if (!payment) return
+
+  const doc = new jsPDF()
+  const receiptNo = `OR-${String(payment.payment_id).padStart(6, '0')}`
+  const issuedOn = new Date().toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
+
+  doc.setFontSize(18)
+  doc.setFont(undefined, 'bold')
+  doc.setTextColor(5, 150, 105)
+  doc.text('Caterlytics', 14, 18)
+
+  doc.setFontSize(10)
+  doc.setFont(undefined, 'normal')
+  doc.setTextColor(100)
+  doc.text('Catering-Service Management & Inventory System', 14, 24)
+
+  doc.setFontSize(14)
+  doc.setFont(undefined, 'bold')
+  doc.setTextColor(17, 24, 39)
+  doc.text('OFFICIAL RECEIPT', 196, 18, { align: 'right' })
+  doc.setFontSize(10)
+  doc.setFont(undefined, 'normal')
+  doc.setTextColor(100)
+  doc.text(receiptNo, 196, 24, { align: 'right' })
+  doc.text(`Issued: ${issuedOn}`, 196, 29, { align: 'right' })
+
+  doc.setDrawColor(220)
+  doc.line(14, 34, 196, 34)
+
+  autoTable(doc, {
+    startY: 40,
+    theme: 'plain',
+    styles: { fontSize: 10, cellPadding: 1.5 },
+    body: [
+      ['Client Name', userName.value || '—'],
+      ['Event Date', formatDate(booking.event_date)],
+      ['Event Location', booking.event_location || '—'],
+      ['Guest Count', booking.guest_count != null ? String(booking.guest_count) : '—'],
+      ['Package', booking.package_name || '—'],
+    ],
+    columnStyles: { 0: { fontStyle: 'bold', textColor: [107, 114, 128], cellWidth: 45 } },
+  })
+
+  autoTable(doc, {
+    startY: doc.lastAutoTable.finalY + 6,
+    head: [['Description', 'Amount']],
+    body: [
+      ['Total Package Cost', `PHP ${Number(payment.total_amount).toLocaleString()}`],
+      ['Amount Paid to Date', `PHP ${Number(payment.amount_paid).toLocaleString()}`],
+      ['Remaining Balance', `PHP ${Number(payment.balance).toLocaleString()}`],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [5, 150, 105] },
+    foot: [['Payment Status', payment.payment_status]],
+    footStyles: { fillColor: [243, 244, 246], textColor: [17, 24, 39], fontStyle: 'bold' },
+  })
+
+  const finalY = doc.lastAutoTable.finalY + 20
+  doc.setFontSize(9)
+  doc.setTextColor(150)
+  doc.text('This receipt was generated by the Caterlytics system and reflects the payment record on file.', 14, finalY)
+
+  doc.save(`caterlytics-receipt-${receiptNo}.pdf`)
 }
 
 function formatPrice(value) {

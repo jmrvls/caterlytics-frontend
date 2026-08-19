@@ -60,3 +60,11 @@ export async function deleteInventoryItem(id) {
   if (error) throw error;
   return { message: 'Item deleted successfully' };
 }
+
+// Items at or below their low_stock_threshold. Used by the notification
+// bell (see useNotifications.js) to alert Admin/Staff/Owner in real time,
+// per the study's objective of generating low-stock notifications (1.2.2).
+export async function getLowStockItems() {
+  const items = await getAllInventory();
+  return items.filter((i) => Number(i.quantity) <= Number(i.low_stock_threshold));
+}

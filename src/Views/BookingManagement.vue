@@ -2,16 +2,17 @@
   <div class="min-h-screen flex bg-gray-50 dark:bg-gray-900 font-sans">
 
     <!-- MOBILE TOP BAR -->
-    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3 print:hidden">
-      <div class="flex items-center gap-2">
-        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
-        <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
-      </div>
-      <button @click="isMobileSidebarOpen = true" class="p-2 rounded-none text-gray-600 dark:text-gray-300">
+    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 px-4 py-3 print:hidden">
+      <button @click="isMobileSidebarOpen = true" class="p-2 -ml-2 rounded-none text-gray-600 dark:text-gray-300">
         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
+      <div class="flex items-center gap-2 flex-1 min-w-0">
+        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
+        <span class="font-bold text-gray-800 dark:text-gray-100 truncate">Caterlytics</span>
+      </div>
+      <NotificationBell />
     </div>
 
     <!-- MOBILE BACKDROP -->
@@ -102,14 +103,18 @@
         <div class="flex items-center justify-between mb-6">
           <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Event Bookings</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage reservations and prevent scheduling conflicts.</p>
           </div>
-          <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            New Booking
-          </button>
+          <div class="flex items-center gap-3">
+            <div class="hidden lg:block">
+              <NotificationBell />
+            </div>
+            <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              New Booking
+            </button>
+          </div>
         </div>
 
         <!-- Summary Cards -->
@@ -191,6 +196,13 @@
               </p>
             </div>
 
+            <div class="flex items-center gap-1.5 flex-wrap mb-2.5">
+              <span v-if="assignedStaffNames(b.booking_id).length === 0" class="text-xs text-gray-400 dark:text-gray-500">No staff assigned</span>
+              <span v-for="name in assignedStaffNames(b.booking_id)" :key="name" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                {{ name }}
+              </span>
+            </div>
+
             <div class="flex items-center gap-2">
               <select
                 :value="b.booking_status"
@@ -202,6 +214,15 @@
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
               </select>
+              <button
+                @click="openAssignModal(b)"
+                class="w-11 h-11 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 active:bg-purple-50 dark:active:bg-purple-900/30 active:text-purple-600"
+                title="Assign staff"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z" />
+                </svg>
+              </button>
               <button
                 @click="confirmDelete(b)"
                 class="w-11 h-11 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 active:bg-red-50 dark:active:bg-red-900/30 active:text-red-600"
@@ -233,16 +254,17 @@
                   <th class="text-left px-6 py-3 font-semibold">Location</th>
                   <th class="text-left px-6 py-3 font-semibold">Guests</th>
                   <th class="text-left px-6 py-3 font-semibold">Package</th>
+                  <th class="text-left px-6 py-3 font-semibold">Staff</th>
                   <th class="text-left px-6 py-3 font-semibold">Status</th>
                   <th class="text-right px-6 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                 <tr v-if="isLoading">
-                  <td colspan="8" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading bookings...</td>
+                  <td colspan="9" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading bookings...</td>
                 </tr>
                 <tr v-else-if="filteredBookings.length === 0">
-                  <td colspan="8" class="text-center py-10 text-gray-400 dark:text-gray-500">
+                  <td colspan="9" class="text-center py-10 text-gray-400 dark:text-gray-500">
                     {{ bookings.length === 0 ? 'No bookings yet. Click "New Booking" to create one.' : 'No bookings match your filters.' }}
                   </td>
                 </tr>
@@ -253,6 +275,14 @@
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.event_location }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
+                  <td class="px-6 py-3.5">
+                    <div class="flex flex-wrap gap-1 max-w-[10rem]">
+                      <span v-if="assignedStaffNames(b.booking_id).length === 0" class="text-xs text-gray-400 dark:text-gray-500">—</span>
+                      <span v-for="name in assignedStaffNames(b.booking_id)" :key="name" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                        {{ name }}
+                      </span>
+                    </div>
+                  </td>
                   <td class="px-6 py-3.5">
                     <span :class="statusBadgeClass(b.booking_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
                       {{ b.booking_status }}
@@ -270,6 +300,11 @@
                         <option value="Completed">Completed</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
+                      <button @click="openAssignModal(b)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30" title="Assign staff">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z" />
+                        </svg>
+                      </button>
                       <button @click="confirmDelete(b)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete booking">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -353,6 +388,26 @@
           </div>
           <p class="text-xs text-gray-400 dark:text-gray-500 -mt-2">Manual entry for now — links to Package & Menu Management once that module is ready.</p>
 
+          <div>
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Assign Staff (optional)</p>
+            <div v-if="assignableStaff.length === 0" class="text-xs text-gray-400 dark:text-gray-500">
+              No staff accounts yet. Add staff under Staff Management first.
+            </div>
+            <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-none p-3">
+              <label v-for="s in assignableStaff" :key="s.id" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  :value="s.id"
+                  v-model="selectedStaffIds"
+                  @change="checkStaffAvailability"
+                  class="rounded-none"
+                />
+                {{ s.full_name }}<span v-if="s.position" class="text-xs text-gray-400 dark:text-gray-500"> · {{ s.position }}</span>
+              </label>
+            </div>
+            <p v-if="staffConflictWarning" class="text-xs text-amber-600 dark:text-amber-400 mt-2">{{ staffConflictWarning }}</p>
+          </div>
+
           <div class="flex gap-3 pt-2">
             <button type="button" @click="closeCreateModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
@@ -383,11 +438,59 @@
       </div>
     </div>
 
+    <!-- ============ ASSIGN STAFF MODAL ============ -->
+    <div v-if="assignModalBooking" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Assign Staff</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          {{ assignModalBooking.client_name }} — {{ formatDate(assignModalBooking.event_date) }}
+        </p>
+
+        <div v-if="assignModalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+          {{ assignModalError }}
+        </div>
+        <div v-if="assignModalConflict" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-none mb-4 flex gap-2">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
+          </svg>
+          <span>{{ assignModalConflict }}</span>
+        </div>
+
+        <div v-if="assignableStaff.length === 0" class="text-sm text-gray-400 dark:text-gray-500 mb-4">
+          No staff accounts yet. Add staff under Staff Management first.
+        </div>
+        <div v-else class="space-y-2 max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-none p-3 mb-4">
+          <label v-for="s in assignableStaff" :key="s.id" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+            <input
+              type="checkbox"
+              :value="s.id"
+              v-model="assignModalStaffIds"
+              @change="checkAssignModalConflicts"
+              class="rounded-none"
+            />
+            {{ s.full_name }}
+            <span v-if="s.position" class="text-xs text-gray-400 dark:text-gray-500"> · {{ s.position }}</span>
+            <span v-if="s.availability !== 'Available'" class="text-xs text-gray-400 dark:text-gray-500">({{ s.availability }})</span>
+          </label>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" @click="closeAssignModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            Cancel
+          </button>
+          <button type="button" @click="handleSaveAssignment" :disabled="isSavingAssignment" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            {{ isSavingAssignment ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import NotificationBell from '../Components/NotificationBell.vue'
 import { useRouter } from 'vue-router'
 import { getMyAvatarUrl } from '../services/profileService'
 import {
@@ -398,6 +501,14 @@ import {
   deleteBooking,
   checkDateConflict
 } from '../services/bookingService'
+import {
+  getAssignableStaff,
+  getAssignedStaff,
+  getAssignedStaffForBookings,
+  getStaffScheduleConflicts,
+  getUnavailableStaffOnDate,
+  setBookingStaff
+} from '../services/staffAssignmentService'
 
 const router = useRouter()
 
@@ -441,6 +552,18 @@ const emptyForm = () => ({
 })
 const form = ref(emptyForm())
 
+// --- Staff assignment ---
+const assignableStaff = ref([]) // all Staff-role profiles, for checklists
+const assignedStaffByBooking = ref({}) // booking_id -> [{ id, full_name }]
+const selectedStaffIds = ref([]) // used by the New Booking form
+const staffConflictWarning = ref('')
+
+const assignModalBooking = ref(null) // booking currently being (re)assigned
+const assignModalStaffIds = ref([])
+const isSavingAssignment = ref(false)
+const assignModalError = ref('')
+const assignModalConflict = ref('')
+
 const todayStr = new Date().toISOString().split('T')[0]
 
 onMounted(() => {
@@ -471,6 +594,7 @@ onMounted(() => {
   })
 
   fetchBookings()
+  getAssignableStaff().then((staff) => { assignableStaff.value = staff }).catch(console.error)
 })
 
 async function fetchBookings() {
@@ -484,6 +608,7 @@ async function fetchBookings() {
     bookings.value = page.rows
     totalBookings.value = page.total
     statusCounts.value = counts
+    loadAssignedStaffFor(page.rows)
   } catch (error) {
     pageError.value = 'Failed to load bookings. Please refresh the page.'
     console.error(error)
@@ -499,11 +624,22 @@ async function loadMoreBookings() {
     const page = await getBookingsPage({ offset: bookings.value.length, limit: PAGE_SIZE })
     bookings.value = [...bookings.value, ...page.rows]
     totalBookings.value = page.total
+    loadAssignedStaffFor(page.rows)
   } catch (error) {
     pageError.value = 'Failed to load more bookings.'
     console.error(error)
   } finally {
     isLoadingMore.value = false
+  }
+}
+
+async function loadAssignedStaffFor(rows) {
+  try {
+    const ids = rows.map((b) => b.booking_id)
+    const map = await getAssignedStaffForBookings(ids)
+    assignedStaffByBooking.value = { ...assignedStaffByBooking.value, ...map }
+  } catch (error) {
+    console.error('Failed to load staff assignments:', error)
   }
 }
 
@@ -536,6 +672,10 @@ function formatDate(dateStr) {
   })
 }
 
+function assignedStaffNames(bookingId) {
+  return (assignedStaffByBooking.value[bookingId] || []).map((s) => s.full_name)
+}
+
 function formatTime(timeStr) {
   if (!timeStr) return '—'
   const [h, m] = timeStr.split(':')
@@ -547,8 +687,10 @@ function formatTime(timeStr) {
 
 function openCreateModal() {
   form.value = emptyForm()
+  selectedStaffIds.value = []
   modalError.value = ''
   conflictWarning.value = ''
+  staffConflictWarning.value = ''
   showCreateModal.value = true
 }
 
@@ -568,19 +710,117 @@ async function handleDateCheck() {
   } catch (error) {
     console.error('Conflict check failed:', error)
   }
+  await checkStaffAvailability()
+}
+
+// Warn (don't block) if any selected staff member is already assigned to
+// another Pending/Confirmed booking on this date, OR has marked this date
+// as unavailable (leave/time-off) on their schedule.
+async function checkStaffAvailability() {
+  staffConflictWarning.value = ''
+  if (!form.value.event_date || selectedStaffIds.value.length === 0) return
+  try {
+    const [bookingConflicts, leaveConflicts] = await Promise.all([
+      getStaffScheduleConflicts(form.value.event_date, selectedStaffIds.value),
+      getUnavailableStaffOnDate(form.value.event_date, selectedStaffIds.value)
+    ])
+    const messages = []
+    if (bookingConflicts.length > 0) {
+      const names = [...new Set(bookingConflicts.map((c) => c.staff_name))].join(', ')
+      messages.push(`${names} already assigned to another event on this date.`)
+    }
+    if (leaveConflicts.length > 0) {
+      const names = [...new Set(leaveConflicts.map((c) => c.staff_name))].join(', ')
+      messages.push(`${names} marked unavailable (leave/time-off) on this date.`)
+    }
+    staffConflictWarning.value = messages.join(' ')
+  } catch (error) {
+    console.error('Staff conflict check failed:', error)
+  }
 }
 
 async function handleCreateBooking() {
   modalError.value = ''
   isCreating.value = true
   try {
-    await createBooking(form.value)
+    const booking = await createBooking(form.value)
+    if (selectedStaffIds.value.length > 0) {
+      try {
+        await setBookingStaff(booking.booking_id, selectedStaffIds.value)
+      } catch (assignError) {
+        // Booking itself succeeded; surface the assignment failure but
+        // don't lose the booking that was just created.
+        pageError.value = assignError?.message || 'Booking created, but staff assignment failed. Assign staff from the table.'
+      }
+    }
     showCreateModal.value = false
     fetchBookings()
   } catch (error) {
     modalError.value = error?.message || error?.response?.data?.error || 'Something went wrong. Please try again.'
   } finally {
     isCreating.value = false
+  }
+}
+
+// --- Assign Staff modal (for existing bookings) ---
+async function openAssignModal(booking) {
+  assignModalBooking.value = booking
+  assignModalError.value = ''
+  assignModalConflict.value = ''
+  assignModalStaffIds.value = (assignedStaffByBooking.value[booking.booking_id] || []).map((s) => s.id)
+  // Refresh from source of truth in case the cached list is stale.
+  try {
+    const current = await getAssignedStaff(booking.booking_id)
+    assignModalStaffIds.value = current.map((s) => s.id)
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+function closeAssignModal() {
+  assignModalBooking.value = null
+}
+
+async function checkAssignModalConflicts() {
+  assignModalConflict.value = ''
+  if (!assignModalBooking.value || assignModalStaffIds.value.length === 0) return
+  try {
+    const [bookingConflicts, leaveConflicts] = await Promise.all([
+      getStaffScheduleConflicts(
+        assignModalBooking.value.event_date,
+        assignModalStaffIds.value,
+        assignModalBooking.value.booking_id
+      ),
+      getUnavailableStaffOnDate(assignModalBooking.value.event_date, assignModalStaffIds.value)
+    ])
+    const messages = []
+    if (bookingConflicts.length > 0) {
+      const names = [...new Set(bookingConflicts.map((c) => c.staff_name))].join(', ')
+      messages.push(`${names} already assigned to another event on this date.`)
+    }
+    if (leaveConflicts.length > 0) {
+      const names = [...new Set(leaveConflicts.map((c) => c.staff_name))].join(', ')
+      messages.push(`${names} marked unavailable (leave/time-off) on this date.`)
+    }
+    assignModalConflict.value = messages.join(' ')
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+async function handleSaveAssignment() {
+  if (!assignModalBooking.value) return
+  assignModalError.value = ''
+  isSavingAssignment.value = true
+  try {
+    await setBookingStaff(assignModalBooking.value.booking_id, assignModalStaffIds.value)
+    const updated = await getAssignedStaff(assignModalBooking.value.booking_id)
+    assignedStaffByBooking.value = { ...assignedStaffByBooking.value, [assignModalBooking.value.booking_id]: updated }
+    assignModalBooking.value = null
+  } catch (error) {
+    assignModalError.value = error?.message || 'Failed to save staff assignment.'
+  } finally {
+    isSavingAssignment.value = false
   }
 }
 
@@ -611,7 +851,10 @@ async function handleDelete() {
   try {
     await deleteBooking(bookingToDelete.value.booking_id)
     const deletedStatus = bookingToDelete.value.booking_status
-    bookings.value = bookings.value.filter((b) => b.booking_id !== bookingToDelete.value.booking_id)
+    const deletedId = bookingToDelete.value.booking_id
+    bookings.value = bookings.value.filter((b) => b.booking_id !== deletedId)
+    const { [deletedId]: _removed, ...restAssignments } = assignedStaffByBooking.value
+    assignedStaffByBooking.value = restAssignments
     totalBookings.value = Math.max(0, totalBookings.value - 1)
     statusCounts.value = {
       ...statusCounts.value,

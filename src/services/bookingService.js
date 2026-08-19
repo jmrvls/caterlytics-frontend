@@ -227,7 +227,7 @@ export async function getMyBookings() {
 
   const { data, error } = await supabase
     .from('tbl_bookings')
-    .select('*')
+    .select('*, tbl_payments(payment_id, total_amount, amount_paid, balance, payment_status, payment_date)')
     .eq('created_by', user.id)
     .order('event_date', { ascending: true });
 

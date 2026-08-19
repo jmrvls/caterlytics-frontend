@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 export async function getUsers() {
   const { data, error } = await supabase
     .from('tbl_profiles')
-    .select('id, username, full_name, role, contact_number, availability, avatar_url')
+    .select('id, username, full_name, role, contact_number, availability, position, avatar_url')
     .neq('role', 'Client')
     .order('username', { ascending: true });
 
@@ -11,9 +11,9 @@ export async function getUsers() {
   return { users: data || [] };
 }
 
-export async function createStaffUser(username, password, full_name, role, contact_number, availability) {
+export async function createStaffUser(username, password, full_name, role, contact_number, availability, position) {
   const { data, error } = await supabase.functions.invoke('create-staff-user', {
-    body: { username, password, full_name, role, contact_number, availability },
+    body: { username, password, full_name, role, contact_number, availability, position },
   });
 
   if (error) {
@@ -25,10 +25,10 @@ export async function createStaffUser(username, password, full_name, role, conta
 
 // Update an existing staff/admin/owner profile's role, contact details, and
 // availability. (Username/password are managed via Supabase Auth, not here.)
-export async function updateStaffUser(id, { full_name, role, contact_number, availability }) {
+export async function updateStaffUser(id, { full_name, role, contact_number, availability, position }) {
   const { data, error } = await supabase
     .from('tbl_profiles')
-    .update({ full_name, role, contact_number, availability })
+    .update({ full_name, role, contact_number, availability, position })
     .eq('id', id)
     .select()
     .single();

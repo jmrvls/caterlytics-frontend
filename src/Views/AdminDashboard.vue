@@ -2,16 +2,17 @@
   <div class="min-h-screen flex bg-gray-50 dark:bg-gray-900 font-sans">
 
     <!-- MOBILE TOP BAR -->
-    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3 print:hidden">
-      <div class="flex items-center gap-2">
-        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
-        <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
-      </div>
-      <button @click="isMobileSidebarOpen = true" class="p-2 rounded-none text-gray-600 dark:text-gray-300">
+    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 px-4 py-3 print:hidden">
+      <button @click="isMobileSidebarOpen = true" class="p-2 -ml-2 rounded-none text-gray-600 dark:text-gray-300">
         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
+      <div class="flex items-center gap-2 flex-1 min-w-0">
+        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
+        <span class="font-bold text-gray-800 dark:text-gray-100 truncate">Caterlytics</span>
+      </div>
+      <NotificationBell />
     </div>
 
     <!-- MOBILE BACKDROP -->
@@ -99,7 +100,11 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <h1 v-if="activeSection !== 'Dashboard'" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{{ sectionLabel }}</h1>
+        <div class="hidden lg:flex justify-end mb-4">
+          <NotificationBell />
+        </div>
+
+        <h1 v-if="activeSection !== 'Dashboard'" class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{{ sectionLabel }}</h1>
 
         <!-- ============ DASHBOARD SECTION (STAFF) ============ -->
         <div v-if="activeSection === 'Dashboard' && userRole === 'Staff'">
@@ -131,6 +136,39 @@
                 <p class="text-xs text-gray-400 dark:text-gray-500">Record and track client payments</p>
               </div>
             </button>
+          </div>
+
+          <!-- My Assigned Events -->
+          <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="font-semibold text-gray-800 dark:text-gray-100 text-sm">My Upcoming Events</h3>
+            </div>
+            <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading...</div>
+            <div v-else-if="myAssignedEvents.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
+              No events assigned to you yet.
+            </div>
+            <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
+              <div v-for="e in myAssignedEvents" :key="e.booking_id" class="px-5 py-3.5 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="font-medium text-gray-800 dark:text-gray-100 text-sm truncate">{{ e.client_name }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(e.event_date) }} · {{ e.event_location }}</p>
+                </div>
+                <span :class="statusBadgeClass(e.booking_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+                  {{ e.booking_status }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- My Schedule -->
+          <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 mt-6">
+            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <h3 class="font-semibold text-gray-800 dark:text-gray-100 text-sm">My Schedule</h3>
+              <button @click="openScheduleModal({ id: currentUserId, full_name: userName })" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                Manage unavailable dates
+              </button>
+            </div>
+            <p class="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">Mark dates you're on leave or unavailable — the office will see this when assigning staff to events.</p>
           </div>
 
         </div>
@@ -178,7 +216,7 @@
               </div>
             </button>
 
-            <button @click="activeSection = 'Inventory'" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
+            <button @click="router.push('/admin/inventory')" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
               <div class="w-10 h-10 rounded-none bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
@@ -264,14 +302,41 @@
         <!-- ============ STAFF MANAGEMENT SECTION ============ -->
         <div v-if="activeSection === 'Staff Management'">
 
-          <div class="flex justify-between items-center mb-4">
-            <p class="text-sm text-gray-500 dark:text-gray-400">Manage Admin, Staff, and Owner/Manager accounts.</p>
-            <button v-if="userRole === 'Admin'" @click="openAddUserModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="flex justify-end items-center mb-4">
+            <button v-if="userRole === 'Admin'" @click="openAddUserModal" class="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-none font-semibold text-xs sm:text-sm hover:bg-emerald-700 transition">
+              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
               Add New User
             </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div class="flex flex-col sm:flex-row gap-2 flex-1">
+              <div class="relative flex-1 max-w-sm">
+                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  v-model="staffSearchQuery"
+                  placeholder="Search by name, username, or contact..."
+                  class="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+              <select v-model="staffRoleFilter" class="py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
+                <option value="">All Roles</option>
+                <option value="Admin">Admin</option>
+                <option value="Staff">Staff</option>
+                <option value="Owner/Manager">Owner/Manager</option>
+              </select>
+              <select v-model="staffAvailabilityFilter" class="py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
+                <option value="">All Availability</option>
+                <option value="Available">Available</option>
+                <option value="On Leave">On Leave</option>
+                <option value="Unavailable">Unavailable</option>
+              </select>
+            </div>
           </div>
 
           <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -279,42 +344,52 @@
             <!-- Mobile card list -->
             <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
               <div v-if="isLoadingUsers" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading users...</div>
-              <div v-else-if="userList.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No users found.</div>
-              <div v-for="u in userList" :key="u.id" class="px-4 py-3.5">
-                <div class="flex items-center gap-3 mb-3">
-                  <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-sm overflow-hidden shrink-0">
+              <div v-else-if="filteredUserList.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No users found.</div>
+              <div v-for="u in filteredUserList" :key="u.id" class="px-3 py-3">
+                <div class="flex items-center gap-2.5 mb-2.5">
+                  <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs overflow-hidden shrink-0">
                     <img v-if="u.avatar_url" :src="u.avatar_url" alt="" class="w-full h-full object-cover" />
                     <span v-else>{{ u.full_name.charAt(0).toUpperCase() }}</span>
                   </div>
                   <div class="min-w-0 flex-1">
-                    <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ u.full_name }}</p>
+                    <p class="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate">{{ u.full_name }}</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ u.username }} · {{ u.contact_number || 'No contact number' }}</p>
                   </div>
                 </div>
 
-                <div class="flex items-center gap-2 mb-3">
+                <div class="flex items-center gap-1.5 mb-2.5">
                   <span
                     :class="{ 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300': u.role === 'Admin', 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300': u.role === 'Staff', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.role === 'Owner/Manager' }"
-                    class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                    class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                   >
                     {{ u.role }}
                   </span>
                   <span
                     :class="{ 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
-                    class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                    class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                   >
                     {{ u.availability }}
+                  </span>
+                  <span v-if="u.position" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                    {{ u.position }}
                   </span>
                 </div>
 
                 <div v-if="userRole === 'Admin'" class="flex items-center gap-2">
-                  <button @click="openEditUserModal(u)" class="flex-1 py-2.5 rounded-none text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 active:bg-emerald-100 dark:active:bg-emerald-900/40">
+                  <button @click="openEditUserModal(u)" class="flex-1 py-2 rounded-none text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 active:bg-emerald-100 dark:active:bg-emerald-900/40">
                     Edit
+                  </button>
+                  <button
+                    v-if="u.role === 'Staff'"
+                    @click="openScheduleModal(u)"
+                    class="flex-1 py-2 rounded-none text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 active:bg-purple-100 dark:active:bg-purple-900/40"
+                  >
+                    Schedule
                   </button>
                   <button
                     v-if="u.id !== currentUserId"
                     @click="confirmDeleteUser(u)"
-                    class="flex-1 py-2.5 rounded-none text-sm font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 active:bg-red-100 dark:active:bg-red-900/40"
+                    class="flex-1 py-2 rounded-none text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 active:bg-red-100 dark:active:bg-red-900/40"
                   >
                     Delete
                   </button>
@@ -332,18 +407,19 @@
                     <th class="text-left px-6 py-3 font-semibold">Username</th>
                     <th class="text-left px-6 py-3 font-semibold">Contact Number</th>
                     <th class="text-left px-6 py-3 font-semibold">Role</th>
+                    <th class="text-left px-6 py-3 font-semibold">Position</th>
                     <th class="text-left px-6 py-3 font-semibold">Availability</th>
                     <th class="text-right px-6 py-3 font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                   <tr v-if="isLoadingUsers">
-                    <td colspan="7" class="text-center py-8 text-gray-400 dark:text-gray-500">Loading users...</td>
+                    <td colspan="8" class="text-center py-8 text-gray-400 dark:text-gray-500">Loading users...</td>
                   </tr>
-                  <tr v-else-if="userList.length === 0">
-                    <td colspan="7" class="text-center py-8 text-gray-400 dark:text-gray-500">No users found.</td>
+                  <tr v-else-if="filteredUserList.length === 0">
+                    <td colspan="8" class="text-center py-8 text-gray-400 dark:text-gray-500">No users found.</td>
                   </tr>
-                  <tr v-for="u in userList" :key="u.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <tr v-for="u in filteredUserList" :key="u.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td class="px-6 py-3.5">
                       <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs overflow-hidden">
                         <img v-if="u.avatar_url" :src="u.avatar_url" alt="" class="w-full h-full object-cover" />
@@ -361,6 +437,7 @@
                         {{ u.role }}
                       </span>
                     </td>
+                    <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.position || '—' }}</td>
                     <td class="px-6 py-3.5">
                       <span
                         :class="{ 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
@@ -373,6 +450,13 @@
                       <div v-if="userRole === 'Admin'" class="flex items-center justify-end gap-3">
                         <button @click="openEditUserModal(u)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
                           Edit
+                        </button>
+                        <button
+                          v-if="u.role === 'Staff'"
+                          @click="openScheduleModal(u)"
+                          class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
+                        >
+                          Schedule
                         </button>
                         <button
                           v-if="u.id !== currentUserId"
@@ -458,6 +542,18 @@
             </select>
           </div>
 
+          <div v-if="newUser.role === 'Staff'" class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Position</label>
+            <select v-model="newUser.position" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
+              <option value="">No position set</option>
+              <option value="Cook">Cook</option>
+              <option value="Server">Server</option>
+              <option value="Driver">Driver</option>
+              <option value="Coordinator">Coordinator</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Availability</label>
             <select v-model="newUser.availability" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
@@ -513,6 +609,18 @@
             </select>
           </div>
 
+          <div v-if="editUser.role === 'Staff'" class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Position</label>
+            <select v-model="editUser.position" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
+              <option value="">No position set</option>
+              <option value="Cook">Cook</option>
+              <option value="Server">Server</option>
+              <option value="Driver">Driver</option>
+              <option value="Coordinator">Coordinator</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Availability</label>
             <select v-model="editUser.availability" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
@@ -557,17 +665,66 @@
       </div>
     </div>
 
+    <!-- ============ STAFF SCHEDULE MODAL (per-date unavailability) ============ -->
+    <div v-if="scheduleModalUser" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{{ scheduleModalUser.full_name }}'s Schedule</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Mark specific dates this staff member is unavailable (leave, time off, etc). Booking-time assignment checks use this list.</p>
+
+        <div v-if="scheduleError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+          {{ scheduleError }}
+        </div>
+
+        <form @submit.prevent="handleAddLeaveDate" class="flex gap-2 mb-4">
+          <input type="date" v-model="newLeaveDate" :min="todayStr" required class="flex-1 p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          <input type="text" v-model="newLeaveReason" placeholder="Reason (optional)" class="flex-1 p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          <button type="submit" :disabled="isSavingLeave" class="px-4 py-2.5 bg-emerald-600 text-white rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            Add
+          </button>
+        </form>
+
+        <div v-if="isLoadingSchedule" class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">Loading...</div>
+        <div v-else-if="scheduleDates.length === 0" class="text-center py-6 text-gray-400 dark:text-gray-500 text-sm">
+          No unavailable dates marked yet.
+        </div>
+        <div v-else class="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-none">
+          <div v-for="d in scheduleDates" :key="d.id" class="flex items-center justify-between px-4 py-2.5">
+            <div>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-100">{{ formatDate(d.unavailable_date) }}</p>
+              <p v-if="d.reason" class="text-xs text-gray-500 dark:text-gray-400">{{ d.reason }}</p>
+            </div>
+            <button @click="handleRemoveLeaveDate(d.id)" class="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline">
+              Remove
+            </button>
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button type="button" @click="closeScheduleModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import NotificationBell from '../Components/NotificationBell.vue'
 import { getMyAvatarUrl } from '../services/profileService'
 import { getUsers, createStaffUser, updateStaffUser, deleteStaffUser } from '../services/staffService'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPayments } from '../services/paymentService'
+import {
+  getMyAssignedBookings,
+  getUnavailableDates,
+  addUnavailableDate,
+  removeUnavailableDate
+} from '../services/staffAssignmentService'
 
 const router = useRouter()
 const isSidebarOpen = ref(true)
@@ -582,28 +739,55 @@ const userAvatarUrl = ref('')
 const currentUserId = ref('')
 
 const userList = ref([])
+const staffSearchQuery = ref('')
+const staffRoleFilter = ref('')
+const staffAvailabilityFilter = ref('')
+
+const filteredUserList = computed(() => {
+  const q = staffSearchQuery.value.trim().toLowerCase()
+  return userList.value.filter((u) => {
+    const matchesQuery = !q ||
+      u.full_name?.toLowerCase().includes(q) ||
+      u.username?.toLowerCase().includes(q) ||
+      u.contact_number?.toLowerCase().includes(q)
+    const matchesRole = !staffRoleFilter.value || u.role === staffRoleFilter.value
+    const matchesAvailability = !staffAvailabilityFilter.value || u.availability === staffAvailabilityFilter.value
+    return matchesQuery && matchesRole && matchesAvailability
+  })
+})
 const isLoadingUsers = ref(false)
 
 const showAddUserModal = ref(false)
 const isCreating = ref(false)
 const modalError = ref('')
-const newUser = ref({ full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available' })
+const newUser = ref({ full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available', position: '' })
 const showNewPassword = ref(false)
 
 const showEditUserModal = ref(false)
 const isSavingEdit = ref(false)
 const editModalError = ref('')
-const editUser = ref({ id: '', full_name: '', username: '', role: '', contact_number: '', availability: 'Available' })
+const editUser = ref({ id: '', full_name: '', username: '', role: '', contact_number: '', availability: 'Available', position: '' })
 
 const userToDelete = ref(null)
 const isDeletingUser = ref(false)
 const deleteUserError = ref('')
+
+// ---------- Staff schedule (per-date unavailability) ----------
+const scheduleModalUser = ref(null)
+const scheduleDates = ref([])
+const isLoadingSchedule = ref(false)
+const scheduleError = ref('')
+const newLeaveDate = ref('')
+const newLeaveReason = ref('')
+const isSavingLeave = ref(false)
+const todayStr = new Date().toISOString().split('T')[0]
 
 // ---------- Dashboard data ----------
 const allBookings = ref([])
 const allInventory = ref([])
 const allPayments = ref([])
 const isLoadingDashboard = ref(false)
+const myAssignedEvents = ref([]) // Staff role: their own upcoming assigned events
 
 const totalBookings = computed(() => allBookings.value.length)
 
@@ -651,8 +835,14 @@ async function fetchDashboardData(role) {
   isLoadingDashboard.value = true
   try {
     if (role === 'Staff') {
-      // Staff only has Payments access — just pull revenue.
-      allPayments.value = await getAllPayments()
+      // Staff only has Payments access — just pull revenue — plus their own
+      // assigned events, so they know what they're actually working on.
+      const [payments, assigned] = await Promise.all([
+        getAllPayments(),
+        getMyAssignedBookings()
+      ])
+      allPayments.value = payments
+      myAssignedEvents.value = assigned
     } else {
       const [bookings, inventory, payments] = await Promise.all([
         getAllBookings(),
@@ -716,8 +906,59 @@ async function fetchUsers() {
   }
 }
 
+async function openScheduleModal(user) {
+  scheduleModalUser.value = user
+  scheduleError.value = ''
+  newLeaveDate.value = ''
+  newLeaveReason.value = ''
+  await loadSchedule()
+}
+
+function closeScheduleModal() {
+  scheduleModalUser.value = null
+  scheduleDates.value = []
+}
+
+async function loadSchedule() {
+  if (!scheduleModalUser.value) return
+  isLoadingSchedule.value = true
+  try {
+    scheduleDates.value = await getUnavailableDates(scheduleModalUser.value.id)
+  } catch (error) {
+    scheduleError.value = error?.message || 'Failed to load schedule.'
+  } finally {
+    isLoadingSchedule.value = false
+  }
+}
+
+async function handleAddLeaveDate() {
+  if (!scheduleModalUser.value || !newLeaveDate.value) return
+  scheduleError.value = ''
+  isSavingLeave.value = true
+  try {
+    await addUnavailableDate(scheduleModalUser.value.id, newLeaveDate.value, newLeaveReason.value || null)
+    newLeaveDate.value = ''
+    newLeaveReason.value = ''
+    await loadSchedule()
+  } catch (error) {
+    scheduleError.value = error?.message || 'Failed to add date.'
+  } finally {
+    isSavingLeave.value = false
+  }
+}
+
+async function handleRemoveLeaveDate(id) {
+  scheduleError.value = ''
+  try {
+    await removeUnavailableDate(id)
+    scheduleDates.value = scheduleDates.value.filter((d) => d.id !== id)
+  } catch (error) {
+    scheduleError.value = error?.message || 'Failed to remove date.'
+  }
+}
+
 function openAddUserModal() {
-  newUser.value = { full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available' }
+  newUser.value = { full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available', position: '' }
   modalError.value = ''
   showNewPassword.value = false
   showAddUserModal.value = true
@@ -738,7 +979,8 @@ async function handleCreateUser() {
       newUser.value.full_name,
       newUser.value.role,
       newUser.value.contact_number,
-      newUser.value.availability
+      newUser.value.availability,
+      newUser.value.role === 'Staff' ? newUser.value.position : null
     )
     showAddUserModal.value = false
     fetchUsers()
@@ -756,7 +998,8 @@ function openEditUserModal(user) {
     username: user.username,
     role: user.role,
     contact_number: user.contact_number || '',
-    availability: user.availability || 'Available'
+    availability: user.availability || 'Available',
+    position: user.position || ''
   }
   editModalError.value = ''
   showEditUserModal.value = true
@@ -775,7 +1018,8 @@ async function handleUpdateUser() {
       full_name: editUser.value.full_name,
       role: editUser.value.role,
       contact_number: editUser.value.contact_number,
-      availability: editUser.value.availability
+      availability: editUser.value.availability,
+      position: editUser.value.role === 'Staff' ? editUser.value.position : null
     })
     showEditUserModal.value = false
     fetchUsers()

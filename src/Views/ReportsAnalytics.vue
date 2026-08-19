@@ -2,16 +2,17 @@
   <div class="min-h-screen flex bg-gray-50 dark:bg-gray-900 font-sans">
 
     <!-- MOBILE TOP BAR -->
-    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 py-3 print:hidden">
-      <div class="flex items-center gap-2">
-        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
-        <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
-      </div>
-      <button @click="isMobileSidebarOpen = true" class="p-2 rounded-none text-gray-600 dark:text-gray-300">
+    <div class="lg:hidden fixed top-0 inset-x-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 px-4 py-3 print:hidden">
+      <button @click="isMobileSidebarOpen = true" class="p-2 -ml-2 rounded-none text-gray-600 dark:text-gray-300">
         <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
+      <div class="flex items-center gap-2 flex-1 min-w-0">
+        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
+        <span class="font-bold text-gray-800 dark:text-gray-100 truncate">Caterlytics</span>
+      </div>
+      <NotificationBell />
     </div>
 
     <!-- MOBILE BACKDROP -->
@@ -102,15 +103,19 @@
         <div class="flex items-center justify-between mb-6 print:mb-4">
           <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports & Analytics</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 print:hidden">Sales, booking, and inventory overview.</p>
             <p class="hidden print:block text-xs text-gray-500 dark:text-gray-400 mt-1">Generated {{ generatedOn }}</p>
           </div>
-          <button @click="exportPDF" class="print:hidden flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Export PDF
-          </button>
+          <div class="flex items-center gap-3 print:hidden">
+            <div class="hidden lg:block">
+              <NotificationBell />
+            </div>
+            <button @click="exportPDF" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export PDF
+            </button>
+          </div>
         </div>
 
         <!-- TABS -->
@@ -569,6 +574,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import NotificationBell from '../Components/NotificationBell.vue'
 import { useRouter } from 'vue-router'
 import { getMyAvatarUrl } from '../services/profileService'
 import { getAllBookings } from '../services/bookingService'
