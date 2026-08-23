@@ -99,6 +99,24 @@ export async function updateBookingStatus(id, status) {
 
   if (fetchError) throw fetchError;
 
+  // Confirming: stock availability must be checked and deducted atomically
+  // with the status change, in a single DB transaction, so a booking can
+  // never end up "Confirmed" while ingredients are actually short. If
+  // stock is insufficient, the RPC raises and NOTHING is changed.
+  if (status === 'Confirmed' && currentBooking.booking_status !== 'Confirmed') {
+    const { data, error } = await supabase.rpc('confirm_booking_with_stock_check', {
+      p_booking_id: id,
+    });
+
+    if (error) {
+      if (error.message?.includes('insufficient stock')) {
+        throw new Error(error.message.replace(/^.*insufficient stock for /, 'Not enough stock for: '));
+      }
+      throw error;
+    }
+    return { ...data, stockWarning: null };
+  }
+
   const { data, error } = await supabase
     .from('tbl_bookings')
     .update({ booking_status: status })
@@ -116,13 +134,7 @@ export async function updateBookingStatus(id, status) {
   }
 
   let stockWarning = null;
-  if (status === 'Confirmed' && currentBooking.booking_status !== 'Confirmed') {
-    // Booking is being confirmed: deduct ingredients from inventory.
-    const failedItems = await adjustStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id, -1);
-    if (failedItems.length > 0) {
-      stockWarning = `Stock deduction failed for: ${failedItems.join(', ')}. Please adjust inventory manually.`;
-    }
-  } else if (status === 'Cancelled' && currentBooking.booking_status === 'Confirmed') {
+  if (status === 'Cancelled' && currentBooking.booking_status === 'Confirmed') {
     // A previously-Confirmed booking is being cancelled: give the
     // deducted ingredients back to inventory.
     const failedItems = await adjustStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id, 1);

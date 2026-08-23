@@ -467,7 +467,7 @@ async function handleDelete() {
     items.value = items.value.filter((i) => i.item_id !== itemToDelete.value.item_id)
     itemToDelete.value = null
   } catch (error) {
-    pageError.value = 'Failed to delete item.'
+    pageError.value = error?.message || 'Failed to delete item.'
     console.error(error)
   } finally {
     isDeleting.value = false
