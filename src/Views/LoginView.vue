@@ -7,7 +7,7 @@
 
       <!-- System Branding Logo -->
       <img
-        src="/src/assets/logofinal.png"
+        :src="logoUrl"
         alt="Logo"
         class="w-14 h-14 object-contain flex-shrink-0"
       />
@@ -15,7 +15,7 @@
       <!-- Center Visual Mockup Area: shrinks to fit remaining space, never overlaps text below -->
       <div class="flex-1 min-h-0 flex items-center justify-center py-4">
         <img
-          src="/src/assets/login-bg.png"
+          :src="loginBgUrl"
           alt="Catering Display"
           class="w-full h-full object-contain"
         />
@@ -125,6 +125,8 @@
 </template>
 
 <script setup>
+import logoUrl from '../Assets/logofinal.png'
+import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { loginUser } from '../services/authService'

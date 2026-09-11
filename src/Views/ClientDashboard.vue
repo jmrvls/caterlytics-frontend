@@ -5,7 +5,7 @@
     <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain" />
+          <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain" />
           <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
         </div>
         <div class="flex items-center gap-3 relative">
@@ -304,6 +304,7 @@
 </template>
 
 <script setup>
+import logoUrl from '../Assets/logofinal.png'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyAvatarUrl } from '../services/profileService'

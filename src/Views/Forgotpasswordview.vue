@@ -3,7 +3,7 @@
     <div class="w-full max-w-md bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
 
       <div class="flex items-center gap-2 mb-6">
-        <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain" />
+        <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain" />
         <span class="font-bold text-gray-800">Caterlytics</span>
       </div>
 
@@ -46,6 +46,7 @@
 </template>
 
 <script setup>
+import logoUrl from '../Assets/logofinal.png'
 import { ref } from 'vue'
 import { requestPasswordReset } from '../services/authService'
 

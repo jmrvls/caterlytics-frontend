@@ -9,7 +9,7 @@
         </svg>
       </button>
       <div class="flex items-center gap-2 flex-1 min-w-0">
-        <img src="/src/assets/logofinal.png" alt="Logo" class="w-7 h-7 object-contain" />
+        <img :src="logoUrl" alt="Logo" class="w-7 h-7 object-contain" />
         <span class="font-bold text-gray-800 dark:text-gray-100 truncate">Caterlytics</span>
       </div>
       <NotificationBell />
@@ -25,7 +25,7 @@
     >
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-2 overflow-hidden">
-          <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
+          <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
           <span v-if="sidebarExpanded" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
         </div>
         <button @click="isMobileSidebarOpen ? (isMobileSidebarOpen = false) : (isSidebarOpen = !isSidebarOpen)" class="p-1.5 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
@@ -711,9 +711,11 @@
 </template>
 
 <script setup>
+import logoUrl from '../Assets/logofinal.png'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import NotificationBell from '../Components/NotificationBell.vue'
+import { useSidebarState } from '../composables/useSidebarState'
 import { getMyAvatarUrl } from '../services/profileService'
 import { getUsers, createStaffUser, updateStaffUser, deleteStaffUser } from '../services/staffService'
 import { getAllBookings } from '../services/bookingService'
@@ -724,13 +726,11 @@ import {
   getUnavailableDates,
   addUnavailableDate,
   removeUnavailableDate
-} from '../services/staffAssignmentService'
+} from '../services/staffassignmentservice'
 
 const router = useRouter()
 const route = useRoute()
-const isSidebarOpen = ref(false)
-const isMobileSidebarOpen = ref(false)
-const sidebarExpanded = computed(() => isSidebarOpen.value || isMobileSidebarOpen.value)
+const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
 const showAccountMenu = ref(false)
 const activeSection = ref('Dashboard')
 

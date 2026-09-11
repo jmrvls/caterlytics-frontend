@@ -6,7 +6,7 @@
 
       <!-- System Branding Logo: flush to top-left corner -->
       <img
-        src="/src/assets/logofinal.png"
+        :src="logoUrl"
         alt="Logo"
         class="absolute top-6 left-6 w-16 h-16 object-contain z-20"
       />
@@ -14,7 +14,7 @@
       <!-- Center Visual Mockup Area: fills the entire panel edge-to-edge -->
       <div class="absolute inset-0 flex items-center justify-center p-10">
         <img
-          src="/src/assets/login-bg.png"
+          :src="loginBgUrl"
           alt="Catering Display"
           class="w-full h-full object-contain"
         />
@@ -126,6 +126,8 @@
 </template>
 
 <script setup>
+import logoUrl from '../Assets/logofinal.png'
+import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { registerUser } from '../services/authService'
