@@ -20,13 +20,13 @@
 
     <!-- SIDEBAR -->
     <aside 
-      :class="[isSidebarOpen ? 'w-64' : 'w-20', isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']" 
+      :class="[sidebarExpanded ? 'w-64' : 'w-20', isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']" 
       class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 h-screen fixed lg:sticky top-0 left-0 z-50 lg:z-auto"
     >
       <div class="flex items-center justify-between p-4">
         <div class="flex items-center gap-2 overflow-hidden">
           <img src="/src/assets/logofinal.png" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
-          <span v-if="isSidebarOpen" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
+          <span v-if="sidebarExpanded" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
         </div>
         <button @click="isMobileSidebarOpen ? (isMobileSidebarOpen = false) : (isSidebarOpen = !isSidebarOpen)" class="p-1.5 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -36,7 +36,7 @@
       </div>
 
       <nav class="flex-1 px-3 mt-6 space-y-1 overflow-y-auto">
-        <p v-if="isSidebarOpen" class="text-xs font-semibold text-gray-400 dark:text-gray-500 px-3 mb-2 uppercase tracking-wide">Menu</p>
+        <p v-if="sidebarExpanded" class="text-xs font-semibold text-gray-400 dark:text-gray-500 px-3 mb-2 uppercase tracking-wide">Menu</p>
 
         <a v-for="item in navItems" :key="item.name"
           href="#"
@@ -47,7 +47,7 @@
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.iconPath" />
           </svg>
-          <span v-if="isSidebarOpen" class="whitespace-nowrap">{{ item.name }}</span>
+          <span v-if="sidebarExpanded" class="whitespace-nowrap">{{ item.name }}</span>
         </a>
       </nav>
 
@@ -73,7 +73,7 @@
         </div>
 
         <!-- Gear icon: its own row, above the profile -->
-        <div v-if="isSidebarOpen" class="flex justify-end px-1 mb-1">
+        <div v-if="sidebarExpanded" class="flex justify-end px-1 mb-1">
           <button @click="router.push('/settings')" title="Settings" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -88,7 +88,7 @@
             <img v-if="userAvatarUrl" :src="userAvatarUrl" alt="" class="w-full h-full object-cover" />
             <span v-else>{{ userInitial }}</span>
           </div>
-          <div v-if="isSidebarOpen" class="overflow-hidden">
+          <div v-if="sidebarExpanded" class="overflow-hidden">
             <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ userName }}</p>
             <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ userRole }}</p>
           </div>
@@ -712,7 +712,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { getMyAvatarUrl } from '../services/profileService'
 import { getUsers, createStaffUser, updateStaffUser, deleteStaffUser } from '../services/staffService'
@@ -727,8 +727,10 @@ import {
 } from '../services/staffAssignmentService'
 
 const router = useRouter()
-const isSidebarOpen = ref(true)
+const route = useRoute()
+const isSidebarOpen = ref(false)
 const isMobileSidebarOpen = ref(false)
+const sidebarExpanded = computed(() => isSidebarOpen.value || isMobileSidebarOpen.value)
 const showAccountMenu = ref(false)
 const activeSection = ref('Dashboard')
 
@@ -865,6 +867,10 @@ onMounted(() => {
   if (!storedUser) {
     router.push('/')
     return
+  }
+
+  if (route.query.section) {
+    activeSection.value = route.query.section
   }
 
   const user = JSON.parse(storedUser)
