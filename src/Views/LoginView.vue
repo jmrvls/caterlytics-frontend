@@ -3,17 +3,17 @@
   <div class="min-h-screen flex w-full font-sans bg-gradient-to-br from-emerald-50 via-white to-gray-50">
 
     <!-- LEFT SIDE: Manuscript & Institution Details -->
-    <div class="hidden lg:flex w-1/2 relative overflow-hidden bg-gray-50 border-r border-gray-200">
+    <div class="hidden lg:flex lg:flex-col w-1/2 h-screen overflow-hidden bg-gray-50 border-r border-gray-200 p-8">
 
-      <!-- System Branding Logo: flush to top-left corner -->
+      <!-- System Branding Logo -->
       <img
         src="/src/assets/logofinal.png"
         alt="Logo"
-        class="absolute top-6 left-6 w-16 h-16 object-contain z-20"
+        class="w-14 h-14 object-contain flex-shrink-0"
       />
 
-      <!-- Center Visual Mockup Area: fills the entire panel edge-to-edge -->
-      <div class="absolute inset-0 flex items-center justify-center p-10">
+      <!-- Center Visual Mockup Area: shrinks to fit remaining space, never overlaps text below -->
+      <div class="flex-1 min-h-0 flex items-center justify-center py-4">
         <img
           src="/src/assets/login-bg.png"
           alt="Catering Display"
@@ -21,9 +21,9 @@
         />
       </div>
 
-      <!-- Bottom Section: flush to bottom-left corner -->
-      <div class="absolute bottom-10 left-8 right-8 z-20">
-        <h2 class="text-5xl font-black text-gray-900 leading-none tracking-tight">
+      <!-- Bottom Section -->
+      <div class="flex-shrink-0 pb-4">
+        <h2 class="text-4xl xl:text-5xl font-black text-gray-900 leading-none tracking-tight">
           Manage <br />
           the events <br />
           <span class="text-emerald-600">you love.</span>
