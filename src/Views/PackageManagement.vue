@@ -194,6 +194,16 @@
               <span class="text-xl font-black text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(pkg.price_per_head) }}</span>
               <span class="text-xs text-gray-400 dark:text-gray-500 font-medium">/ head</span>
             </div>
+            <div class="mt-2 flex items-center justify-between text-xs">
+              <span class="text-gray-400 dark:text-gray-500">Cost: ₱{{ formatPrice(pkg.cost_per_head) }} / head</span>
+              <span
+                v-if="pkg.margin_percent !== null"
+                :class="pkg.margin_percent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'"
+                class="font-semibold"
+              >
+                {{ pkg.margin_percent >= 0 ? '+' : '' }}{{ pkg.margin_percent }}% margin
+              </span>
+            </div>
           </div>
         </div>
 
@@ -344,7 +354,8 @@ import {
   updatePackage,
   deletePackage,
   getPackageIngredients,
-  setPackageIngredients
+  setPackageIngredients,
+  getAllPackageCosting
 } from '../services/packageService'
 import { getAllInventory } from '../services/inventoryService'
 
@@ -417,7 +428,14 @@ async function fetchPackages() {
   isLoading.value = true
   pageError.value = ''
   try {
-    packages.value = await getAllPackages()
+    const [pkgs, costing] = await Promise.all([getAllPackages(), getAllPackageCosting()])
+    const costingById = new Map(costing.map((c) => [c.package_id, c]))
+    packages.value = pkgs.map((p) => ({
+      ...p,
+      cost_per_head: costingById.get(p.package_id)?.cost_per_head ?? 0,
+      margin_per_head: costingById.get(p.package_id)?.margin_per_head ?? p.price_per_head,
+      margin_percent: costingById.get(p.package_id)?.margin_percent ?? null
+    }))
   } catch (error) {
     pageError.value = 'Failed to load packages. Please refresh the page.'
     console.error(error)
@@ -586,7 +604,7 @@ const allNavItems = [
   { name: 'Catering Packages', path: '/admin/packages', iconPath: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
   { name: 'Inventory', path: '/admin/inventory', iconPath: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4' },
   { name: 'Payments', path: '/admin/payments', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },
-  { name: 'Staff Management', path: '/admin/dashboard?section=Staff Management', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
+  { name: 'Staff Management', path: '/admin/staff', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', path: '/admin/reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
 ]
 

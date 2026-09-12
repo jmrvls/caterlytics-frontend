@@ -48,7 +48,7 @@
 
         <a v-for="item in navItems" :key="item.name"
           href="#"
-        @click.prevent="isMobileSidebarOpen = false; item.name === 'Event Bookings' ? router.push('/admin/bookings') : item.name === 'Catering Packages' ? router.push('/admin/packages') : item.name === 'Inventory' ? router.push('/admin/inventory') : item.name === 'Payments' ? router.push('/admin/payments') : item.name === 'Reports' ? router.push('/admin/reports') : (activeSection = item.name)"
+        @click.prevent="isMobileSidebarOpen = false; item.name === 'Event Bookings' ? router.push('/admin/bookings') : item.name === 'Catering Packages' ? router.push('/admin/packages') : item.name === 'Inventory' ? router.push('/admin/inventory') : item.name === 'Payments' ? router.push('/admin/payments') : item.name === 'Staff Management' ? router.push('/admin/staff') : item.name === 'Reports' ? router.push('/admin/reports') : (activeSection = item.name)"
           :class="activeSection === item.name ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
           class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
@@ -236,7 +236,7 @@
               </div>
             </button>
 
-            <button @click="activeSection = 'Staff Management'" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
+            <button @click="router.push('/admin/staff')" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
               <div class="w-10 h-10 rounded-none bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z" />
@@ -307,371 +307,14 @@
 
         </div>
 
-        <!-- ============ STAFF MANAGEMENT SECTION ============ -->
-        <div v-if="activeSection === 'Staff Management'">
-
-          <div class="flex justify-end items-center mb-4">
-            <button v-if="userRole === 'Admin'" @click="openAddUserModal" class="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-none font-semibold text-xs sm:text-sm hover:bg-emerald-700 transition">
-              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add New User
-            </button>
-          </div>
-
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <div class="flex flex-col sm:flex-row gap-2 flex-1">
-              <div class="relative flex-1 max-w-sm">
-                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  v-model="staffSearchQuery"
-                  placeholder="Search by name, username, or contact..."
-                  class="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-              <select v-model="staffRoleFilter" class="py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
-                <option value="">All Roles</option>
-                <option value="Admin">Admin</option>
-                <option value="Staff">Staff</option>
-                <option value="Owner/Manager">Owner/Manager</option>
-              </select>
-              <select v-model="staffAvailabilityFilter" class="py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
-                <option value="">All Availability</option>
-                <option value="Available">Available</option>
-                <option value="On Leave">On Leave</option>
-                <option value="Unavailable">Unavailable</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-
-            <!-- Mobile card list -->
-            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
-              <div v-if="isLoadingUsers" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading users...</div>
-              <div v-else-if="filteredUserList.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No users found.</div>
-              <div v-for="u in filteredUserList" :key="u.id" class="px-3 py-3">
-                <div class="flex items-center gap-2.5 mb-2.5">
-                  <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs overflow-hidden shrink-0">
-                    <img v-if="u.avatar_url" :src="u.avatar_url" alt="" class="w-full h-full object-cover" />
-                    <span v-else>{{ u.full_name.charAt(0).toUpperCase() }}</span>
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate">{{ u.full_name }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ u.username }} · {{ u.contact_number || 'No contact number' }}</p>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-1.5 mb-2.5">
-                  <span
-                    :class="{ 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300': u.role === 'Admin', 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300': u.role === 'Staff', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.role === 'Owner/Manager' }"
-                    class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                  >
-                    {{ u.role }}
-                  </span>
-                  <span
-                    :class="{ 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
-                    class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                  >
-                    {{ u.availability }}
-                  </span>
-                  <span v-if="u.position" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                    {{ u.position }}
-                  </span>
-                </div>
-
-                <div v-if="userRole === 'Admin'" class="flex items-center gap-2">
-                  <button @click="openEditUserModal(u)" class="flex-1 py-2 rounded-none text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 active:bg-emerald-100 dark:active:bg-emerald-900/40">
-                    Edit
-                  </button>
-                  <button
-                    v-if="u.role === 'Staff'"
-                    @click="openScheduleModal(u)"
-                    class="flex-1 py-2 rounded-none text-xs font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 active:bg-purple-100 dark:active:bg-purple-900/40"
-                  >
-                    Schedule
-                  </button>
-                  <button
-                    v-if="u.id !== currentUserId"
-                    @click="confirmDeleteUser(u)"
-                    class="flex-1 py-2 rounded-none text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 active:bg-red-100 dark:active:bg-red-900/40"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Desktop / tablet table -->
-            <div class="hidden sm:block overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
-                  <tr>
-                    <th class="text-left px-6 py-3 font-semibold"></th>
-                    <th class="text-left px-6 py-3 font-semibold">Full Name</th>
-                    <th class="text-left px-6 py-3 font-semibold">Username</th>
-                    <th class="text-left px-6 py-3 font-semibold">Contact Number</th>
-                    <th class="text-left px-6 py-3 font-semibold">Role</th>
-                    <th class="text-left px-6 py-3 font-semibold">Position</th>
-                    <th class="text-left px-6 py-3 font-semibold">Availability</th>
-                    <th class="text-right px-6 py-3 font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                  <tr v-if="isLoadingUsers">
-                    <td colspan="8" class="text-center py-8 text-gray-400 dark:text-gray-500">Loading users...</td>
-                  </tr>
-                  <tr v-else-if="filteredUserList.length === 0">
-                    <td colspan="8" class="text-center py-8 text-gray-400 dark:text-gray-500">No users found.</td>
-                  </tr>
-                  <tr v-for="u in filteredUserList" :key="u.id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td class="px-6 py-3.5">
-                      <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs overflow-hidden">
-                        <img v-if="u.avatar_url" :src="u.avatar_url" alt="" class="w-full h-full object-cover" />
-                        <span v-else>{{ u.full_name.charAt(0).toUpperCase() }}</span>
-                      </div>
-                    </td>
-                    <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ u.full_name }}</td>
-                    <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.username }}</td>
-                    <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.contact_number || '—' }}</td>
-                    <td class="px-6 py-3.5">
-                      <span 
-                        :class="{ 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300': u.role === 'Admin', 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300': u.role === 'Staff', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.role === 'Owner/Manager' }"
-                        class="px-2.5 py-1 rounded-full text-xs font-semibold"
-                      >
-                        {{ u.role }}
-                      </span>
-                    </td>
-                    <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.position || '—' }}</td>
-                    <td class="px-6 py-3.5">
-                      <span
-                        :class="{ 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
-                        class="px-2.5 py-1 rounded-full text-xs font-semibold"
-                      >
-                        {{ u.availability }}
-                      </span>
-                    </td>
-                    <td class="px-6 py-3.5 text-right">
-                      <div v-if="userRole === 'Admin'" class="flex items-center justify-end gap-3">
-                        <button @click="openEditUserModal(u)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
-                          Edit
-                        </button>
-                        <button
-                          v-if="u.role === 'Staff'"
-                          @click="openScheduleModal(u)"
-                          class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline"
-                        >
-                          Schedule
-                        </button>
-                        <button
-                          v-if="u.id !== currentUserId"
-                          @click="confirmDeleteUser(u)"
-                          class="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                      <span v-else class="text-xs text-gray-300 dark:text-gray-600">—</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
 
         <!-- ============ PLACEHOLDER FOR OTHER SECTIONS ============ -->
-        <div v-if="!['Dashboard', 'Staff Management'].includes(activeSection)" class="bg-white dark:bg-gray-800 p-8 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 text-center text-gray-400 dark:text-gray-500">
+        <div v-if="activeSection !== 'Dashboard'" class="bg-white dark:bg-gray-800 p-8 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 text-center text-gray-400 dark:text-gray-500">
           {{ activeSection }} page — coming soon.
         </div>
 
       </div>
     </main>
-
-    <!-- ============ ADD USER MODAL ============ -->
-    <div v-if="showAddUserModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Add New User</h3>
-
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
-          {{ modalError }}
-        </div>
-
-        <form @submit.prevent="handleCreateUser" class="space-y-5">
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Full Name</label>
-            <input type="text" v-model="newUser.full_name" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Username</label>
-            <input type="text" v-model="newUser.username" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Password</label>
-            <input
-              :type="showNewPassword ? 'text' : 'password'"
-              v-model="newUser.password"
-              class="w-full p-3 pr-12 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100"
-              required
-            />
-            <button
-              type="button"
-              @click="showNewPassword = !showNewPassword"
-              class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 focus:outline-none"
-            >
-              <svg v-if="!showNewPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a8.962 8.962 0 012.122-.363c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21l-9-9" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
-              </svg>
-            </button>
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Contact Number</label>
-            <input type="text" v-model="newUser.contact_number" placeholder="e.g. 0917 123 4567" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Role</label>
-            <select v-model="newUser.role" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
-              <option disabled value="">Select a role</option>
-              <option value="Admin">Admin</option>
-              <option value="Staff">Staff</option>
-              <option value="Owner/Manager">Owner/Manager</option>
-            </select>
-          </div>
-
-          <div v-if="newUser.role === 'Staff'" class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Position</label>
-            <select v-model="newUser.position" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
-              <option value="">No position set</option>
-              <option value="Cook">Cook</option>
-              <option value="Server">Server</option>
-              <option value="Driver">Driver</option>
-              <option value="Coordinator">Coordinator</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Availability</label>
-            <select v-model="newUser.availability" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
-              <option value="Available">Available</option>
-              <option value="On Leave">On Leave</option>
-              <option value="Unavailable">Unavailable</option>
-            </select>
-          </div>
-
-          <div class="flex gap-3 pt-2">
-            <button type="button" @click="closeAddUserModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-              Cancel
-            </button>
-            <button type="submit" :disabled="isCreating" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
-              {{ isCreating ? 'Creating...' : 'Create User' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- ============ EDIT USER MODAL ============ -->
-    <div v-if="showEditUserModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Edit Staff Member</h3>
-
-        <div v-if="editModalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
-          {{ editModalError }}
-        </div>
-
-        <form @submit.prevent="handleUpdateUser" class="space-y-5">
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Full Name</label>
-            <input type="text" v-model="editUser.full_name" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Username</label>
-            <input type="text" :value="editUser.username" disabled class="w-full p-3 bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-none text-gray-500 dark:text-gray-400" />
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Contact Number</label>
-            <input type="text" v-model="editUser.contact_number" placeholder="e.g. 0917 123 4567" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Role</label>
-            <select v-model="editUser.role" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
-              <option value="Admin">Admin</option>
-              <option value="Staff">Staff</option>
-              <option value="Owner/Manager">Owner/Manager</option>
-            </select>
-          </div>
-
-          <div v-if="editUser.role === 'Staff'" class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Position</label>
-            <select v-model="editUser.position" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
-              <option value="">No position set</option>
-              <option value="Cook">Cook</option>
-              <option value="Server">Server</option>
-              <option value="Driver">Driver</option>
-              <option value="Coordinator">Coordinator</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Availability</label>
-            <select v-model="editUser.availability" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
-              <option value="Available">Available</option>
-              <option value="On Leave">On Leave</option>
-              <option value="Unavailable">Unavailable</option>
-            </select>
-          </div>
-
-          <div class="flex gap-3 pt-2">
-            <button type="button" @click="closeEditUserModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-              Cancel
-            </button>
-            <button type="submit" :disabled="isSavingEdit" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
-              {{ isSavingEdit ? 'Saving...' : 'Save Changes' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- ============ DELETE USER CONFIRM MODAL ============ -->
-    <div v-if="userToDelete" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete Account?</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
-          This will permanently delete the account for
-          <span class="font-semibold text-gray-700 dark:text-gray-200">{{ userToDelete.full_name }}</span>
-          ({{ userToDelete.role }}). This cannot be undone.
-        </p>
-        <div v-if="deleteUserError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
-          {{ deleteUserError }}
-        </div>
-        <div class="flex gap-3">
-          <button @click="userToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-            Cancel
-          </button>
-          <button @click="handleDeleteUser" :disabled="isDeletingUser" class="flex-1 bg-red-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
-            {{ isDeletingUser ? 'Deleting...' : 'Delete' }}
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- ============ STAFF SCHEDULE MODAL (per-date unavailability) ============ -->
     <div v-if="scheduleModalUser" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -720,12 +363,11 @@
 
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { getMyAvatarUrl } from '../services/profileService'
-import { getUsers, createStaffUser, updateStaffUser, deleteStaffUser } from '../services/staffService'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPayments } from '../services/paymentService'
@@ -737,7 +379,6 @@ import {
 } from '../services/staffassignmentservice'
 
 const router = useRouter()
-const route = useRoute()
 const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
 const showAccountMenu = ref(false)
 const activeSection = ref('Dashboard')
@@ -748,41 +389,9 @@ const userInitial = ref('U')
 const userAvatarUrl = ref('')
 const currentUserId = ref('')
 
-const userList = ref([])
-const staffSearchQuery = ref('')
-const staffRoleFilter = ref('')
-const staffAvailabilityFilter = ref('')
-
-const filteredUserList = computed(() => {
-  const q = staffSearchQuery.value.trim().toLowerCase()
-  return userList.value.filter((u) => {
-    const matchesQuery = !q ||
-      u.full_name?.toLowerCase().includes(q) ||
-      u.username?.toLowerCase().includes(q) ||
-      u.contact_number?.toLowerCase().includes(q)
-    const matchesRole = !staffRoleFilter.value || u.role === staffRoleFilter.value
-    const matchesAvailability = !staffAvailabilityFilter.value || u.availability === staffAvailabilityFilter.value
-    return matchesQuery && matchesRole && matchesAvailability
-  })
-})
-const isLoadingUsers = ref(false)
-
-const showAddUserModal = ref(false)
-const isCreating = ref(false)
-const modalError = ref('')
-const newUser = ref({ full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available', position: '' })
-const showNewPassword = ref(false)
-
-const showEditUserModal = ref(false)
-const isSavingEdit = ref(false)
-const editModalError = ref('')
-const editUser = ref({ id: '', full_name: '', username: '', role: '', contact_number: '', availability: 'Available', position: '' })
-
-const userToDelete = ref(null)
-const isDeletingUser = ref(false)
-const deleteUserError = ref('')
-
-// ---------- Staff schedule (per-date unavailability) ----------
+// ---------- Staff schedule (per-date unavailability) — self-service,
+// used from the Staff role's own "My Schedule" card on this Dashboard.
+// The full staff list + add/edit/delete lives in StaffManagement.vue.
 const scheduleModalUser = ref(null)
 const scheduleDates = ref([])
 const isLoadingSchedule = ref(false)
@@ -877,10 +486,6 @@ onMounted(() => {
     return
   }
 
-  if (route.query.section) {
-    activeSection.value = route.query.section
-  }
-
   const user = JSON.parse(storedUser)
 
   if (!['Admin', 'Staff', 'Owner/Manager'].includes(user.role)) {
@@ -901,24 +506,6 @@ onMounted(() => {
 
   fetchDashboardData(user.role)
 })
-
-watch(activeSection, (newSection) => {
-  if (newSection === 'Staff Management') {
-    fetchUsers()
-  }
-})
-
-async function fetchUsers() {
-  isLoadingUsers.value = true
-  try {
-    const result = await getUsers()
-    userList.value = result.users
-  } catch (error) {
-    console.error('Failed to fetch users:', error)
-  } finally {
-    isLoadingUsers.value = false
-  }
-}
 
 async function openScheduleModal(user) {
   scheduleModalUser.value = user
@@ -968,99 +555,6 @@ async function handleRemoveLeaveDate(id) {
     scheduleDates.value = scheduleDates.value.filter((d) => d.id !== id)
   } catch (error) {
     scheduleError.value = error?.message || 'Failed to remove date.'
-  }
-}
-
-function openAddUserModal() {
-  newUser.value = { full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available', position: '' }
-  modalError.value = ''
-  showNewPassword.value = false
-  showAddUserModal.value = true
-}
-
-function closeAddUserModal() {
-  showAddUserModal.value = false
-}
-
-async function handleCreateUser() {
-  modalError.value = ''
-  isCreating.value = true
-
-  try {
-    await createStaffUser(
-      newUser.value.username,
-      newUser.value.password,
-      newUser.value.full_name,
-      newUser.value.role,
-      newUser.value.contact_number,
-      newUser.value.availability,
-      newUser.value.role === 'Staff' ? newUser.value.position : null
-    )
-    showAddUserModal.value = false
-    fetchUsers()
-  } catch (error) {
-    modalError.value = error.message || 'Something went wrong. Please try again.'
-  } finally {
-    isCreating.value = false
-  }
-}
-
-function openEditUserModal(user) {
-  editUser.value = {
-    id: user.id,
-    full_name: user.full_name,
-    username: user.username,
-    role: user.role,
-    contact_number: user.contact_number || '',
-    availability: user.availability || 'Available',
-    position: user.position || ''
-  }
-  editModalError.value = ''
-  showEditUserModal.value = true
-}
-
-function closeEditUserModal() {
-  showEditUserModal.value = false
-}
-
-async function handleUpdateUser() {
-  editModalError.value = ''
-  isSavingEdit.value = true
-
-  try {
-    await updateStaffUser(editUser.value.id, {
-      full_name: editUser.value.full_name,
-      role: editUser.value.role,
-      contact_number: editUser.value.contact_number,
-      availability: editUser.value.availability,
-      position: editUser.value.role === 'Staff' ? editUser.value.position : null
-    })
-    showEditUserModal.value = false
-    fetchUsers()
-  } catch (error) {
-    editModalError.value = error.message || 'Something went wrong. Please try again.'
-  } finally {
-    isSavingEdit.value = false
-  }
-}
-
-function confirmDeleteUser(user) {
-  userToDelete.value = user
-  deleteUserError.value = ''
-}
-
-async function handleDeleteUser() {
-  if (!userToDelete.value) return
-  deleteUserError.value = ''
-  isDeletingUser.value = true
-  try {
-    await deleteStaffUser(userToDelete.value.id)
-    userList.value = userList.value.filter((u) => u.id !== userToDelete.value.id)
-    userToDelete.value = null
-  } catch (error) {
-    deleteUserError.value = error.message || 'Failed to delete account. Please try again.'
-  } finally {
-    isDeletingUser.value = false
   }
 }
 

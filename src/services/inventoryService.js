@@ -17,6 +17,7 @@ export async function createInventoryItem(itemData) {
       item_name: itemData.item_name,
       quantity: itemData.quantity,
       low_stock_threshold: itemData.low_stock_threshold,
+      unit_cost: itemData.unit_cost ?? 0,
     })
     .select()
     .single();
@@ -32,6 +33,7 @@ export async function updateInventoryItem(id, itemData) {
       item_name: itemData.item_name,
       quantity: itemData.quantity,
       low_stock_threshold: itemData.low_stock_threshold,
+      unit_cost: itemData.unit_cost ?? 0,
     })
     .eq('item_id', id)
     .select()

@@ -51,6 +51,35 @@ export async function deletePackage(id) {
   return { message: 'Package deleted successfully' };
 }
 
+// ---------- Food Costing / Margin ----------
+
+// Cost-per-head, margin-per-head, and margin % for every package, computed
+// server-side from tbl_package_ingredients x tbl_inventory.unit_cost
+// (see vw_package_costing view). Addresses the study's own interview
+// finding that food costing was the most desired/most time-consuming
+// feature for the catering owner.
+export async function getAllPackageCosting() {
+  const { data, error } = await supabase
+    .from('vw_package_costing')
+    .select('*')
+    .order('package_id', { ascending: true });
+
+  if (error) throw new Error('Failed to load package costing.');
+  return data || [];
+}
+
+// Costing for a single package (used on the package detail/edit view).
+export async function getPackageCosting(packageId) {
+  const { data, error } = await supabase
+    .from('vw_package_costing')
+    .select('*')
+    .eq('package_id', packageId)
+    .single();
+
+  if (error) throw new Error('Failed to load package costing.');
+  return data;
+}
+
 // ---------- Package Ingredients (for Auto Deduct Stock) ----------
 
 // Get the ingredient list (with item names) for one package.
