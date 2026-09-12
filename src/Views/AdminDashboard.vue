@@ -108,7 +108,7 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="hidden lg:flex justify-end mb-4">
+        <div v-if="activeSection !== 'Dashboard'" class="hidden lg:flex justify-end mb-4">
           <NotificationBell />
         </div>
 
@@ -118,9 +118,14 @@
         <div v-if="activeSection === 'Dashboard' && userRole === 'Staff'">
 
           <!-- Welcome Banner -->
-          <div class="p-8 rounded-none mb-8">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Welcome, {{ userName }}!</h2>
-            <p class="text-gray-500 dark:text-gray-400 mt-2">You can view and manage client payments here.</p>
+          <div class="p-8 rounded-none mb-8 flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Welcome, {{ userName }}!</h2>
+              <p class="text-gray-500 dark:text-gray-400 mt-2">You can view and manage client payments here.</p>
+            </div>
+            <div class="hidden lg:block">
+              <NotificationBell />
+            </div>
           </div>
 
           <!-- Summary Card -->
@@ -185,9 +190,14 @@
         <div v-if="activeSection === 'Dashboard' && userRole !== 'Staff'">
 
           <!-- Welcome Banner -->
-          <div class="p-8 rounded-none mb-8">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Welcome, {{ userName }}!</h2>
-            <p class="text-gray-500 dark:text-gray-400 mt-2">Manage bookings, packages, and inventory.</p>
+          <div class="p-8 rounded-none mb-8 flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Welcome, {{ userName }}!</h2>
+              <p class="text-gray-500 dark:text-gray-400 mt-2">Manage bookings, packages, and inventory.</p>
+            </div>
+            <div class="hidden lg:block">
+              <NotificationBell />
+            </div>
           </div>
 
           <!-- Summary Cards -->
