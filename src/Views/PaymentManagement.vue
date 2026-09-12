@@ -49,7 +49,7 @@
         <a v-for="item in navItems" :key="item.name"
           href="#"
           @click.prevent="goTo(item)"
-          :class="item.name === 'Payments' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+          :class="item.name === 'Payment Records' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
           class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,7 +120,7 @@
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
               </svg>
-              New Payment
+              Add Payment
             </button>
           </div>
         </div>
@@ -169,7 +169,7 @@
         <div class="md:hidden space-y-3">
           <div v-if="isLoading" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">Loading payments...</div>
           <div v-else-if="filteredPayments.length === 0" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
-            {{ payments.length === 0 ? 'No payment records yet. Tap "New Payment" to add one.' : 'No records match your search.' }}
+            {{ payments.length === 0 ? 'No payment records yet. Tap "Add Payment" to add one.' : 'No records match your search.' }}
           </div>
           <div
             v-for="p in filteredPayments" :key="p.payment_id"
@@ -206,7 +206,7 @@
                 @click="openRecordModal(p)"
                 class="flex-1 py-2.5 rounded-none text-sm font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 active:bg-emerald-100 dark:active:bg-emerald-900/40"
               >
-                Record Payment
+                Add Payment
               </button>
               <button
                 v-if="Number(p.amount_paid) > 0"
@@ -258,7 +258,7 @@
                 </tr>
                 <tr v-else-if="filteredPayments.length === 0">
                   <td colspan="7" class="text-center py-10 text-gray-400 dark:text-gray-500">
-                    {{ payments.length === 0 ? 'No payment records yet. Click "New Payment" to add one.' : 'No records match your search.' }}
+                    {{ payments.length === 0 ? 'No payment records yet. Click "Add Payment" to add one.' : 'No records match your search.' }}
                   </td>
                 </tr>
                 <tr v-for="p in filteredPayments" :key="p.payment_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
@@ -279,7 +279,7 @@
                         @click="openRecordModal(p)"
                         class="px-3 py-1.5 rounded-none text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
                       >
-                        Record Payment
+                        Add Payment
                       </button>
                       <button
                         v-if="Number(p.amount_paid) > 0"
@@ -315,7 +315,7 @@
     <!-- ============ NEW PAYMENT MODAL ============ -->
     <div v-if="showCreateModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">New Payment Record</h3>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Add Payment</h3>
 
         <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
           {{ modalError }}
@@ -355,7 +355,7 @@
     <!-- ============ RECORD PAYMENT MODAL ============ -->
     <div v-if="recordingPayment" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Record Payment</h3>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Add Payment</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
           Remaining balance: <span class="font-semibold text-gray-700 dark:text-gray-200">₱{{ Number(recordingPayment.balance).toLocaleString() }}</span>
         </p>
@@ -694,7 +694,7 @@ const allNavItems = [
   { name: 'Event Bookings', path: '/admin/bookings', iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
   { name: 'Catering Packages', path: '/admin/packages', iconPath: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
   { name: 'Inventory', path: '/admin/inventory', iconPath: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4' },
-  { name: 'Payments', path: '/admin/payments', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },
+  { name: 'Payment Records', path: '/admin/payments', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },
   { name: 'Staff Management', path: '/admin/staff', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', path: '/admin/reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
 ]
@@ -702,7 +702,7 @@ const allNavItems = [
 // Staff (per the manuscript's Use Case Diagram) only has access to
 // Login/Authentication and Manage Payments -- so their sidebar only
 // shows Dashboard (general landing view) and Payments.
-const staffAllowedSections = ['Dashboard', 'Payments']
+const staffAllowedSections = ['Dashboard', 'Payment Records']
 
 const navItems = computed(() =>
   userRole.value === 'Staff'
