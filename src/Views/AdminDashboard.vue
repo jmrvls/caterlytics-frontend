@@ -129,7 +129,7 @@
           </div>
 
           <!-- Summary Card -->
-          <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8 mt-4 max-w-sm">
+          <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8 mt-4 max-w-sm mx-auto">
             <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
               <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Revenue</h3>
               <p class="text-3xl font-black text-gray-900 dark:text-gray-100">₱{{ formatCurrency(totalRevenue) }}</p>
@@ -190,128 +190,71 @@
         <div v-if="activeSection === 'Dashboard' && userRole !== 'Staff'">
 
           <!-- Welcome Banner -->
-          <div class="p-8 rounded-none mb-8 flex items-center justify-between">
+          <div class="flex items-start justify-between mb-8">
             <div>
-              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Welcome, {{ userName }}!</h2>
-              <p class="text-gray-500 dark:text-gray-400 mt-2">Manage bookings, packages, and inventory.</p>
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome, {{ userName }}!</h2>
+              <p class="text-gray-500 dark:text-gray-400 mt-1">Manage bookings, packages, and inventory.</p>
             </div>
-            <div class="hidden lg:block">
+            <div class="hidden lg:flex flex-col items-end gap-2">
+              <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
               <NotificationBell />
             </div>
           </div>
 
-          <!-- Summary Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 mt-4">
-            <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-              <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Bookings</h3>
-              <p class="text-3xl font-black text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : totalBookings }}</p>
+          <!-- Taken so far -->
+          <div class="mb-6">
+            <div class="flex items-center gap-4">
+              <span class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-100 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</span>
+              <span class="flex-1 border-b border-dashed border-gray-300 dark:border-gray-600"></span>
+              <span class="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">Total Revenue</span>
             </div>
-            <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-              <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Active Events</h3>
-              <p class="text-3xl font-black text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : activeEventsCount }}</p>
+          </div>
+
+          <!-- Mini stats -->
+          <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : totalBookings }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Total Bookings</span>
             </div>
-            <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-              <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Low Stock Items</h3>
-              <p class="text-3xl font-black text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : lowStockCount }}</p>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : activeEventsCount }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Active Events</span>
             </div>
-            <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-              <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Revenue</h3>
-              <p class="text-3xl font-black text-gray-900 dark:text-gray-100">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</p>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
+              </svg>
+              <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : lowStockCount }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Low Stock Items</span>
             </div>
           </div>
 
           <!-- Quick Actions -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <button @click="router.push('/admin/bookings')" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
-              <div class="w-10 h-10 rounded-none bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">New Booking</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">Create a reservation</p>
-              </div>
-            </button>
-
-            <button @click="router.push('/admin/inventory')" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
-              <div class="w-10 h-10 rounded-none bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Add Inventory</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">Update stock levels</p>
-              </div>
-            </button>
-
-            <button @click="router.push('/admin/staff')" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
-              <div class="w-10 h-10 rounded-none bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Manage Staff</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">Add or view users</p>
-              </div>
-            </button>
+          <div class="flex flex-wrap items-center gap-6 mb-8">
+            <a href="#" @click.prevent="router.push('/admin/bookings')" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">New Booking</a>
+            <a href="#" @click.prevent="router.push('/admin/inventory')" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">Add Inventory</a>
+            <a href="#" @click.prevent="router.push('/admin/staff')" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">Manage Staff</a>
           </div>
 
           <!-- Recent Bookings -->
-          <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-              <h3 class="font-bold text-gray-800 dark:text-gray-100">Recent Bookings</h3>
-            </div>
-
-            <!-- Mobile card list -->
-            <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
-              <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
-              <div v-else-if="recentBookings.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No bookings yet.</div>
-              <div v-for="b in recentBookings" :key="b.booking_id" class="px-4 py-3.5">
-                <div class="flex items-start justify-between gap-2">
-                  <div class="min-w-0">
-                    <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ b.client_name }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(b.event_date) }} · {{ b.package_name }}</p>
-                  </div>
-                  <span :class="statusBadgeClass(b.booking_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
-                    {{ b.booking_status }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Desktop / tablet table -->
-            <div class="hidden sm:block overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
-                  <tr>
-                    <th class="text-left px-6 py-3 font-semibold">Client</th>
-                    <th class="text-left px-6 py-3 font-semibold">Event Date</th>
-                    <th class="text-left px-6 py-3 font-semibold">Package</th>
-                    <th class="text-left px-6 py-3 font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                  <tr v-if="isLoadingDashboard">
-                    <td colspan="4" class="text-center py-8 text-gray-400 dark:text-gray-500">Loading bookings...</td>
-                  </tr>
-                  <tr v-else-if="recentBookings.length === 0">
-                    <td colspan="4" class="text-center py-8 text-gray-400 dark:text-gray-500">No bookings yet.</td>
-                  </tr>
-                  <tr v-for="b in recentBookings" :key="b.booking_id" class="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
-                    <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ formatDate(b.event_date) }}</td>
-                    <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ b.package_name }}</td>
-                    <td class="px-6 py-3.5">
-                      <span :class="statusBadgeClass(b.booking_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
-                        {{ b.booking_status }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4">Recent Bookings</h3>
+          <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
+          <div v-else-if="recentBookings.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No bookings yet.</div>
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div v-for="b in recentBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-4">
+              <div class="h-1.5 w-10 bg-gray-200 dark:bg-gray-600 rounded-full mb-4"></div>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">{{ formatDate(b.event_date) }}</p>
+              <p class="font-bold text-gray-900 dark:text-gray-100">{{ b.client_name }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">{{ b.package_name || 'No package' }}</p>
+              <span :class="statusBadgeClass(b.booking_status)" class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold">
+                {{ b.booking_status }}
+              </span>
             </div>
           </div>
 
@@ -449,6 +392,10 @@ function formatDate(dateStr) {
     year: 'numeric', month: 'short', day: 'numeric'
   })
 }
+
+const todayLabel = new Date().toLocaleDateString('en-PH', {
+  weekday: 'short', month: 'short', day: 'numeric'
+})
 
 function statusBadgeClass(status) {
   switch (status) {

@@ -125,26 +125,37 @@
           </div>
         </div>
 
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6 mt-4">
-          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total</h3>
-            <p class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ bookings.length }}</p>
+        <!-- Summary Stats -->
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span class="font-bold text-gray-900 dark:text-gray-100">{{ bookings.length }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Total</span>
           </div>
-          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Pending</h3>
-            <p class="text-2xl font-black text-amber-500 dark:text-amber-400">{{ countByStatus('Pending') }}</p>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="font-bold text-amber-500 dark:text-amber-400">{{ countByStatus('Pending') }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Pending</span>
           </div>
-          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Confirmed</h3>
-            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</p>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Confirmed</span>
           </div>
-          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Completed</h3>
-            <p class="text-2xl font-black text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</p>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span class="font-bold text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Completed</span>
           </div>
         </div>
-
 
         <!-- Filters -->
         <div class="bg-white dark:bg-gray-800 p-4 rounded-none border border-gray-100 dark:border-gray-700 mb-4 flex flex-col sm:flex-row gap-3">

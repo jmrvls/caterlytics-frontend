@@ -168,58 +168,70 @@
           <!-- ============ OVERVIEW TAB ============ -->
           <div v-if="activeTab === 'Overview'">
 
-            <!-- Summary Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6 mt-4">
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Bookings</h3>
-                <p class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ filteredBookings.length }}</p>
+            <!-- Summary Stats -->
+            <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span class="font-bold text-gray-900 dark:text-gray-100">{{ filteredBookings.length }}</span>
+                <span class="text-gray-400 dark:text-gray-500 text-sm">Total Bookings</span>
               </div>
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Confirmed</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</p>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</span>
+                <span class="text-gray-400 dark:text-gray-500 text-sm">Confirmed</span>
               </div>
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Completed</h3>
-                <p class="text-2xl font-black text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</p>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="font-bold text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</span>
+                <span class="text-gray-400 dark:text-gray-500 text-sm">Completed</span>
               </div>
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Cancelled</h3>
-                <p class="text-2xl font-black text-red-500 dark:text-red-400">{{ countByStatus('Cancelled') }}</p>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span class="font-bold text-red-500 dark:text-red-400">{{ countByStatus('Cancelled') }}</span>
+                <span class="text-gray-400 dark:text-gray-500 text-sm">Cancelled</span>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6 mt-4">
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Revenue Collected</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(revenueCollected) }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Revenue Collected</h3>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Actual amount paid, from the Payments module.</p>
               </div>
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Expenses</h3>
-                <p class="text-2xl font-black text-red-500 dark:text-red-400">₱{{ formatPrice(totalExpenses) }}</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Expenses</h3>
+                <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Recorded business costs in this range.</p>
               </div>
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Gross Profit</h3>
-                <p class="text-2xl font-black" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Gross Profit</h3>
+                <p class="text-2xl font-black mt-1" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Revenue Collected − direct costs (Ingredients &amp; Supplies).</p>
               </div>
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Outstanding Balance</h3>
-                <p class="text-2xl font-black text-amber-500 dark:text-amber-400">₱{{ formatPrice(outstandingBalance) }}</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Outstanding Balance</h3>
+                <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Still owed by clients across their bookings.</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 mt-4">
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Billed</h3>
-                <p class="text-2xl font-black text-gray-900 dark:text-gray-100">₱{{ formatPrice(totalBilled) }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Billed</h3>
+                <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(totalBilled) }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Sum of all payment records in this range.</p>
               </div>
-              <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-                <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Low Stock Items</h3>
-                <p class="text-2xl font-black text-amber-500 dark:text-amber-400">{{ lowStockItems.length }}</p>
+              <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Low Stock Items</h3>
+                <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">{{ lowStockItems.length }}</p>
                 <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Out of {{ inventory.length }} tracked item(s) in inventory.</p>
               </div>
             </div>

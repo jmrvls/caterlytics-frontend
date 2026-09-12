@@ -125,19 +125,28 @@
           </div>
         </div>
 
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Items</h3>
-            <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ items.length }}</p>
+        <!-- Summary Stats -->
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
+            </svg>
+            <span class="font-bold text-gray-900 dark:text-gray-100">{{ items.length }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Total Items</span>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Low Stock</h3>
-            <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">{{ lowStockItems.length }}</p>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
+            </svg>
+            <span class="font-bold text-red-500 dark:text-red-400">{{ lowStockItems.length }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Low Stock</span>
           </div>
-          <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-            <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Healthy Stock</h3>
-            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ items.length - lowStockItems.length }}</p>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ items.length - lowStockItems.length }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Healthy Stock</span>
           </div>
         </div>
 

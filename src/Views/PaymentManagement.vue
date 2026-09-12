@@ -125,23 +125,35 @@
           </div>
         </div>
 
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6 mt-4">
-          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Records</h3>
-            <p class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ payments.length }}</p>
+        <!-- Summary Stats -->
+        <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
+            </svg>
+            <span class="font-bold text-gray-900 dark:text-gray-100">{{ payments.length }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Total Records</span>
           </div>
-          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Fully Paid</h3>
-            <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400">{{ countByStatus('Paid') }}</p>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ countByStatus('Paid') }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Fully Paid</span>
           </div>
-          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Partial</h3>
-            <p class="text-2xl font-black text-amber-500 dark:text-amber-400">{{ countByStatus('Partial') }}</p>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="font-bold text-amber-500 dark:text-amber-400">{{ countByStatus('Partial') }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Partial</span>
           </div>
-          <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-            <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Unpaid</h3>
-            <p class="text-2xl font-black text-red-500 dark:text-red-400">{{ countByStatus('Unpaid') }}</p>
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
+            </svg>
+            <span class="font-bold text-red-500 dark:text-red-400">{{ countByStatus('Unpaid') }}</span>
+            <span class="text-gray-400 dark:text-gray-500 text-sm">Unpaid</span>
           </div>
         </div>
 
