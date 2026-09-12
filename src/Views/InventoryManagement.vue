@@ -9,7 +9,6 @@
         </svg>
       </button>
       <div class="flex items-center gap-2 flex-1 min-w-0">
-        <img :src="logoUrl" alt="Logo" class="w-7 h-7 object-contain" />
         <span class="font-bold text-gray-800 dark:text-gray-100 truncate">Caterlytics</span>
       </div>
       <NotificationBell />
@@ -24,14 +23,23 @@
       class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 h-screen fixed lg:sticky top-0 left-0 z-50 lg:z-auto"
     >
       <div class="flex items-center justify-between p-4">
-        <div class="flex items-center gap-2 overflow-hidden">
+        <div v-if="sidebarExpanded" class="flex items-center gap-2 overflow-hidden">
           <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
-          <span v-if="sidebarExpanded" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
+          <span class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
         </div>
-        <button @click="isMobileSidebarOpen ? (isMobileSidebarOpen = false) : (isSidebarOpen = !isSidebarOpen)" class="p-1.5 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        <button @click="isMobileSidebarOpen ? (isMobileSidebarOpen = false) : (isSidebarOpen = !isSidebarOpen)" :class="!sidebarExpanded ? 'mx-auto' : ''" class="relative group p-1.5 rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 dark:text-gray-500">
+          <img v-if="!sidebarExpanded" :src="logoUrl" alt="Toggle" class="w-8 h-8 object-contain group-hover:opacity-0 transition-opacity duration-150" />
+          <svg v-if="!sidebarExpanded" class="w-8 h-8 absolute inset-0 m-auto opacity-0 group-hover:opacity-100 transition-opacity duration-150" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <rect x="3" y="4" width="18" height="16" rx="2" stroke-width="2" />
+            <line x1="9" y1="4" x2="9" y2="20" stroke-width="2" />
           </svg>
+          <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <rect x="3" y="4" width="18" height="16" rx="2" stroke-width="2" />
+            <line x1="9" y1="4" x2="9" y2="20" stroke-width="2" />
+          </svg>
+          <span class="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50">
+            {{ sidebarExpanded ? 'Close sidebar' : 'Open sidebar' }}
+          </span>
         </button>
       </div>
 
