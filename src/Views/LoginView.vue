@@ -28,23 +28,12 @@
           the events <br />
           <span class="text-emerald-600">you love.</span>
         </h2>
-
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest pt-4 leading-relaxed">
-          Presented to the Faculty of the Computer Science Department of <br />
-          Hercor College Inc., Lawaan, Roxas City, Capiz, Philippines
-        </p>
       </div>
     </div>
 
     <!-- RIGHT SIDE: System Authentic Log In Form Section -->
     <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white lg:bg-transparent">
       <div class="w-full space-y-8 lg:bg-white lg:p-10 lg:rounded-3xl lg:shadow-xl lg:shadow-gray-100" style="max-width: clamp(360px, 32vw, 480px)">
-
-        <!-- Form Header Messaging -->
-        <div class="space-y-2">
-          <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">Welcome Back</h3>
-          <p class="text-sm text-gray-500 font-medium">Please enter your account details to log in.</p>
-        </div>
 
         <!-- Error Banner -->
         <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl">
@@ -102,7 +91,7 @@
 
           <!-- Form Submission Controller -->
           <button type="submit" :disabled="isLoading" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md shadow-emerald-100 mt-2 disabled:opacity-50">
-            {{ isLoading ? 'Signing in...' : 'Sign In to System' }}
+            {{ isLoading ? 'Logging in...' : 'Log In' }}
           </button>
         </form>
 

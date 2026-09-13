@@ -1,5 +1,13 @@
 <template>
-  <div class="relative">
+  <!--
+    Per the manuscript's Use Case Diagram (Figure 3), Staff's only use cases
+    are Login/Authentication and Manage Payments -- Manage Inventory /
+    Low-Stock Alert belong to Admin and Owner/Manager only. Staff has no
+    Inventory page to act on (see main.js route guard + staffAllowedSections
+    in the sidebars), so this bell -- which is purely a low-stock alert --
+    stays hidden for Staff instead of showing an alert with a dead-end link.
+  -->
+  <div v-if="userRole !== 'Staff'" class="relative">
     <button
       @click="open = !open"
       class="relative p-2 rounded-none text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -78,6 +86,15 @@ import { useNotifications } from '../composables/useNotifications'
 const router = useRouter()
 const open = ref(false)
 const { lowStockItems, unreadCount, loading, markAllRead } = useNotifications()
+
+const storedUser = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('user') || '{}')
+  } catch {
+    return {}
+  }
+})()
+const userRole = storedUser.role || ''
 
 function goToInventory() {
   open.value = false

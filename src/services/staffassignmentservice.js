@@ -17,7 +17,7 @@ export async function getAssignableStaff() {
 export async function getAssignedStaff(bookingId) {
   const { data, error } = await supabase
     .from('tbl_booking_staff')
-    .select('staff_id, tbl_profiles(id, full_name, contact_number, availability)')
+    .select('staff_id, tbl_profiles!tbl_booking_staff_staff_id_fkey(id, full_name, contact_number, availability)')
     .eq('booking_id', bookingId);
 
   if (error) throw new Error('Failed to load assigned staff.');
@@ -31,7 +31,7 @@ export async function getAssignedStaffForBookings(bookingIds) {
 
   const { data, error } = await supabase
     .from('tbl_booking_staff')
-    .select('booking_id, staff_id, tbl_profiles(id, full_name)')
+    .select('booking_id, staff_id, tbl_profiles!tbl_booking_staff_staff_id_fkey(id, full_name)')
     .in('booking_id', bookingIds);
 
   if (error) throw new Error('Failed to load staff assignments.');
@@ -52,7 +52,7 @@ export async function getStaffScheduleConflicts(eventDate, staffIds, excludeBook
 
   let query = supabase
     .from('tbl_booking_staff')
-    .select('staff_id, tbl_profiles(full_name), tbl_bookings!inner(booking_id, client_name, event_date, booking_status)')
+    .select('staff_id, tbl_profiles!tbl_booking_staff_staff_id_fkey(full_name), tbl_bookings!inner(booking_id, client_name, event_date, booking_status)')
     .in('staff_id', staffIds)
     .eq('tbl_bookings.event_date', eventDate)
     .in('tbl_bookings.booking_status', ['Pending', 'Confirmed']);
@@ -188,7 +188,7 @@ export async function getUnavailableStaffOnDate(eventDate, staffIds) {
 
   const { data, error } = await supabase
     .from('tbl_staff_unavailability')
-    .select('staff_id, reason, tbl_profiles(full_name)')
+    .select('staff_id, reason, tbl_profiles!tbl_staff_unavailability_staff_id_fkey(full_name)')
     .eq('unavailable_date', eventDate)
     .in('staff_id', staffIds);
 
