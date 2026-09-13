@@ -98,7 +98,7 @@
         <!-- Dynamic Registration Anchor Link -->
         <div class="text-center pt-2">
           <p class="text-sm text-gray-500 font-medium">
-            New client? <router-link to="/register" class="text-emerald-600 font-bold hover:underline">Create an online booking account</router-link>
+            New client? <router-link to="/register" class="text-emerald-600 font-bold hover:underline">Create Account</router-link>
           </p>
         </div>
 

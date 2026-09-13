@@ -517,20 +517,20 @@ async function submitBooking() {
 }
 function statusBadgeClass(status) {
   switch (status) {
-    case 'Confirmed': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-    case 'Pending': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-    case 'Completed': return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-    case 'Cancelled': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+    case 'Confirmed': return 'text-emerald-700 dark:text-emerald-300'
+    case 'Pending': return 'text-amber-700 dark:text-amber-300'
+    case 'Completed': return 'text-blue-700 dark:text-blue-300'
+    case 'Cancelled': return 'text-red-700 dark:text-red-300'
+    default: return 'text-gray-600 dark:text-gray-300'
   }
 }
 
 function paymentBadgeClass(status) {
   switch (status) {
-    case 'Paid': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-    case 'Partial': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-    case 'Unpaid': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+    case 'Paid': return 'text-emerald-700 dark:text-emerald-300'
+    case 'Partial': return 'text-amber-700 dark:text-amber-300'
+    case 'Unpaid': return 'text-red-700 dark:text-red-300'
+    default: return 'text-gray-600 dark:text-gray-300'
   }
 }
 

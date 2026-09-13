@@ -108,24 +108,7 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Staff Management</h1>
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="hidden lg:block">
-              <NotificationBell />
-            </div>
-            <button v-if="userRole === 'Admin'" @click="openAddUserModal" class="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-none font-semibold text-xs sm:text-sm hover:bg-emerald-700 transition">
-              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add New User
-            </button>
-          </div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
           <div class="flex flex-col sm:flex-row gap-2 flex-1">
             <div class="relative flex-1 max-w-sm">
               <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -151,6 +134,18 @@
               <option value="Unavailable">Unavailable</option>
             </select>
           </div>
+
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <div class="hidden lg:block">
+              <NotificationBell />
+            </div>
+            <button v-if="userRole === 'Admin'" @click="openAddUserModal" class="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-none font-semibold text-xs sm:text-sm hover:bg-emerald-700 transition whitespace-nowrap">
+              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add New User
+            </button>
+          </div>
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -173,13 +168,13 @@
 
               <div class="flex items-center gap-1.5 mb-2.5">
                 <span
-                  :class="{ 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300': u.role === 'Admin', 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300': u.role === 'Staff', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.role === 'Owner/Manager' }"
+                  :class="{ 'text-purple-700 dark:text-purple-300': u.role === 'Admin', 'text-blue-700 dark:text-blue-300': u.role === 'Staff', 'text-amber-700 dark:text-amber-300': u.role === 'Owner/Manager' }"
                   class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                 >
                   {{ u.role }}
                 </span>
                 <span
-                  :class="{ 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
+                  :class="{ 'text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
                   class="px-2 py-0.5 rounded-full text-[11px] font-semibold"
                 >
                   {{ u.availability }}
@@ -245,7 +240,7 @@
                   <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.contact_number || '—' }}</td>
                   <td class="px-6 py-3.5">
                     <span
-                      :class="{ 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300': u.role === 'Admin', 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300': u.role === 'Staff', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.role === 'Owner/Manager' }"
+                      :class="{ 'text-purple-700 dark:text-purple-300': u.role === 'Admin', 'text-blue-700 dark:text-blue-300': u.role === 'Staff', 'text-amber-700 dark:text-amber-300': u.role === 'Owner/Manager' }"
                       class="px-2.5 py-1 rounded-full text-xs font-semibold"
                     >
                       {{ u.role }}
@@ -254,7 +249,7 @@
                   <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.position || '—' }}</td>
                   <td class="px-6 py-3.5">
                     <span
-                      :class="{ 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
+                      :class="{ 'text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
                       class="px-2.5 py-1 rounded-full text-xs font-semibold"
                     >
                       {{ u.availability }}

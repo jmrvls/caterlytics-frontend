@@ -108,25 +108,9 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Payment Records</h1>
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="hidden lg:block">
-              <NotificationBell />
-            </div>
-            <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add Payment
-            </button>
-          </div>
-        </div>
-
-        <!-- Summary Stats -->
-        <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+          <!-- Summary Stats -->
+          <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
           <div class="flex items-center gap-2">
             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
@@ -154,6 +138,20 @@
             </svg>
             <span class="font-bold text-red-500 dark:text-red-400">{{ countByStatus('Unpaid') }}</span>
             <span class="text-gray-400 dark:text-gray-500 text-sm">Unpaid</span>
+          </div>
+          </div>
+
+          <!-- Bell + Add Payment -->
+          <div class="flex items-center gap-3">
+            <div class="hidden lg:block">
+              <NotificationBell />
+            </div>
+            <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Payment
+            </button>
           </div>
         </div>
 
@@ -537,9 +535,9 @@ function countByStatus(status) {
 }
 
 function statusStyle(status) {
-  if (status === 'Paid') return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-  if (status === 'Partial') return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-  return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+  if (status === 'Paid') return 'text-emerald-700 dark:text-emerald-300'
+  if (status === 'Partial') return 'text-amber-700 dark:text-amber-300'
+  return 'text-red-700 dark:text-red-300'
 }
 
 function formatDate(dateStr) {

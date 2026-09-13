@@ -108,25 +108,9 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Inventory</h1>
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="hidden lg:block">
-              <NotificationBell />
-            </div>
-            <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              New Item
-            </button>
-          </div>
-        </div>
-
-        <!-- Summary Stats -->
-        <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+          <!-- Summary Stats -->
+          <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
           <div class="flex items-center gap-2">
             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
@@ -147,6 +131,20 @@
             </svg>
             <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ items.length - lowStockItems.length }}</span>
             <span class="text-gray-400 dark:text-gray-500 text-sm">Healthy Stock</span>
+          </div>
+          </div>
+
+          <!-- Bell + New Item -->
+          <div class="flex items-center gap-3">
+            <div class="hidden lg:block">
+              <NotificationBell />
+            </div>
+            <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              New Item
+            </button>
           </div>
         </div>
 
@@ -190,7 +188,7 @@
           >
             <div class="flex items-start justify-between gap-3 mb-3">
               <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ i.item_name }}</p>
-              <span :class="isLow(i) ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+              <span :class="isLow(i) ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
                 {{ isLow(i) ? 'Low Stock' : 'OK' }}
               </span>
             </div>
@@ -255,7 +253,7 @@
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatCost(i.unit_cost) }}</td>
                   <td class="px-6 py-3.5">
-                    <span :class="isLow(i) ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                    <span :class="isLow(i) ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'" class="px-2.5 py-1 rounded-full text-xs font-semibold">
                       {{ isLow(i) ? 'Low Stock' : 'OK' }}
                     </span>
                   </td>

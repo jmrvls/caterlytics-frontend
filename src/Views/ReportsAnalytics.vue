@@ -108,11 +108,21 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden print:p-0 w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-6 print:mb-4 print:flex-nowrap">
-          <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Reports & Analytics</h1>
-            <p class="hidden print:block text-xs text-gray-500 dark:text-gray-400 mt-1">Generated {{ generatedOn }}</p>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4 print:mb-4 print:flex-nowrap print:justify-between">
+          <p class="hidden print:block text-xs text-gray-500 dark:text-gray-400 mt-1">Generated {{ generatedOn }}</p>
+
+          <!-- TABS -->
+          <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-none border border-gray-100 dark:border-gray-700 w-fit print:hidden">
+            <button
+              v-for="tab in tabs" :key="tab"
+              @click="activeTab = tab"
+              :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              class="px-4 py-2 rounded-none text-sm font-semibold transition"
+            >
+              {{ tab }}
+            </button>
           </div>
+
           <div class="flex items-center gap-3 print:hidden">
             <div class="hidden lg:block">
               <NotificationBell />
@@ -124,18 +134,6 @@
               Export PDF
             </button>
           </div>
-        </div>
-
-        <!-- TABS -->
-        <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-none border border-gray-100 dark:border-gray-700 mb-4 w-fit print:hidden">
-          <button
-            v-for="tab in tabs" :key="tab"
-            @click="activeTab = tab"
-            :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
-            class="px-4 py-2 rounded-none text-sm font-semibold transition"
-          >
-            {{ tab }}
-          </button>
         </div>
 
         <!-- DATE FILTER (affects Overview + Bookings tabs) -->
@@ -380,7 +378,7 @@
                       <p class="text-xs text-gray-500 dark:text-gray-400">Qty: {{ i.quantity }} · Threshold: {{ i.low_stock_threshold }}</p>
                     </div>
                     <span
-                      :class="isLowStock(i) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'"
+                      :class="isLowStock(i) ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'"
                       class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold"
                     >
                       {{ isLowStock(i) ? 'Low Stock' : 'Sufficient' }}
@@ -406,7 +404,7 @@
                       <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
                       <td class="px-6 py-3.5">
                         <span
-                          :class="isLowStock(i) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'"
+                          :class="isLowStock(i) ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'"
                           class="px-2.5 py-1 rounded-full text-xs font-semibold"
                         >
                           {{ isLowStock(i) ? 'Low Stock' : 'Sufficient' }}
@@ -422,8 +420,7 @@
 
           <!-- ============ EXPENSES TAB ============ -->
           <div v-else-if="activeTab === 'Expenses'">
-            <div class="flex items-center justify-between mb-4 print:hidden">
-              <p class="text-sm text-gray-500 dark:text-gray-400">Track business costs to compute Gross Profit.</p>
+            <div class="flex items-center justify-end mb-4 print:hidden">
               <button @click="openExpenseForm" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -452,7 +449,7 @@
                       <div class="flex items-center gap-2">
                         <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(e.expense_date) }}</span>
                         <span
-                          :class="['Ingredients', 'Supplies'].includes(e.category) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
+                          :class="['Ingredients', 'Supplies'].includes(e.category) ? 'text-amber-700 dark:text-amber-300' : 'text-gray-600 dark:text-gray-300'"
                           class="px-2.5 py-1 rounded-full text-xs font-semibold"
                         >{{ e.category }}</span>
                       </div>
@@ -490,7 +487,7 @@
                       <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ e.description }}</td>
                       <td class="px-6 py-3.5">
                         <span
-                          :class="['Ingredients', 'Supplies'].includes(e.category) ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
+                          :class="['Ingredients', 'Supplies'].includes(e.category) ? 'text-amber-700 dark:text-amber-300' : 'text-gray-600 dark:text-gray-300'"
                           class="px-2.5 py-1 rounded-full text-xs font-semibold"
                           :title="['Ingredients', 'Supplies'].includes(e.category) ? 'Counted in Gross Profit (direct cost)' : 'Operating cost — not counted in Gross Profit'"
                         >{{ e.category }}</span>
@@ -696,20 +693,20 @@ function countByStatus(status) {
 
 function statusBadgeClass(status) {
   switch (status) {
-    case 'Confirmed': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-    case 'Pending': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-    case 'Completed': return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-    case 'Cancelled': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+    case 'Confirmed': return 'text-emerald-700 dark:text-emerald-300'
+    case 'Pending': return 'text-amber-700 dark:text-amber-300'
+    case 'Completed': return 'text-blue-700 dark:text-blue-300'
+    case 'Cancelled': return 'text-red-700 dark:text-red-300'
+    default: return 'text-gray-600 dark:text-gray-300'
   }
 }
 
 function paymentStatusBadgeClass(status) {
   switch (status) {
-    case 'Paid': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-    case 'Partial': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-    case 'Unpaid': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+    case 'Paid': return 'text-emerald-700 dark:text-emerald-300'
+    case 'Partial': return 'text-amber-700 dark:text-amber-300'
+    case 'Unpaid': return 'text-red-700 dark:text-red-300'
+    default: return 'text-gray-600 dark:text-gray-300'
   }
 }
 

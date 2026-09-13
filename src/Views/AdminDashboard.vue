@@ -118,71 +118,48 @@
         <div v-if="activeSection === 'Dashboard' && userRole === 'Staff'">
 
           <!-- Welcome Banner -->
-          <div class="p-8 rounded-none mb-8 flex items-center justify-between">
+          <div class="flex items-start justify-between mb-8">
             <div>
-              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Welcome, {{ userName }}!</h2>
-              <p class="text-gray-500 dark:text-gray-400 mt-2">You can view and manage client payments here.</p>
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome, {{ userName }}!</h2>
+              <p class="text-gray-500 dark:text-gray-400 mt-1">You can view and manage client payments here.</p>
             </div>
-            <div class="hidden lg:block">
+            <div class="hidden lg:flex flex-col items-end gap-2">
+              <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
               <NotificationBell />
             </div>
           </div>
 
-          <!-- Summary Card -->
-          <div class="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8 mt-4 max-w-sm mx-auto">
-            <div class="relative bg-white dark:bg-gray-800 px-5 pt-6 pb-5 rounded-none border-2 border-gray-200 dark:border-gray-600">
-              <h3 class="absolute -top-3 left-4 bg-white dark:bg-gray-800 px-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">Total Revenue</h3>
-              <p class="text-3xl font-black text-gray-900 dark:text-gray-100">₱{{ formatCurrency(totalRevenue) }}</p>
-            </div>
+          <!-- Total Revenue -->
+          <div class="mb-6">
+            <span class="block text-sm text-gray-400 dark:text-gray-500 mb-1">Total Revenue</span>
+            <span class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-100 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</span>
           </div>
 
-          <!-- Quick Action -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <button @click="router.push('/admin/payments')" class="bg-white dark:bg-gray-800 p-5 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-center gap-3 hover:border-emerald-300 dark:hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-900/20 transition text-center">
-              <div class="w-10 h-10 rounded-none bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Go to Payments</p>
-                <p class="text-xs text-gray-400 dark:text-gray-500">Record and track client payments</p>
-              </div>
-            </button>
+          <!-- Quick Actions -->
+          <div class="flex flex-wrap items-center gap-6 mb-8 pb-6 border-b border-gray-100 dark:border-gray-700">
+            <a href="#" @click.prevent="router.push('/admin/payments')" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">Go to Payments</a>
+            <a href="#" @click.prevent="openScheduleModal({ id: currentUserId, full_name: userName })" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">Manage Unavailable Dates</a>
           </div>
 
-          <!-- My Assigned Events -->
-          <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700">
-            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-              <h3 class="font-semibold text-gray-800 dark:text-gray-100 text-sm">My Upcoming Events</h3>
-            </div>
-            <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading...</div>
-            <div v-else-if="myAssignedEvents.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">
-              No events assigned to you yet.
-            </div>
-            <div v-else class="divide-y divide-gray-100 dark:divide-gray-700">
-              <div v-for="e in myAssignedEvents" :key="e.booking_id" class="px-5 py-3.5 flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="font-medium text-gray-800 dark:text-gray-100 text-sm truncate">{{ e.client_name }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(e.event_date) }} · {{ e.event_location }}</p>
-                </div>
-                <span :class="statusBadgeClass(e.booking_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
-                  {{ e.booking_status }}
-                </span>
-              </div>
+          <!-- My Upcoming Events -->
+          <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4">My Upcoming Events</h3>
+          <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading...</div>
+          <div v-else-if="myAssignedEvents.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No events assigned to you yet.</div>
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <div v-for="e in myAssignedEvents" :key="e.booking_id" class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-4">
+              <div class="h-1.5 w-10 bg-gray-200 dark:bg-gray-600 rounded-full mb-4"></div>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">{{ formatDate(e.event_date) }}</p>
+              <p class="font-bold text-gray-900 dark:text-gray-100 truncate">{{ e.client_name }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mb-3 truncate">{{ e.event_location }}</p>
+              <span :class="statusBadgeClass(e.booking_status)" class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold">
+                {{ e.booking_status }}
+              </span>
             </div>
           </div>
 
           <!-- My Schedule -->
-          <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 mt-6">
-            <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-              <h3 class="font-semibold text-gray-800 dark:text-gray-100 text-sm">My Schedule</h3>
-              <button @click="openScheduleModal({ id: currentUserId, full_name: userName })" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
-                Manage unavailable dates
-              </button>
-            </div>
-            <p class="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">Mark dates you're on leave or unavailable — the office will see this when assigning staff to events.</p>
-          </div>
+          <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4">My Schedule</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">Mark dates you're on leave or unavailable — the office will see this when assigning staff to events.</p>
 
         </div>
 
@@ -203,11 +180,8 @@
 
           <!-- Taken so far -->
           <div class="mb-6">
-            <div class="flex items-center gap-4">
-              <span class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-100 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</span>
-              <span class="flex-1 border-b border-dashed border-gray-300 dark:border-gray-600"></span>
-              <span class="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">Total Revenue</span>
-            </div>
+            <span class="block text-sm text-gray-400 dark:text-gray-500 mb-1">Total Revenue</span>
+            <span class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-gray-100 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</span>
           </div>
 
           <!-- Mini stats -->
@@ -399,11 +373,11 @@ const todayLabel = new Date().toLocaleDateString('en-PH', {
 
 function statusBadgeClass(status) {
   switch (status) {
-    case 'Confirmed': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-    case 'Pending': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-    case 'Completed': return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-    case 'Cancelled': return 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300'
-    default: return 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'
+    case 'Confirmed': return 'text-emerald-700 dark:text-emerald-300'
+    case 'Pending': return 'text-amber-700 dark:text-amber-300'
+    case 'Completed': return 'text-blue-700 dark:text-blue-300'
+    case 'Cancelled': return 'text-red-700 dark:text-red-300'
+    default: return 'text-gray-600 dark:text-gray-300'
   }
 }
 
