@@ -53,7 +53,7 @@
     <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome, {{ userName }}</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}</h1>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Book a catering package or check the status of your reservations.</p>
       </div>
 
@@ -319,6 +319,13 @@ const userName = ref('')
 const userInitial = ref('U')
 const showAccountMenu = ref(false)
 const userAvatarUrl = ref('')
+
+const greeting = (() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+})()
 
 const tabs = ['Book Catering', 'My Bookings']
 const activeTab = ref('Book Catering')

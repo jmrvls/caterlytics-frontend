@@ -120,7 +120,7 @@
           <!-- Welcome Banner -->
           <div class="flex items-start justify-between mb-8">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome, {{ userName }}!</h2>
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}!</h2>
               <p class="text-gray-500 dark:text-gray-400 mt-1">You can view and manage client payments here.</p>
             </div>
             <div class="hidden lg:flex flex-col items-end gap-2">
@@ -169,7 +169,7 @@
           <!-- Welcome Banner -->
           <div class="flex items-start justify-between mb-8">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome, {{ userName }}!</h2>
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}!</h2>
               <p class="text-gray-500 dark:text-gray-400 mt-1">Manage bookings, packages, and inventory.</p>
             </div>
             <div class="hidden lg:flex flex-col items-end gap-2">
@@ -370,6 +370,13 @@ function formatDate(dateStr) {
 const todayLabel = new Date().toLocaleDateString('en-PH', {
   weekday: 'short', month: 'short', day: 'numeric'
 })
+
+const greeting = (() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 18) return 'Good afternoon'
+  return 'Good evening'
+})()
 
 function statusBadgeClass(status) {
   switch (status) {
