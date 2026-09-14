@@ -137,18 +137,54 @@
         </div>
 
         <!-- DATE FILTER (affects Overview + Bookings tabs) -->
-        <div v-if="activeTab !== 'Inventory Report'" class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700 mb-4 flex flex-wrap items-end gap-4 print:hidden">
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">From</label>
-            <input type="date" v-model="dateFrom" class="block p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
+        <div v-if="activeTab !== 'Inventory Report'" class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700 mb-4 flex flex-wrap items-center justify-between gap-4 print:hidden">
+
+          <!-- Summary Stats (Overview only) -->
+          <div v-if="activeTab === 'Overview'" class="flex flex-wrap items-center gap-x-8 gap-y-3">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span class="font-bold text-gray-900 dark:text-gray-100">{{ filteredBookings.length }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Total Bookings</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Confirmed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="font-bold text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Completed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span class="font-bold text-red-500 dark:text-red-400">{{ countByStatus('Cancelled') }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Cancelled</span>
+            </div>
           </div>
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">To</label>
-            <input type="date" v-model="dateTo" class="block p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
+
+          <!-- Date inputs -->
+          <div class="flex flex-wrap items-end gap-4 ml-auto">
+            <div class="relative">
+              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">From</label>
+              <input type="date" v-model="dateFrom" class="block p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
+            </div>
+            <div class="relative">
+              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">To</label>
+              <input type="date" v-model="dateTo" class="block p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
+            </div>
+            <button v-if="dateFrom || dateTo" @click="dateFrom = ''; dateTo = ''" class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400">
+              Clear filter
+            </button>
           </div>
-          <button v-if="dateFrom || dateTo" @click="dateFrom = ''; dateTo = ''" class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400">
-            Clear filter
-          </button>
         </div>
 
         <!-- Error Banner -->
@@ -165,38 +201,6 @@
 
           <!-- ============ OVERVIEW TAB ============ -->
           <div v-if="activeTab === 'Overview'">
-
-            <!-- Summary Stats -->
-            <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <span class="font-bold text-gray-900 dark:text-gray-100">{{ filteredBookings.length }}</span>
-                <span class="text-gray-400 dark:text-gray-500 text-sm">Total Bookings</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</span>
-                <span class="text-gray-400 dark:text-gray-500 text-sm">Confirmed</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span class="font-bold text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</span>
-                <span class="text-gray-400 dark:text-gray-500 text-sm">Completed</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                <span class="font-bold text-red-500 dark:text-red-400">{{ countByStatus('Cancelled') }}</span>
-                <span class="text-gray-400 dark:text-gray-500 text-sm">Cancelled</span>
-              </div>
-            </div>
 
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
