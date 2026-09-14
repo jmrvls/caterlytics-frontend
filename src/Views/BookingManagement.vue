@@ -142,7 +142,7 @@
           </div>
           <div
             v-for="b in filteredBookings" :key="b.booking_id"
-            class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-none p-4"
+            class="bg-white dark:bg-gray-800 border border-emerald-600 dark:border-gray-700 rounded-none p-4"
           >
             <div class="flex items-start justify-between gap-3 mb-2">
               <div class="min-w-0">
@@ -212,10 +212,10 @@
         </div>
 
         <!-- Bookings Table — desktop / tablet -->
-        <div class="hidden md:block bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="hidden md:block bg-white dark:bg-gray-800 rounded-none shadow-sm border border-emerald-600 dark:border-gray-700 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
-              <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
+              <thead class="bg-gray-50 dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 uppercase text-xs tracking-wide">
                 <tr>
                   <th class="text-left px-6 py-3 font-semibold">Client</th>
                   <th class="text-left px-6 py-3 font-semibold">Event Date</th>

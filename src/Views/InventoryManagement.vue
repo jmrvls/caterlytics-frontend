@@ -119,7 +119,7 @@
         </div>
 
         <!-- Low Stock Alert -->
-        <div v-if="lowStockItems.length > 0" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm font-medium p-4 rounded-none mb-4 flex gap-2">
+        <div v-if="lowStockItems.length > 0" class="text-red-700 dark:text-red-300 text-sm font-medium p-4 mb-4 flex gap-2">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
           </svg>

@@ -241,7 +241,7 @@
           <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
           <div v-else-if="recentBookings.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No bookings yet.</div>
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div v-for="b in recentBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-4">
+            <div v-for="b in recentBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-none border border-emerald-600 dark:border-gray-700 p-4">
               <div class="h-1.5 w-10 bg-gray-200 dark:bg-gray-600 rounded-full mb-4"></div>
               <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">{{ formatDate(b.event_date) }}</p>
               <p class="font-bold text-gray-900 dark:text-gray-100">{{ b.client_name }}</p>
