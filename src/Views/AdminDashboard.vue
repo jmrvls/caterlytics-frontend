@@ -151,8 +151,8 @@
           <!-- Welcome Banner -->
           <div class="flex items-start justify-between mb-8">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}!</h2>
-              <p class="text-gray-500 dark:text-gray-400 mt-1">Manage bookings, packages, and inventory.</p>
+              <span class="block text-sm font-bold text-gray-500 dark:text-gray-400 mb-1">Total Revenue</span>
+              <span class="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</span>
             </div>
             <div class="hidden lg:flex flex-col items-end gap-2">
               <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
@@ -160,77 +160,80 @@
             </div>
           </div>
 
-          <!-- Taken so far -->
-          <div class="mb-6">
-            <span class="block text-sm text-gray-400 dark:text-gray-500 mb-1">Total Revenue</span>
-            <span class="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</span>
-          </div>
-
           <!-- Mini stats -->
-          <div class="flex flex-wrap items-center gap-x-8 gap-y-3 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : totalBookings }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Total Bookings</span>
+          <div class="mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
+          <div class="flex items-start justify-between gap-4 max-w-md">
+            <!-- Left column -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : totalBookings }}</span>
+                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Total Bookings</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : activeEventsCount }}</span>
+                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Active Events</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
+                </svg>
+                <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : lowStockCount }}</span>
+                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Low Stock Items</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : completedBookingsCount }}</span>
+                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Completed</span>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : activeEventsCount }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Active Events</span>
+
+            <!-- Right column -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : healthyStockCount }}</span>
+                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Healthy Stock</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : fullyPaidCount }}</span>
+                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Fully Paid</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="font-bold text-amber-500 dark:text-amber-400">{{ isLoadingDashboard ? '…' : partialCount }}</span>
+                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Partial</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
+                </svg>
+                <span class="font-bold text-red-500 dark:text-red-400">{{ isLoadingDashboard ? '…' : unpaidCount }}</span>
+                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Unpaid</span>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
-              </svg>
-              <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : lowStockCount }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Low Stock Items</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : healthyStockCount }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Healthy Stock</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : completedBookingsCount }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Completed</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : fullyPaidCount }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Fully Paid</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="font-bold text-amber-500 dark:text-amber-400">{{ isLoadingDashboard ? '…' : partialCount }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Partial</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
-              </svg>
-              <span class="font-bold text-red-500 dark:text-red-400">{{ isLoadingDashboard ? '…' : unpaidCount }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Unpaid</span>
-            </div>
+          </div>
           </div>
 
           <!-- Quick Actions -->
-          <div class="flex flex-wrap items-center gap-6 mb-8">
-            <a href="#" @click.prevent="router.push('/admin/bookings')" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">New Booking</a>
-            <a href="#" @click.prevent="router.push('/admin/inventory')" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">Add Inventory</a>
-            <a href="#" @click.prevent="router.push('/admin/staff')" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">Manage Staff</a>
+          <div class="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3 mb-8">
+            <a href="#" @click.prevent="router.push('/admin/bookings')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-md text-center whitespace-nowrap transition-colors sm:flex-none">New Booking</a>
+            <a href="#" @click.prevent="router.push('/admin/inventory')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-md text-center whitespace-nowrap transition-colors sm:flex-none">Add Inventory</a>
+            <a href="#" @click.prevent="router.push('/admin/staff')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-md text-center whitespace-nowrap transition-colors sm:flex-none">Manage Staff</a>
           </div>
 
           <!-- Recent Bookings -->
