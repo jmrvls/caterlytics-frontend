@@ -90,56 +90,9 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
-          <!-- Summary Stats -->
-          <div class="flex flex-wrap items-center gap-x-8 gap-y-3">
-          <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
-            </svg>
-            <span class="font-bold text-gray-900 dark:text-gray-100">{{ payments.length }}</span>
-            <span class="text-gray-400 dark:text-gray-500 text-sm">Total Records</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ countByStatus('Paid') }}</span>
-            <span class="text-gray-400 dark:text-gray-500 text-sm">Fully Paid</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="font-bold text-amber-500 dark:text-amber-400">{{ countByStatus('Partial') }}</span>
-            <span class="text-gray-400 dark:text-gray-500 text-sm">Partial</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
-            </svg>
-            <span class="font-bold text-red-500 dark:text-red-400">{{ countByStatus('Unpaid') }}</span>
-            <span class="text-gray-400 dark:text-gray-500 text-sm">Unpaid</span>
-          </div>
-          </div>
-
-          <!-- Bell + Add Payment -->
-          <div class="flex items-center gap-3">
-            <div class="hidden lg:block">
-              <NotificationBell />
-            </div>
-            <button @click="openCreateModal" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add Payment
-            </button>
-          </div>
-        </div>
-
-        <!-- Search -->
-        <div class="bg-white dark:bg-gray-800 p-4 rounded-none border border-gray-100 dark:border-gray-700 mb-4">
-          <div class="relative">
+        <div class="flex flex-row items-center justify-between gap-2 sm:gap-3 mb-4">
+          <!-- Search -->
+          <div class="relative flex-1 max-w-sm">
             <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
             </svg>
@@ -149,6 +102,19 @@
               placeholder="Search by client name..."
               class="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
             />
+          </div>
+
+          <!-- Bell + Add Payment -->
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <div class="hidden lg:block">
+              <NotificationBell />
+            </div>
+            <button @click="openCreateModal" class="flex items-center justify-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap min-w-[172px]">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Payment
+            </button>
           </div>
         </div>
 

@@ -90,9 +90,9 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
-          <div class="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div class="relative flex-1 min-w-[150px] order-1">
+        <div class="flex flex-col gap-3 mb-4">
+          <div class="flex flex-row items-center justify-between gap-2 sm:gap-3">
+            <div class="relative flex-1 max-w-sm">
               <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
               </svg>
@@ -104,20 +104,22 @@
               />
             </div>
 
-            <!-- New Booking: sits beside search on mobile, moves to the end on desktop -->
-            <button @click="openCreateModal" class="order-2 sm:order-4 flex items-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap flex-shrink-0">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              New Booking
-            </button>
-
-            <!-- Bell: desktop only -->
-            <div class="hidden lg:block order-3 sm:order-2 flex-shrink-0">
-              <NotificationBell />
+            <div class="flex items-center gap-3 flex-shrink-0">
+              <div class="hidden lg:block">
+                <NotificationBell />
+              </div>
+              <button @click="openCreateModal" class="flex items-center justify-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap min-w-[172px]">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                New Booking
+              </button>
             </div>
+          </div>
 
-            <select v-model="statusFilter" class="order-4 sm:order-3 basis-full sm:basis-auto sm:w-auto px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100 flex-shrink-0">
+          <!-- Filter -->
+          <div class="flex flex-col sm:flex-row gap-2">
+            <select v-model="statusFilter" class="py-2.5 px-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
               <option value="">All Statuses</option>
               <option value="Pending">Pending</option>
               <option value="Confirmed">Confirmed</option>

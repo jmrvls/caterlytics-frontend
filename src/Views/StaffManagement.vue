@@ -90,8 +90,9 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
-          <div class="flex flex-col sm:flex-row gap-2 flex-1">
+        <div class="flex flex-col gap-3 mb-4">
+          <!-- Row 1: Search + Add New User side by side, button on the right -->
+          <div class="flex items-center gap-2">
             <div class="relative flex-1 max-w-sm">
               <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -100,33 +101,37 @@
                 type="text"
                 v-model="staffSearchQuery"
                 placeholder="Search by name, username, or contact..."
-                class="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100"
+                class="w-full pl-9 pr-3 py-2.5 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100"
               />
             </div>
-            <select v-model="staffRoleFilter" class="py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
+
+            <div class="flex items-center gap-3 flex-shrink-0 ml-auto">
+              <div class="hidden lg:block">
+                <NotificationBell />
+              </div>
+              <button v-if="userRole === 'Admin'" @click="openAddUserModal" class="flex items-center justify-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap min-w-[172px]">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add New User
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: Filters -->
+          <div class="flex flex-row gap-2">
+            <select v-model="staffRoleFilter" class="flex-1 min-w-0 py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
               <option value="">All Roles</option>
               <option value="Admin">Admin</option>
               <option value="Staff">Staff</option>
               <option value="Owner/Manager">Owner/Manager</option>
             </select>
-            <select v-model="staffAvailabilityFilter" class="py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
+            <select v-model="staffAvailabilityFilter" class="flex-1 min-w-0 py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
               <option value="">All Availability</option>
               <option value="Available">Available</option>
               <option value="On Leave">On Leave</option>
               <option value="Unavailable">Unavailable</option>
             </select>
-          </div>
-
-          <div class="flex items-center gap-3 flex-shrink-0">
-            <div class="hidden lg:block">
-              <NotificationBell />
-            </div>
-            <button v-if="userRole === 'Admin'" @click="openAddUserModal" class="flex items-center gap-1.5 sm:gap-2 bg-emerald-600 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-none font-semibold text-xs sm:text-sm hover:bg-emerald-700 transition whitespace-nowrap">
-              <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add New User
-            </button>
           </div>
         </div>
 

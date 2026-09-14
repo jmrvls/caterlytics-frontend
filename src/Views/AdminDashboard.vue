@@ -190,11 +190,39 @@
               <span class="text-gray-400 dark:text-gray-500 text-sm">Low Stock Items</span>
             </div>
             <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : healthyStockCount }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Healthy Stock</span>
+            </div>
+            <div class="flex items-center gap-2">
               <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
               <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : completedBookingsCount }}</span>
               <span class="text-gray-400 dark:text-gray-500 text-sm">Completed</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : fullyPaidCount }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Fully Paid</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="font-bold text-amber-500 dark:text-amber-400">{{ isLoadingDashboard ? '…' : partialCount }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Partial</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
+              </svg>
+              <span class="font-bold text-red-500 dark:text-red-400">{{ isLoadingDashboard ? '…' : unpaidCount }}</span>
+              <span class="text-gray-400 dark:text-gray-500 text-sm">Unpaid</span>
             </div>
           </div>
 
@@ -335,6 +363,12 @@ const completedBookingsCount = computed(() =>
 const lowStockCount = computed(() =>
   allInventory.value.filter((item) => Number(item.quantity) <= Number(item.low_stock_threshold)).length
 )
+
+const healthyStockCount = computed(() => allInventory.value.length - lowStockCount.value)
+
+const fullyPaidCount = computed(() => allPayments.value.filter((p) => p.payment_status === 'Paid').length)
+const partialCount = computed(() => allPayments.value.filter((p) => p.payment_status === 'Partial').length)
+const unpaidCount = computed(() => allPayments.value.filter((p) => p.payment_status === 'Unpaid').length)
 
 const totalRevenue = computed(() =>
   allPayments.value.reduce((sum, p) => sum + (Number(p.amount_paid) || 0), 0)

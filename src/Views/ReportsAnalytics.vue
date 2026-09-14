@@ -90,81 +90,32 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden print:p-0 w-full min-w-0">
       <div class="max-w-7xl mx-auto">
 
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4 print:mb-4 print:flex-nowrap print:justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 print:flex-row print:items-center print:justify-between">
           <p class="hidden print:block text-xs text-gray-500 dark:text-gray-400 mt-1">Generated {{ generatedOn }}</p>
 
-          <!-- TABS -->
-          <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-none border border-gray-100 dark:border-gray-700 w-fit print:hidden">
-            <button
-              v-for="tab in tabs" :key="tab"
-              @click="activeTab = tab"
-              :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
-              class="px-4 py-2 rounded-none text-sm font-semibold transition"
-            >
-              {{ tab }}
-            </button>
+          <!-- TABS: horizontally scrollable on mobile so they never wrap -->
+          <div class="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 print:hidden">
+            <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-none border border-gray-100 dark:border-gray-700 w-max min-h-[44px]">
+              <button
+                v-for="tab in tabs" :key="tab"
+                @click="activeTab = tab"
+                :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                class="px-4 py-2 rounded-none text-sm font-semibold transition whitespace-nowrap flex-shrink-0"
+              >
+                {{ tab }}
+              </button>
+            </div>
           </div>
 
           <div class="flex items-center gap-3 print:hidden">
             <div class="hidden lg:block">
               <NotificationBell />
             </div>
-            <button @click="exportPDF" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap flex-shrink-0">
+            <button @click="exportPDF" class="flex items-center justify-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap w-full sm:w-auto sm:min-w-[172px] flex-shrink-0">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Export PDF
-            </button>
-          </div>
-        </div>
-
-        <!-- DATE FILTER (affects Overview + Bookings tabs) -->
-        <div v-if="activeTab !== 'Inventory Report'" class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700 mb-4 flex flex-wrap items-center justify-between gap-4 print:hidden">
-
-          <!-- Summary Stats (Overview only) -->
-          <div v-if="activeTab === 'Overview'" class="flex flex-wrap items-center gap-x-8 gap-y-3">
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-              <span class="font-bold text-gray-900 dark:text-gray-100">{{ filteredBookings.length }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Total Bookings</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ countByStatus('Confirmed') }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Confirmed</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              <span class="font-bold text-blue-600 dark:text-blue-400">{{ countByStatus('Completed') }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Completed</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              <span class="font-bold text-red-500 dark:text-red-400">{{ countByStatus('Cancelled') }}</span>
-              <span class="text-gray-400 dark:text-gray-500 text-sm">Cancelled</span>
-            </div>
-          </div>
-
-          <!-- Date inputs -->
-          <div class="flex flex-wrap items-end gap-4 ml-auto">
-            <div class="relative">
-              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">From</label>
-              <input type="date" v-model="dateFrom" class="block p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
-            </div>
-            <div class="relative">
-              <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">To</label>
-              <input type="date" v-model="dateTo" class="block p-2.5 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
-            </div>
-            <button v-if="dateFrom || dateTo" @click="dateFrom = ''; dateTo = ''" class="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400">
-              Clear filter
             </button>
           </div>
         </div>
@@ -221,7 +172,7 @@
             </div>
 
             <!-- Booking status breakdown (simple bar chart, no chart lib needed) -->
-            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-5 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-5">
               <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Bookings by Status</h3>
               <div v-if="filteredBookings.length === 0" class="text-sm text-gray-400 dark:text-gray-500 py-6 text-center">No bookings in this range.</div>
               <div v-else class="space-y-3">
@@ -234,16 +185,80 @@
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Monthly bookings trend -->
-            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-5">
-              <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Bookings per Month</h3>
-              <div v-if="monthlyTrend.length === 0" class="text-sm text-gray-400 dark:text-gray-500 py-6 text-center">No bookings in this range.</div>
-              <div v-else class="flex items-end gap-3 h-40">
-                <div v-for="m in monthlyTrend" :key="m.label" class="flex-1 flex flex-col items-center justify-end h-full">
-                  <span class="text-xs font-bold text-gray-700 dark:text-gray-200 mb-1">{{ m.count }}</span>
-                  <div class="w-full bg-emerald-500 rounded-t-lg transition-all" :style="{ height: m.pct + '%' }"></div>
-                  <span class="text-[11px] text-gray-400 dark:text-gray-500 mt-2">{{ m.label }}</span>
+          <!-- ============ SALES REPORT TAB ============ -->
+          <div v-else-if="activeTab === 'Sales Report'">
+            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-bold text-gray-800 dark:text-gray-100">Sales Records ({{ filteredPayments.length }})</h3>
+                <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400">Total Collected: ₱{{ formatPrice(revenueCollected) }}</p>
+              </div>
+              <div v-if="filteredPayments.length === 0" class="text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
+                No sales found for the selected date range.
+              </div>
+              <div v-else>
+                <!-- Mobile card list -->
+                <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
+                  <div v-for="p in filteredPayments" :key="p.payment_id" class="px-4 py-3.5">
+                    <div class="flex items-start justify-between gap-2 mb-1.5">
+                      <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ p.tbl_bookings?.client_name || '—' }}</p>
+                      <span :class="paymentStatusBadgeClass(p.payment_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+                        {{ p.payment_status }}
+                      </span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      {{ formatDate(p.tbl_bookings?.event_date) }} · {{ p.tbl_bookings?.package_name || '—' }} · Paid on {{ formatDate(p.payment_date) }}
+                    </p>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                      <div class="bg-gray-50 dark:bg-gray-900 py-1.5 rounded-none">
+                        <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Total</p>
+                        <p class="text-xs font-bold text-gray-800 dark:text-gray-100">₱{{ formatPrice(p.total_amount) }}</p>
+                      </div>
+                      <div class="bg-gray-50 dark:bg-gray-900 py-1.5 rounded-none">
+                        <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Paid</p>
+                        <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(p.amount_paid) }}</p>
+                      </div>
+                      <div class="bg-gray-50 dark:bg-gray-900 py-1.5 rounded-none">
+                        <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Balance</p>
+                        <p class="text-xs font-bold text-red-500 dark:text-red-400">₱{{ formatPrice(p.balance) }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Desktop / tablet table -->
+                <div class="hidden sm:block overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 uppercase text-xs tracking-wide">
+                    <tr>
+                      <th class="text-left px-6 py-3 font-semibold">Client</th>
+                      <th class="text-left px-6 py-3 font-semibold">Event Date</th>
+                      <th class="text-left px-6 py-3 font-semibold">Package</th>
+                      <th class="text-left px-6 py-3 font-semibold">Payment Date</th>
+                      <th class="text-left px-6 py-3 font-semibold">Total Billed</th>
+                      <th class="text-left px-6 py-3 font-semibold">Paid</th>
+                      <th class="text-left px-6 py-3 font-semibold">Balance</th>
+                      <th class="text-left px-6 py-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tr v-for="p in filteredPayments" :key="p.payment_id">
+                      <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ p.tbl_bookings?.client_name || '—' }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(p.tbl_bookings?.event_date) }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ p.tbl_bookings?.package_name || '—' }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(p.payment_date) }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatPrice(p.total_amount) }}</td>
+                      <td class="px-6 py-3.5 text-emerald-600 dark:text-emerald-400 font-medium">₱{{ formatPrice(p.amount_paid) }}</td>
+                      <td class="px-6 py-3.5 text-red-500 dark:text-red-400">₱{{ formatPrice(p.balance) }}</td>
+                      <td class="px-6 py-3.5">
+                        <span :class="paymentStatusBadgeClass(p.payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                          {{ p.payment_status }}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
                 </div>
               </div>
             </div>
@@ -606,7 +621,7 @@ const packages = ref([])
 const payments = ref([])
 const expenses = ref([])
 
-const tabs = ['Overview', 'Bookings Report', 'Inventory Report', 'Expenses']
+const tabs = ['Overview', 'Sales Report', 'Bookings Report', 'Inventory Report', 'Expenses']
 const activeTab = ref('Overview')
 
 const dateFrom = ref('')
@@ -800,23 +815,6 @@ const statusBreakdown = computed(() => {
   })
 })
 
-const monthlyTrend = computed(() => {
-  const counts = {}
-  filteredBookings.value.forEach((b) => {
-    if (!b.event_date) return
-    const d = new Date(b.event_date)
-    const key = d.toLocaleDateString('en-PH', { month: 'short', year: '2-digit' })
-    counts[key] = (counts[key] || 0) + 1
-  })
-  const entries = Object.entries(counts)
-  const max = Math.max(...entries.map(([, c]) => c), 1)
-  return entries.map(([label, count]) => ({
-    label,
-    count,
-    pct: Math.max(Math.round((count / max) * 100), 6)
-  }))
-})
-
 // ---------- Inventory ----------
 function isLowStock(item) {
   return Number(item.quantity) <= Number(item.low_stock_threshold)
@@ -948,6 +946,24 @@ function exportPDF() {
       ],
       theme: 'grid',
       headStyles: { fillColor: [5, 150, 105] },
+    })
+  } else if (activeTab.value === 'Sales Report') {
+    autoTable(doc, {
+      startY,
+      head: [['Client', 'Event Date', 'Package', 'Payment Date', 'Total Billed', 'Paid', 'Balance', 'Status']],
+      body: filteredPayments.value.map((p) => [
+        p.tbl_bookings?.client_name || '—',
+        formatDate(p.tbl_bookings?.event_date),
+        p.tbl_bookings?.package_name || '—',
+        formatDate(p.payment_date),
+        `PHP ${formatPrice(p.total_amount)}`,
+        `PHP ${formatPrice(p.amount_paid)}`,
+        `PHP ${formatPrice(p.balance)}`,
+        p.payment_status,
+      ]),
+      theme: 'grid',
+      headStyles: { fillColor: [5, 150, 105] },
+      styles: { fontSize: 8 },
     })
   } else if (activeTab.value === 'Bookings Report') {
     autoTable(doc, {
