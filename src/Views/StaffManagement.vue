@@ -225,19 +225,19 @@
                   <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ u.full_name }}</td>
                   <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.username }}</td>
                   <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.contact_number || '—' }}</td>
-                  <td class="px-6 py-3.5">
+                  <td class="px-6 py-3.5 align-middle">
                     <span
                       :class="{ 'text-purple-700 dark:text-purple-300': u.role === 'Admin', 'text-blue-700 dark:text-blue-300': u.role === 'Staff', 'text-amber-700 dark:text-amber-300': u.role === 'Owner/Manager' }"
-                      class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      class="inline-block align-middle text-xs font-semibold leading-5"
                     >
                       {{ u.role }}
                     </span>
                   </td>
                   <td class="px-6 py-3.5 text-gray-500 dark:text-gray-400">{{ u.position || '—' }}</td>
-                  <td class="px-6 py-3.5">
+                  <td class="px-6 py-3.5 align-middle">
                     <span
                       :class="{ 'text-emerald-700 dark:text-emerald-300': u.availability === 'Available', 'text-amber-700 dark:text-amber-300': u.availability === 'On Leave', 'text-red-700 dark:text-red-300': u.availability === 'Unavailable' }"
-                      class="px-2.5 py-1 rounded-full text-xs font-semibold"
+                      class="inline-block align-middle text-xs font-semibold leading-5"
                     >
                       {{ u.availability }}
                     </span>

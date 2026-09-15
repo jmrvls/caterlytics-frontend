@@ -149,7 +149,7 @@
                 <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ b.client_name }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(b.event_date) }} · {{ formatTime(b.event_time) }}</p>
               </div>
-              <span :class="statusBadgeClass(b.booking_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+              <span :class="statusBadgeClass(b.booking_status)" class="shrink-0 text-xs font-semibold leading-5">
                 {{ b.booking_status }}
               </span>
             </div>
@@ -241,7 +241,7 @@
                   <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatTime(b.event_time) }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.event_location }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 max-w-[12rem] truncate" :title="b.event_location">{{ b.event_location }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
                   <td class="px-6 py-3.5">
@@ -252,8 +252,8 @@
                       </span>
                     </div>
                   </td>
-                  <td class="px-6 py-3.5">
-                    <span :class="statusBadgeClass(b.booking_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                  <td class="px-6 py-3.5 align-middle">
+                    <span :class="statusBadgeClass(b.booking_status)" class="inline-block align-middle text-xs font-semibold leading-5">
                       {{ b.booking_status }}
                     </span>
                   </td>

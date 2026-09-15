@@ -143,7 +143,7 @@
           >
             <div class="flex items-start justify-between gap-3 mb-3">
               <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ i.item_name }}</p>
-              <span :class="isLow(i) ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+              <span :class="isLow(i) ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'" class="shrink-0 text-xs font-semibold leading-5">
                 {{ isLow(i) ? 'Low Stock' : 'OK' }}
               </span>
             </div>
@@ -207,8 +207,8 @@
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatCost(i.unit_cost) }}</td>
-                  <td class="px-6 py-3.5">
-                    <span :class="isLow(i) ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                  <td class="px-6 py-3.5 align-middle">
+                    <span :class="isLow(i) ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'" class="inline-block align-middle text-xs font-semibold leading-5">
                       {{ isLow(i) ? 'Low Stock' : 'OK' }}
                     </span>
                   </td>

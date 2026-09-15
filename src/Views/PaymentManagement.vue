@@ -138,7 +138,7 @@
                 <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ p.tbl_bookings?.client_name || '—' }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(p.tbl_bookings?.event_date) }}</p>
               </div>
-              <span :class="statusStyle(p.payment_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+              <span :class="statusStyle(p.payment_status)" class="shrink-0 text-xs font-semibold leading-5">
                 {{ p.payment_status }}
               </span>
             </div>
@@ -225,8 +225,8 @@
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.total_amount).toLocaleString() }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.amount_paid).toLocaleString() }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.balance).toLocaleString() }}</td>
-                  <td class="px-6 py-3.5">
-                    <span :class="statusStyle(p.payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                  <td class="px-6 py-3.5 align-middle">
+                    <span :class="statusStyle(p.payment_status)" class="inline-block align-middle text-xs font-semibold leading-5">
                       {{ p.payment_status }}
                     </span>
                   </td>

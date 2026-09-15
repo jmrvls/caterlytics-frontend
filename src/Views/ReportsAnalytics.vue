@@ -142,7 +142,7 @@
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Expenses</h3>
-                <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Gross Profit</h3>
@@ -150,18 +150,18 @@
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Outstanding Balance</h3>
-                <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4 mb-6">
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Billed</h3>
-                <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(totalBilled) }}</p>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(totalBilled) }}</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Low Stock Items</h3>
-                <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">{{ lowStockItems.length }}</p>
+                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ lowStockItems.length }}</p>
               </div>
             </div>
 
@@ -183,7 +183,7 @@
 
           <!-- ============ SALES REPORT TAB ============ -->
           <div v-else-if="activeTab === 'Sales Report'">
-            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
               <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <h3 class="font-bold text-gray-800 dark:text-gray-100">Sales Records ({{ filteredPayments.length }})</h3>
                 <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400">Total Collected: ₱{{ formatPrice(revenueCollected) }}</p>
@@ -197,7 +197,7 @@
                   <div v-for="p in filteredPayments" :key="p.payment_id" class="px-4 py-3.5">
                     <div class="flex items-start justify-between gap-2 mb-1.5">
                       <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ p.tbl_bookings?.client_name || '—' }}</p>
-                      <span :class="paymentStatusBadgeClass(p.payment_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+                      <span :class="paymentStatusBadgeClass(p.payment_status)" class="shrink-0 text-xs font-semibold leading-5">
                         {{ p.payment_status }}
                       </span>
                     </div>
@@ -245,8 +245,8 @@
                       <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatPrice(p.total_amount) }}</td>
                       <td class="px-6 py-3.5 text-emerald-600 dark:text-emerald-400 font-medium">₱{{ formatPrice(p.amount_paid) }}</td>
                       <td class="px-6 py-3.5 text-red-500 dark:text-red-400">₱{{ formatPrice(p.balance) }}</td>
-                      <td class="px-6 py-3.5">
-                        <span :class="paymentStatusBadgeClass(p.payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                      <td class="px-6 py-3.5 align-middle">
+                        <span :class="paymentStatusBadgeClass(p.payment_status)" class="inline-block align-middle text-xs font-semibold leading-5">
                           {{ p.payment_status }}
                         </span>
                       </td>
@@ -260,7 +260,7 @@
 
           <!-- ============ BOOKINGS REPORT TAB ============ -->
           <div v-else-if="activeTab === 'Bookings Report'">
-            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
               <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <h3 class="font-bold text-gray-800 dark:text-gray-100">Booking Records ({{ filteredBookings.length }})</h3>
               </div>
@@ -274,11 +274,11 @@
                     <div class="flex items-start justify-between gap-2 mb-1.5">
                       <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ b.client_name }}</p>
                       <template v-if="paymentByBookingId.get(b.booking_id)">
-                        <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold">
+                        <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="shrink-0 text-xs font-semibold leading-5">
                           {{ paymentByBookingId.get(b.booking_id).payment_status }}
                         </span>
                       </template>
-                      <span v-else class="shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">No record</span>
+                      <span v-else class="shrink-0 text-xs font-semibold text-gray-400 dark:text-gray-500 italic">No record</span>
                     </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ formatDate(b.event_date) }} · {{ b.event_location }} · {{ b.guest_count }} guests · {{ b.package_name || '—' }}</p>
                     <div v-if="paymentByBookingId.get(b.booking_id)" class="grid grid-cols-3 gap-2 text-center">
@@ -326,8 +326,8 @@
                         <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).total_amount) }}</td>
                         <td class="px-6 py-3.5 text-emerald-600 dark:text-emerald-400 font-medium">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).amount_paid) }}</td>
                         <td class="px-6 py-3.5 text-red-500 dark:text-red-400">₱{{ formatPrice(paymentByBookingId.get(b.booking_id).balance) }}</td>
-                        <td class="px-6 py-3.5">
-                          <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
+                        <td class="px-6 py-3.5 align-middle">
+                          <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="inline-block align-middle text-xs font-semibold leading-5">
                             {{ paymentByBookingId.get(b.booking_id).payment_status }}
                           </span>
                         </td>
@@ -336,8 +336,8 @@
                         <td class="px-6 py-3.5 text-gray-400 dark:text-gray-500 italic" colspan="3">
                           No payment record yet (est. ₱{{ formatPrice(estimateBookingAmount(b)) }})
                         </td>
-                        <td class="px-6 py-3.5">
-                          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">No record</span>
+                        <td class="px-6 py-3.5 align-middle">
+                          <span class="inline-block align-middle text-xs font-semibold text-gray-400 dark:text-gray-500 italic leading-5">No record</span>
                         </td>
                       </template>
                     </tr>
@@ -357,7 +357,7 @@
               <span>{{ lowStockItems.length }} item(s) at or below their low-stock threshold.</span>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
+            <div class="rounded-none border border-gray-100 dark:border-gray-700 overflow-hidden">
               <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
                 <h3 class="font-bold text-gray-800 dark:text-gray-100">Inventory Levels ({{ inventory.length }})</h3>
               </div>
