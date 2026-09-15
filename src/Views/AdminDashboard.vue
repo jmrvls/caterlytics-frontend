@@ -231,9 +231,9 @@
 
           <!-- Quick Actions -->
           <div class="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-3 mb-8">
-            <a href="#" @click.prevent="router.push('/admin/bookings')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-md text-center whitespace-nowrap transition-colors sm:flex-none">New Booking</a>
-            <a href="#" @click.prevent="router.push('/admin/inventory')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-md text-center whitespace-nowrap transition-colors sm:flex-none">Add Inventory</a>
-            <a href="#" @click.prevent="router.push('/admin/staff')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-md text-center whitespace-nowrap transition-colors sm:flex-none">Manage Staff</a>
+            <a href="#" @click.prevent="router.push('/admin/bookings')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-none text-center whitespace-nowrap transition-colors sm:flex-none">New Booking</a>
+            <a href="#" @click.prevent="router.push('/admin/inventory')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-none text-center whitespace-nowrap transition-colors sm:flex-none">Add Inventory</a>
+            <a href="#" @click.prevent="router.push('/admin/staff')" class="text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-2 sm:px-4 py-2 rounded-none text-center whitespace-nowrap transition-colors sm:flex-none">Manage Staff</a>
           </div>
 
           <!-- Recent Bookings -->
