@@ -135,39 +135,33 @@
           <!-- ============ OVERVIEW TAB ============ -->
           <div v-if="activeTab === 'Overview'">
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Revenue Collected</h3>
                 <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Actual amount paid, from the Payments module.</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Expenses</h3>
                 <p class="text-2xl font-black text-red-500 dark:text-red-400 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Recorded business costs in this range.</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Gross Profit</h3>
                 <p class="text-2xl font-black mt-1" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Revenue Collected − direct costs (Ingredients &amp; Supplies).</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Outstanding Balance</h3>
                 <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Still owed by clients across their bookings.</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-2 gap-4 mb-6">
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Billed</h3>
                 <p class="text-2xl font-black text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(totalBilled) }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Sum of all payment records in this range.</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
                 <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Low Stock Items</h3>
                 <p class="text-2xl font-black text-amber-500 dark:text-amber-400 mt-1">{{ lowStockItems.length }}</p>
-                <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-2 leading-snug">Out of {{ inventory.length }} tracked item(s) in inventory.</p>
               </div>
             </div>
 
