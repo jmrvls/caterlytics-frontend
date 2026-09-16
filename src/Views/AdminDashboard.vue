@@ -88,7 +88,7 @@
 
     <!-- MAIN CONTENT -->
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
-      <div class="max-w-7xl mx-auto">
+      <div class="max-w-none 2xl:max-w-[1920px] mx-auto">
 
         <div v-if="activeSection !== 'Dashboard'" class="hidden lg:flex justify-end mb-4">
           <NotificationBell />
@@ -131,7 +131,7 @@
           <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4">My Upcoming Events</h3>
           <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading...</div>
           <div v-else-if="myAssignedEvents.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No events assigned to you yet.</div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mb-8">
             <div v-for="e in myAssignedEvents" :key="e.booking_id" class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-4">
               <div class="h-1.5 w-10 bg-gray-200 dark:bg-gray-600 rounded-full mb-4"></div>
               <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">{{ formatDate(e.event_date) }}</p>
@@ -244,7 +244,7 @@
           <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4">Recent Bookings</h3>
           <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
           <div v-else-if="recentBookings.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No bookings yet.</div>
-          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             <div v-for="b in recentBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-none border border-emerald-600 dark:border-gray-700 p-4">
               <div class="h-1.5 w-10 bg-gray-200 dark:bg-gray-600 rounded-full mb-4"></div>
               <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">{{ formatDate(b.event_date) }}</p>

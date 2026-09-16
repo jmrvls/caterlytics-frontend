@@ -88,7 +88,7 @@
 
     <!-- MAIN CONTENT -->
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
-      <div class="max-w-7xl mx-auto">
+      <div class="max-w-none 2xl:max-w-[1920px] mx-auto">
 
         <div class="flex flex-row items-center justify-between gap-2 sm:gap-3 mb-4">
           <div class="relative flex-1 max-w-sm">
@@ -132,7 +132,7 @@
         </div>
 
         <!-- Package Cards -->
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
           <div
             v-for="pkg in filteredPackages"
             :key="pkg.package_id"

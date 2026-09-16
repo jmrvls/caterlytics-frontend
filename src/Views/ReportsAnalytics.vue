@@ -88,7 +88,7 @@
 
     <!-- MAIN CONTENT -->
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden print:p-0 w-full min-w-0">
-      <div class="max-w-7xl mx-auto">
+      <div class="max-w-none 2xl:max-w-[1920px] mx-auto">
 
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 print:flex-row print:items-center print:justify-between">
           <p class="hidden print:block text-xs text-gray-500 dark:text-gray-400 mt-1">Generated {{ generatedOn }}</p>
