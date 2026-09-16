@@ -154,7 +154,7 @@
           <div v-for="b in myBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="min-w-0">
               <p class="font-bold text-gray-800 dark:text-gray-100">{{ b.package_name || 'Custom Booking' }}</p>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">{{ formatDate(b.event_date) }} at {{ b.event_time }} — {{ b.event_location }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">{{ formatDate(b.event_date) }} at {{ b.event_time }} — <span class="capitalize">{{ b.event_location }}</span></p>
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ b.guest_count }} guests</p>
 
               <div v-if="b.tbl_payments" class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -290,6 +290,7 @@
 
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
+import { toTitleCase } from '../utils/textFormat'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking, updateMyBooking } from '../services/bookingService'
@@ -559,9 +560,9 @@ function downloadReceipt(booking) {
     theme: 'plain',
     styles: { fontSize: 10, cellPadding: 1.5 },
     body: [
-      ['Client Name', userName.value || '—'],
+      ['Client Name', toTitleCase(userName.value) || '—'],
       ['Event Date', formatDate(booking.event_date)],
-      ['Event Location', booking.event_location || '—'],
+      ['Event Location', toTitleCase(booking.event_location) || '—'],
       ['Guest Count', booking.guest_count != null ? String(booking.guest_count) : '—'],
       ['Package', booking.package_name || '—'],
     ],

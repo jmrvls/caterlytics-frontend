@@ -146,7 +146,7 @@
           >
             <div class="flex items-start justify-between gap-3 mb-2">
               <div class="min-w-0">
-                <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ b.client_name }}</p>
+                <p class="font-semibold text-gray-900 dark:text-gray-100 truncate capitalize">{{ b.client_name }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(b.event_date) }} · {{ formatTime(b.event_time) }}</p>
               </div>
               <span :class="statusBadgeClass(b.booking_status)" class="shrink-0 text-xs font-semibold leading-5">
@@ -157,7 +157,7 @@
             <div class="text-sm text-gray-600 dark:text-gray-300 space-y-1 mb-3">
               <p class="flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                <span class="truncate">{{ b.event_location }}</span>
+                <span class="truncate capitalize">{{ b.event_location }}</span>
               </p>
               <p class="flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-4a4 4 0 10-4-4m4 4a4 4 0 01-4-4" /></svg>
@@ -238,10 +238,10 @@
                   </td>
                 </tr>
                 <tr v-for="b in filteredBookings" :key="b.booking_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
-                  <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
+                  <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100 capitalize">{{ b.client_name }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatTime(b.event_time) }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 max-w-[12rem] truncate" :title="b.event_location">{{ b.event_location }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 max-w-[12rem] truncate capitalize" :title="b.event_location">{{ b.event_location }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
                   <td class="px-6 py-3.5">

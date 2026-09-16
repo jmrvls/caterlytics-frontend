@@ -135,7 +135,7 @@
           >
             <div class="flex items-start justify-between gap-3 mb-3">
               <div class="min-w-0">
-                <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ p.tbl_bookings?.client_name || '—' }}</p>
+                <p class="font-semibold text-gray-900 dark:text-gray-100 truncate capitalize">{{ p.tbl_bookings?.client_name || '—' }}</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(p.tbl_bookings?.event_date) }}</p>
               </div>
               <span :class="statusStyle(p.payment_status)" class="shrink-0 text-xs font-semibold leading-5">
@@ -220,7 +220,7 @@
                   </td>
                 </tr>
                 <tr v-for="p in filteredPayments" :key="p.payment_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
-                  <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ p.tbl_bookings?.client_name || '—' }}</td>
+                  <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100 capitalize">{{ p.tbl_bookings?.client_name || '—' }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(p.tbl_bookings?.event_date) }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.total_amount).toLocaleString() }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ Number(p.amount_paid).toLocaleString() }}</td>
@@ -284,7 +284,7 @@
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Booking</label>
             <select v-model.number="createForm.booking_id" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
               <option value="" disabled>Select a booking</option>
-              <option v-for="b in bookingsWithoutPayment" :key="b.booking_id" :value="b.booking_id">
+              <option v-for="b in bookingsWithoutPayment" :key="b.booking_id" :value="b.booking_id" class="capitalize">
                 {{ b.client_name }} — {{ formatDate(b.event_date) }}
               </option>
             </select>
@@ -363,6 +363,7 @@
 
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
+import { toTitleCase } from '../utils/textFormat'
 import { ref, computed, onMounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
@@ -595,9 +596,9 @@ function generateReceipt(payment) {
     theme: 'plain',
     styles: { fontSize: 10, cellPadding: 1.5 },
     body: [
-      ['Client Name', booking.client_name || '—'],
+      ['Client Name', toTitleCase(booking.client_name) || '—'],
       ['Event Date', formatDate(booking.event_date)],
-      ['Event Location', booking.event_location || '—'],
+      ['Event Location', toTitleCase(booking.event_location) || '—'],
       ['Guest Count', booking.guest_count != null ? String(booking.guest_count) : '—'],
       ['Package', booking.package_name || '—'],
     ],

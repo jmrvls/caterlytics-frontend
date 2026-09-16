@@ -206,7 +206,7 @@
                 <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
                   <div v-for="p in filteredPayments" :key="p.payment_id" class="px-4 py-3.5">
                     <div class="flex items-start justify-between gap-2 mb-1.5">
-                      <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ p.tbl_bookings?.client_name || '—' }}</p>
+                      <p class="font-semibold text-gray-800 dark:text-gray-100 truncate capitalize">{{ p.tbl_bookings?.client_name || '—' }}</p>
                       <span :class="paymentStatusBadgeClass(p.payment_status)" class="shrink-0 text-xs font-semibold leading-5">
                         {{ p.payment_status }}
                       </span>
@@ -248,7 +248,7 @@
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     <tr v-for="p in filteredPayments" :key="p.payment_id">
-                      <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ p.tbl_bookings?.client_name || '—' }}</td>
+                      <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100 capitalize">{{ p.tbl_bookings?.client_name || '—' }}</td>
                       <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(p.tbl_bookings?.event_date) }}</td>
                       <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ p.tbl_bookings?.package_name || '—' }}</td>
                       <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(p.payment_date) }}</td>
@@ -282,7 +282,7 @@
                 <div class="sm:hidden divide-y divide-gray-100 dark:divide-gray-700">
                   <div v-for="b in filteredBookings" :key="b.booking_id" class="px-4 py-3.5">
                     <div class="flex items-start justify-between gap-2 mb-1.5">
-                      <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ b.client_name }}</p>
+                      <p class="font-semibold text-gray-800 dark:text-gray-100 truncate capitalize">{{ b.client_name }}</p>
                       <template v-if="paymentByBookingId.get(b.booking_id)">
                         <span :class="paymentStatusBadgeClass(paymentByBookingId.get(b.booking_id).payment_status)" class="shrink-0 text-xs font-semibold leading-5">
                           {{ paymentByBookingId.get(b.booking_id).payment_status }}
@@ -290,7 +290,7 @@
                       </template>
                       <span v-else class="shrink-0 text-xs font-semibold text-gray-400 dark:text-gray-500 italic">No record</span>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ formatDate(b.event_date) }} · {{ b.event_location }} · {{ b.guest_count }} guests · {{ b.package_name || '—' }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ formatDate(b.event_date) }} · <span class="capitalize">{{ b.event_location }}</span> · {{ b.guest_count }} guests · {{ b.package_name || '—' }}</p>
                     <div v-if="paymentByBookingId.get(b.booking_id)" class="grid grid-cols-3 gap-2 text-center">
                       <div class="bg-gray-50 dark:bg-gray-900 py-1.5 rounded-none">
                         <p class="text-[9px] font-semibold text-gray-400 dark:text-gray-500 uppercase">Total</p>
@@ -327,9 +327,9 @@
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     <tr v-for="b in filteredBookings" :key="b.booking_id">
-                      <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ b.client_name }}</td>
+                      <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100 capitalize">{{ b.client_name }}</td>
                       <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
-                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.event_location }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 capitalize">{{ b.event_location }}</td>
                       <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
                       <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
                       <template v-if="paymentByBookingId.get(b.booking_id)">
@@ -608,6 +608,7 @@
 
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
+import { toTitleCase } from '../utils/textFormat'
 import { ref, computed, onMounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
@@ -997,7 +998,7 @@ async function exportPDF() {
       startY,
       head: [['Client', 'Event Date', 'Package', 'Payment Date', 'Total Billed', 'Paid', 'Balance', 'Status']],
       body: filteredPayments.value.map((p) => [
-        p.tbl_bookings?.client_name || '—',
+        toTitleCase(p.tbl_bookings?.client_name) || '—',
         formatDate(p.tbl_bookings?.event_date),
         p.tbl_bookings?.package_name || '—',
         formatDate(p.payment_date),
@@ -1017,9 +1018,9 @@ async function exportPDF() {
       body: filteredBookings.value.map((b) => {
         const pay = paymentByBookingId.value.get(b.booking_id)
         return [
-          b.client_name,
+          toTitleCase(b.client_name),
           formatDate(b.event_date),
-          b.event_location,
+          toTitleCase(b.event_location),
           String(b.guest_count),
           b.package_name || '—',
           pay ? `PHP ${formatPrice(pay.total_amount)}` : `~PHP ${formatPrice(estimateBookingAmount(b))}`,

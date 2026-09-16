@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import { adjustInventoryStock } from './inventoryService';
+import { toTitleCase } from '../utils/textFormat';
 
 export async function getAllBookings() {
   const { data, error } = await supabase
@@ -59,11 +60,11 @@ export async function createBooking(bookingData) {
   const { data, error } = await supabase
     .from('tbl_bookings')
     .insert({
-      client_name: bookingData.client_name,
+      client_name: toTitleCase(bookingData.client_name),
       client_email: bookingData.client_email || null,
       event_date: bookingData.event_date,
       event_time: bookingData.event_time,
-      event_location: bookingData.event_location,
+      event_location: toTitleCase(bookingData.event_location),
       guest_count: bookingData.guest_count,
       package_name: bookingData.package_name || null,
       package_id: bookingData.package_id || null,
@@ -275,7 +276,7 @@ export async function updateMyBooking(id, updates) {
     .update({
       event_date: updates.event_date,
       event_time: updates.event_time,
-      event_location: updates.event_location,
+      event_location: toTitleCase(updates.event_location),
       guest_count: updates.guest_count,
       package_name: updates.package_name || null,
       package_id: updates.package_id || null,
