@@ -120,13 +120,13 @@
 
           <!-- Row 2: Filters -->
           <div class="flex flex-row gap-2">
-            <select v-model="staffRoleFilter" class="flex-1 min-w-0 py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
+            <select v-model="staffRoleFilter" class="flex-1 min-w-0 sm:flex-none sm:w-44 py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
               <option value="">All Roles</option>
               <option value="Admin">Admin</option>
               <option value="Staff">Staff</option>
               <option value="Owner/Manager">Owner/Manager</option>
             </select>
-            <select v-model="staffAvailabilityFilter" class="flex-1 min-w-0 py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
+            <select v-model="staffAvailabilityFilter" class="flex-1 min-w-0 sm:flex-none sm:w-44 py-2 px-3 text-sm bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100">
               <option value="">All Availability</option>
               <option value="Available">Available</option>
               <option value="On Leave">On Leave</option>
