@@ -93,8 +93,18 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 print:flex-row print:items-center print:justify-between">
           <p class="hidden print:block text-xs text-gray-500 dark:text-gray-400 mt-1">Generated {{ generatedOn }}</p>
 
-          <!-- TABS: horizontally scrollable on mobile so they never wrap -->
-          <div class="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 print:hidden">
+          <!-- TABS: dropdown on phone (single tap, no swiping); pill tabs stay for tablet/desktop -->
+          <div class="sm:hidden print:hidden">
+            <select
+              :value="activeTab"
+              @change="activeTab = $event.target.value"
+              class="w-full py-2.5 px-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+            >
+              <option v-for="tab in tabs" :key="tab" :value="tab">{{ tab }}</option>
+            </select>
+          </div>
+
+          <div class="hidden sm:block overflow-x-auto print:hidden">
             <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-none border border-gray-100 dark:border-gray-700 w-max min-h-[44px]">
               <button
                 v-for="tab in tabs" :key="tab"
@@ -107,7 +117,7 @@
             </div>
           </div>
 
-          <div class="flex items-center gap-3 print:hidden">
+          <div class="hidden sm:flex items-center gap-3 print:hidden">
             <div class="hidden lg:block">
               <NotificationBell />
             </div>
@@ -510,19 +520,20 @@
 
         </template>
 
-        <!-- Export PDF — mobile only, pinned to the bottom of the page -->
-        <button
-          @click="exportPDF"
-          class="sm:hidden flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-3 rounded-none font-semibold text-sm hover:bg-emerald-700 transition w-full mt-6 print:hidden"
-        >
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Export PDF
-        </button>
-
       </div>
     </main>
+
+    <!-- Export PDF — floating round button, phone mode only, always pinned bottom-right regardless of scroll -->
+    <button
+      @click="exportPDF"
+      class="sm:hidden print:hidden fixed bottom-6 right-4 z-40 w-14 h-14 rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-900/30 flex items-center justify-center hover:bg-emerald-700 active:scale-95 transition"
+      title="Export PDF"
+      aria-label="Export PDF"
+    >
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    </button>
 
     <!-- ============ NEW EXPENSE MODAL ============ -->
     <div v-if="showExpenseForm" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
