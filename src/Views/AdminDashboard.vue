@@ -118,9 +118,13 @@
           </div>
 
           <!-- Quick Actions -->
-          <div class="flex flex-wrap items-center gap-6 mb-8 pb-6 border-b border-gray-100 dark:border-gray-700">
-            <a href="#" @click.prevent="router.push('/admin/payments')" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">Go to Payments</a>
-            <a href="#" @click.prevent="openScheduleModal({ id: currentUserId, full_name: userName })" class="text-sm font-medium text-gray-700 dark:text-gray-200 underline underline-offset-2 hover:text-emerald-600 dark:hover:text-emerald-400">Manage Unavailable Dates</a>
+          <div class="flex flex-wrap items-center gap-3 mb-8 pb-6 border-b border-gray-100 dark:border-gray-700">
+            <button @click="router.push('/admin/payments')" class="flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap">
+              Go to Payments
+            </button>
+            <button @click="openScheduleModal({ id: currentUserId, full_name: userName })" class="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 border-2 border-emerald-600 dark:border-emerald-500 px-4 py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition whitespace-nowrap">
+              Manage Unavailable Dates
+            </button>
           </div>
 
           <!-- My Upcoming Events -->

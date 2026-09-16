@@ -924,29 +924,58 @@ async function handleDeleteExpense() {
 }
 
 // ---------- Export: real generated PDF (not browser print) ----------
-function exportPDF() {
+// Converts the imported logo image into a base64 data URL so jsPDF can embed it
+// (jsPDF's addImage needs actual image data, not just a file URL).
+function loadImageAsDataURL(url) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        canvas.getContext('2d').drawImage(img, 0, 0)
+        resolve(canvas.toDataURL('image/png'))
+      } catch {
+        resolve(null)
+      }
+    }
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
+}
+
+async function exportPDF() {
   const doc = new jsPDF()
   const rangeLabel = (dateFrom.value || dateTo.value)
     ? `${dateFrom.value || 'Start'} to ${dateTo.value || 'Present'}`
     : 'All time'
 
   // Letterhead
+  const logoDataUrl = await loadImageAsDataURL(logoUrl)
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', 14, 9, 16, 16)
+  }
+
+  const textX = logoDataUrl ? 34 : 14
+
   doc.setFontSize(18)
   doc.setFont(undefined, 'bold')
   doc.setTextColor(5, 150, 105)
-  doc.text('Caterlytics', 14, 18)
+  doc.text('Caterlytics', textX, 19)
 
   doc.setFontSize(10)
   doc.setFont(undefined, 'normal')
   doc.setTextColor(100)
-  doc.text('Catering-Service Management & Inventory System', 14, 24)
-  doc.text(`${activeTab.value} Report  •  Range: ${rangeLabel}`, 14, 30)
-  doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 14, 35)
+  doc.text('Catering-Service Management & Inventory System', textX, 25)
+  doc.text(`${activeTab.value} Report  •  Range: ${rangeLabel}`, 14, 34)
+  doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 14, 39)
 
   doc.setDrawColor(220)
-  doc.line(14, 39, 196, 39)
+  doc.line(14, 43, 196, 43)
 
-  let startY = 46
+  let startY = 50
 
   if (activeTab.value === 'Overview') {
     autoTable(doc, {
