@@ -111,7 +111,7 @@
             <div class="hidden lg:block">
               <NotificationBell />
             </div>
-            <button @click="exportPDF" class="flex items-center justify-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap w-full sm:w-auto sm:min-w-[172px] flex-shrink-0">
+            <button @click="exportPDF" class="hidden sm:flex items-center justify-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap sm:w-auto sm:min-w-[172px] flex-shrink-0">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -137,31 +137,31 @@
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Revenue Collected</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wide">Revenue Collected</h3>
+                <p class="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(revenueCollected) }}</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Expenses</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wide">Total Expenses</h3>
+                <p class="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(totalExpenses) }}</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Gross Profit</h3>
-                <p class="text-2xl font-black mt-1" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wide">Gross Profit</h3>
+                <p class="text-xl font-semibold mt-1" :class="grossProfit >= 0 ? 'text-emerald-600' : 'text-red-500'">₱{{ formatPrice(grossProfit) }}</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Outstanding Balance</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wide">Outstanding Balance</h3>
+                <p class="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(outstandingBalance) }}</p>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4 mb-6">
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Total Billed</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">₱{{ formatPrice(totalBilled) }}</p>
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wide">Total Billed</h3>
+                <p class="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">₱{{ formatPrice(totalBilled) }}</p>
               </div>
               <div class="bg-white dark:bg-gray-800 p-5 rounded-none border border-gray-100 dark:border-gray-700">
-                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">Low Stock Items</h3>
-                <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ lowStockItems.length }}</p>
+                <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 tracking-wide">Low Stock Items</h3>
+                <p class="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">{{ lowStockItems.length }}</p>
               </div>
             </div>
 
@@ -509,6 +509,17 @@
           </div>
 
         </template>
+
+        <!-- Export PDF — mobile only, pinned to the bottom of the page -->
+        <button
+          @click="exportPDF"
+          class="sm:hidden flex items-center justify-center gap-2 bg-emerald-600 text-white px-4 py-3 rounded-none font-semibold text-sm hover:bg-emerald-700 transition w-full mt-6 print:hidden"
+        >
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Export PDF
+        </button>
 
       </div>
     </main>
