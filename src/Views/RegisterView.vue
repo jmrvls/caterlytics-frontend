@@ -27,11 +27,6 @@
           and start <br />
           <span class="text-emerald-600">booking today.</span>
         </h2>
-
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest pt-4 leading-relaxed">
-          Presented to the Faculty of the Computer Science Department of <br />
-          Hercor College Inc., Lawaan, Roxas City, Capiz, Philippines
-        </p>
       </div>
     </div>
 

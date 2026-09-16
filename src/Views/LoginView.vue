@@ -40,6 +40,11 @@
           {{ errorMessage }}
         </div>
 
+        <!-- Form Heading -->
+        <div>
+          <h1 class="text-2xl font-black text-gray-900">Log in to Caterlytics</h1>
+        </div>
+
         <!-- Log In Form -->
         <form @submit.prevent="handleLogin" class="space-y-5">
 
