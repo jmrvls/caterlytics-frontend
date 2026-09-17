@@ -90,10 +90,6 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-none 2xl:max-w-[1920px] mx-auto">
 
-        <div class="hidden lg:flex justify-end mb-4">
-          <NotificationBell />
-        </div>
-
         <h1 v-if="activeSection !== 'Dashboard'" class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{{ sectionLabel }}</h1>
 
         <!-- ============ DASHBOARD SECTION (STAFF) ============ -->
@@ -105,7 +101,8 @@
               <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}!</h2>
               <p class="text-gray-500 dark:text-gray-400 mt-1">You can view and manage client payments here.</p>
             </div>
-            <div class="hidden lg:flex flex-col items-end gap-2">
+            <div class="hidden lg:flex items-center gap-3">
+              <NotificationBell />
               <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
             </div>
           </div>
@@ -157,7 +154,8 @@
               <span class="block text-sm font-bold text-gray-500 dark:text-gray-400 mb-1">Total Revenue</span>
               <span class="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</span>
             </div>
-            <div class="hidden lg:flex flex-col items-end gap-2">
+            <div class="hidden lg:flex items-center gap-3">
+              <NotificationBell />
               <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
             </div>
           </div>
