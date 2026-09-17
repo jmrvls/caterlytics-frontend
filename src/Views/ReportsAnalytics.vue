@@ -14,6 +14,11 @@
       <NotificationBell />
     </div>
 
+    <!-- DESKTOP NOTIFICATION BELL (fixed position, identical on every page) -->
+    <div class="hidden lg:block fixed top-6 right-6 sm:right-8 z-40 print:hidden">
+      <NotificationBell />
+    </div>
+
     <!-- MOBILE BACKDROP -->
     <div v-if="isMobileSidebarOpen" @click="isMobileSidebarOpen = false" class="fixed inset-0 bg-black/40 z-40 lg:hidden"></div>
 
@@ -118,9 +123,6 @@
           </div>
 
           <div class="hidden sm:flex items-center gap-3 print:hidden">
-            <div class="hidden lg:block">
-              <NotificationBell />
-            </div>
             <button @click="exportPDF" class="hidden sm:flex items-center justify-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap sm:w-auto sm:min-w-[172px] flex-shrink-0">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H8a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
