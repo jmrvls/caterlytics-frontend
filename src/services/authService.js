@@ -48,13 +48,20 @@ export async function registerUser(username, email, password, full_name) {
         full_name,
         role: 'Client',
       },
+      // Where Supabase sends the user after they click the confirmation
+      // link in their email. Since we don't have a dedicated "welcome"
+      // page, send them straight back to the login screen.
+      emailRedirectTo: `${window.location.origin}/`,
     },
   });
 
   if (error) throw new Error(error.message);
 
+  // NOTE: with "Confirm email" enabled in Supabase, the account exists but
+  // is unconfirmed at this point. No session is returned yet — the user
+  // must click the confirmation link emailed to them before they can log in.
   return {
-    message: 'Account created successfully',
+    message: 'Confirmation email sent.',
     user: {
       user_id: data.user.id,
       username,

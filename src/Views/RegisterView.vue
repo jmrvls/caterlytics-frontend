@@ -34,81 +34,98 @@
     <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
       <div class="w-full max-w-md space-y-8">
 
-        <div class="space-y-2">
-          <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">Create Account</h3>
-          <p class="text-sm text-gray-500 font-medium">Sign up to start booking catering services.</p>
-        </div>
-
-        <form @submit.prevent="handleRegister" class="space-y-5">
-
-          <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl">
-            {{ errorMessage }}
+        <!-- Registration form -->
+        <template v-if="!accountCreated">
+          <div class="space-y-2">
+            <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">Create Account</h3>
+            <p class="text-sm text-gray-500 font-medium">Sign up to start booking catering services.</p>
           </div>
 
-          <div v-if="successMessage" class="bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-medium p-3 rounded-xl">
-            {{ successMessage }}
-          </div>
+          <form @submit.prevent="handleRegister" class="space-y-5">
 
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Full Name</label>
-            <input type="text" v-model="form.full_name" placeholder="Enter your full name" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
-          </div>
+            <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl">
+              {{ errorMessage }}
+            </div>
 
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Username</label>
-            <input type="text" v-model="form.username" placeholder="Choose a username" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
-          </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Full Name</label>
+              <input type="text" v-model="form.full_name" placeholder="Enter your full name" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+            </div>
 
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Email</label>
-            <input type="email" v-model="form.email" placeholder="you@example.com" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
-            <p class="text-xs text-gray-400">Used to send you a reset link if you ever forget your password.</p>
-          </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Username</label>
+              <input type="text" v-model="form.username" placeholder="Choose a username" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+            </div>
 
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Password</label>
-            <div class="relative">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Email</label>
+              <input type="email" v-model="form.email" placeholder="you@example.com" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+              <p class="text-xs text-gray-400">We'll send a confirmation link here to verify it's really you.</p>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Password</label>
+              <div class="relative">
+                <input
+                  :type="showPassword ? 'text' : 'password'"
+                  v-model="form.password"
+                  placeholder="••••••••"
+                  class="w-full p-3.5 pr-12 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                  required
+                />
+                <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-emerald-600 focus:outline-none">
+                  <svg v-if="!showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a8.962 8.962 0 012.122-.363c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Confirm Password</label>
               <input
                 :type="showPassword ? 'text' : 'password'"
-                v-model="form.password"
+                v-model="form.confirmPassword"
                 placeholder="••••••••"
-                class="w-full p-3.5 pr-12 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                 required
               />
-              <button type="button" @click="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-emerald-600 focus:outline-none">
-                <svg v-if="!showPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a8.962 8.962 0 012.122-.363c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
-                </svg>
-              </button>
             </div>
+
+            <button type="submit" :disabled="isLoading" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md shadow-emerald-100 mt-2 disabled:opacity-50">
+              {{ isLoading ? 'Creating account...' : 'Create Account' }}
+            </button>
+          </form>
+
+          <div class="text-center pt-2">
+            <p class="text-sm text-gray-500 font-medium">
+              Already have an account? <router-link to="/" class="text-emerald-600 font-bold hover:underline">Sign in</router-link>
+            </p>
+          </div>
+        </template>
+
+        <!-- Post-signup: tell them to check their inbox and click the link -->
+        <template v-else>
+          <div class="space-y-2">
+            <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">Check your email</h3>
+            <p class="text-sm text-gray-500 font-medium">
+              We sent a confirmation link to <span class="font-bold text-gray-700">{{ form.email }}</span>. Click the link in that email to activate your account, then come back and sign in.
+            </p>
           </div>
 
-          <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Confirm Password</label>
-            <input
-              :type="showPassword ? 'text' : 'password'"
-              v-model="form.confirmPassword"
-              placeholder="••••••••"
-              class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
-              required
-            />
+          <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium p-3 rounded-xl">
+            Didn't get it? Check your Spam or Promotions folder — it can take a minute to arrive.
           </div>
 
-          <button type="submit" :disabled="isLoading" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md shadow-emerald-100 mt-2 disabled:opacity-50">
-            {{ isLoading ? 'Creating account...' : 'Create Account' }}
-          </button>
-        </form>
-
-        <div class="text-center pt-2">
-          <p class="text-sm text-gray-500 font-medium">
-            Already have an account? <router-link to="/" class="text-emerald-600 font-bold hover:underline">Sign in</router-link>
-          </p>
-        </div>
+          <div class="text-center pt-2">
+            <router-link to="/" class="text-emerald-600 font-bold text-sm hover:underline">Back to Sign In</router-link>
+          </div>
+        </template>
 
         <div class="text-center pt-6 border-t border-gray-100">
           <span class="text-gray-400 text-xs font-bold tracking-widest uppercase">Caterlytics</span>
@@ -124,14 +141,17 @@
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { registerUser } from '../services/authService'
 
-const router = useRouter()
 const showPassword = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
-const successMessage = ref('')
+
+// Once true, we show the "check your email and click the link" screen
+// instead of the form. Supabase itself handles the link click (it
+// confirms the account and redirects back into the app) — we don't
+// need a code-entry step here.
+const accountCreated = ref(false)
 
 const form = ref({
   full_name: '',
@@ -143,7 +163,6 @@ const form = ref({
 
 const handleRegister = async () => {
   errorMessage.value = ''
-  successMessage.value = ''
 
   if (form.value.password !== form.value.confirmPassword) {
     errorMessage.value = 'Passwords do not match.'
@@ -164,18 +183,12 @@ const handleRegister = async () => {
 
   try {
     await registerUser(form.value.username, form.value.email, form.value.password, form.value.full_name)
-
-    successMessage.value = 'Account created! Redirecting to login...'
-
-    setTimeout(() => {
-      router.push('/')
-    }, 1500)
-
+    accountCreated.value = true
   } catch (error) {
     if (error.response && error.response.data && error.response.data.error) {
       errorMessage.value = error.response.data.error
     } else {
-      errorMessage.value = 'Something went wrong. Please try again.'
+      errorMessage.value = error.message || 'Something went wrong. Please try again.'
     }
   } finally {
     isLoading.value = false
