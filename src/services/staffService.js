@@ -11,9 +11,20 @@ export async function getUsers() {
   return { users: data || [] };
 }
 
-export async function createStaffUser(username, email, password, full_name, role, contact_number, availability, position) {
+export async function createStaffUser(username, email, full_name, role, contact_number, availability, position) {
   const { data, error } = await supabase.functions.invoke('create-staff-user', {
-    body: { username, email, password, full_name, role, contact_number, availability, position },
+    body: {
+      username,
+      email,
+      full_name,
+      role,
+      contact_number,
+      availability,
+      position,
+      // Where the invite email's link should send them so they can set
+      // their own password (see Resetpasswordview.vue).
+      redirectTo: `${window.location.origin}/reset-password`,
+    },
   });
 
   if (error) {

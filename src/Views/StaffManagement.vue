@@ -296,31 +296,7 @@
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Email</label>
             <input type="email" v-model="newUser.email" placeholder="their.email@gmail.com" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">A confirmation email will be sent to this address.</p>
-          </div>
-
-          <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Password</label>
-            <input
-              :type="showNewPassword ? 'text' : 'password'"
-              v-model="newUser.password"
-              class="w-full p-3 pr-12 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100"
-              required
-            />
-            <button
-              type="button"
-              @click="showNewPassword = !showNewPassword"
-              class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 focus:outline-none"
-            >
-              <svg v-if="!showNewPassword" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <svg v-else class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a8.962 8.962 0 012.122-.363c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21l-9-9" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18" />
-              </svg>
-            </button>
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">An invitation email will be sent to this address so they can set their own password.</p>
           </div>
 
           <div class="relative">
@@ -550,8 +526,7 @@ const isLoadingUsers = ref(false)
 const showAddUserModal = ref(false)
 const isCreating = ref(false)
 const modalError = ref('')
-const newUser = ref({ full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available', position: '' })
-const showNewPassword = ref(false)
+const newUser = ref({ full_name: '', username: '', email: '', role: '', contact_number: '', availability: 'Available', position: '' })
 
 const showEditUserModal = ref(false)
 const isSavingEdit = ref(false)
@@ -615,9 +590,8 @@ async function fetchUsers() {
 }
 
 function openAddUserModal() {
-  newUser.value = { full_name: '', username: '', email: '', password: '', role: '', contact_number: '', availability: 'Available', position: '' }
+  newUser.value = { full_name: '', username: '', email: '', role: '', contact_number: '', availability: 'Available', position: '' }
   modalError.value = ''
-  showNewPassword.value = false
   showAddUserModal.value = true
 }
 
@@ -633,7 +607,6 @@ async function handleCreateUser() {
     await createStaffUser(
       newUser.value.username,
       newUser.value.email,
-      newUser.value.password,
       newUser.value.full_name,
       newUser.value.role,
       newUser.value.contact_number,
