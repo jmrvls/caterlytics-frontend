@@ -143,8 +143,8 @@ const handleLogin = async () => {
   try {
     const result = await loginUser(form.value.username, form.value.password)
 
-    localStorage.setItem('token', result.token)
-    localStorage.setItem('user', JSON.stringify(result.user))
+    sessionStorage.setItem('token', result.token)
+    sessionStorage.setItem('user', JSON.stringify(result.user))
 
     if (result.user.role === 'Client') {
       router.push('/client/bookings')

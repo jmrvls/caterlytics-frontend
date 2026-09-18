@@ -294,6 +294,12 @@
           </div>
 
           <div class="relative">
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Email</label>
+            <input type="email" v-model="newUser.email" placeholder="their.email@gmail.com" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">A confirmation email will be sent to this address.</p>
+          </div>
+
+          <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Password</label>
             <input
               :type="showNewPassword ? 'text' : 'password'"
@@ -574,7 +580,7 @@ function formatDate(dateStr) {
 }
 
 onMounted(() => {
-  const storedUser = localStorage.getItem('user')
+  const storedUser = sessionStorage.getItem('user')
   if (!storedUser) {
     router.push('/')
     return
@@ -609,7 +615,7 @@ async function fetchUsers() {
 }
 
 function openAddUserModal() {
-  newUser.value = { full_name: '', username: '', password: '', role: '', contact_number: '', availability: 'Available', position: '' }
+  newUser.value = { full_name: '', username: '', email: '', password: '', role: '', contact_number: '', availability: 'Available', position: '' }
   modalError.value = ''
   showNewPassword.value = false
   showAddUserModal.value = true
@@ -626,6 +632,7 @@ async function handleCreateUser() {
   try {
     await createStaffUser(
       newUser.value.username,
+      newUser.value.email,
       newUser.value.password,
       newUser.value.full_name,
       newUser.value.role,
@@ -758,8 +765,8 @@ function goTo(item) {
 }
 
 const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
   router.push('/')
 }
 

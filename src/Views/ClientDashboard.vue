@@ -351,7 +351,7 @@ const selectedPackage = computed(() => packages.value.find((p) => p.package_name
 const selectedEditPackage = computed(() => packages.value.find((p) => p.package_name === editForm.value.package_name))
 
 onMounted(() => {
-  const storedUser = localStorage.getItem('user')
+  const storedUser = sessionStorage.getItem('user')
   if (!storedUser) {
     router.push('/')
     return
@@ -602,8 +602,8 @@ function formatDate(dateStr) {
 }
 
 function handleLogout() {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
   router.push('/')
 }
 </script>

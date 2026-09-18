@@ -345,7 +345,7 @@ function formatCost(value) {
 const form = ref(emptyForm())
 
 onMounted(() => {
-  const storedUser = localStorage.getItem('user')
+  const storedUser = sessionStorage.getItem('user')
   if (!storedUser) {
     router.push('/')
     return
@@ -458,8 +458,8 @@ function goTo(item) {
 }
 
 const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
   router.push('/')
 }
 

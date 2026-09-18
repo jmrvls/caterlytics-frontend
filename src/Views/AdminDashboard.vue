@@ -446,7 +446,7 @@ async function fetchDashboardData(role) {
 }
 
 onMounted(() => {
-  const storedUser = localStorage.getItem('user')
+  const storedUser = sessionStorage.getItem('user')
   if (!storedUser) {
     router.push('/')
     return
@@ -519,8 +519,8 @@ async function handleRemoveLeaveDate(id) {
 }
 
 const handleLogout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
   router.push('/')
 }
 

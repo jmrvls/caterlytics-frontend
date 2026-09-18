@@ -11,9 +11,9 @@ export async function getUsers() {
   return { users: data || [] };
 }
 
-export async function createStaffUser(username, password, full_name, role, contact_number, availability, position) {
+export async function createStaffUser(username, email, password, full_name, role, contact_number, availability, position) {
   const { data, error } = await supabase.functions.invoke('create-staff-user', {
-    body: { username, password, full_name, role, contact_number, availability, position },
+    body: { username, email, password, full_name, role, contact_number, availability, position },
   });
 
   if (error) {

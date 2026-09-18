@@ -135,7 +135,7 @@ const newPassword = ref('')
 const confirmPassword = ref('')
 const isChangingPassword = ref(false)
 
-const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
+const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
 const userInitial = computed(() => (profile.value.full_name || currentUser.full_name || '?').charAt(0).toUpperCase())
 
 function goBack() {
@@ -167,8 +167,8 @@ async function handleSaveProfile() {
     const updated = await updateMyProfile(currentUser.user_id, profileForm.value)
     profile.value = { ...profile.value, ...updated }
     // Keep the cached user (used across the whole app) in sync too.
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
-    localStorage.setItem('user', JSON.stringify({ ...storedUser, full_name: updated.full_name }))
+    const storedUser = JSON.parse(sessionStorage.getItem('user') || '{}')
+    sessionStorage.setItem('user', JSON.stringify({ ...storedUser, full_name: updated.full_name }))
     flash(successMessage, 'Profile updated.')
   } catch (error) {
     pageError.value = error.message || 'Failed to update profile.'
@@ -189,8 +189,8 @@ async function handleAvatarChange(event) {
   try {
     const updated = await uploadMyAvatar(currentUser.user_id, file)
     profile.value = { ...profile.value, avatar_url: updated.avatar_url }
-    const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
-    localStorage.setItem('user', JSON.stringify({ ...storedUser, avatar_url: updated.avatar_url }))
+    const storedUser = JSON.parse(sessionStorage.getItem('user') || '{}')
+    sessionStorage.setItem('user', JSON.stringify({ ...storedUser, avatar_url: updated.avatar_url }))
     flash(successMessage, 'Profile picture updated.')
   } catch (error) {
     pageError.value = error.message || 'Failed to upload picture.'
