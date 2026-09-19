@@ -35,6 +35,11 @@
     <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white lg:bg-transparent">
       <div class="w-full space-y-8 lg:bg-white lg:p-10 lg:rounded-3xl lg:shadow-xl lg:shadow-gray-100" style="max-width: clamp(360px, 32vw, 480px)">
 
+        <!-- Email Confirmed Banner -->
+        <div v-if="showConfirmedBanner" class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium p-3 rounded-xl">
+          ✅ Your email is confirmed. You can log in now.
+        </div>
+
         <!-- Error Banner -->
         <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl">
           {{ errorMessage }}
@@ -121,19 +126,32 @@
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { loginUser } from '../services/authService'
 
 const router = useRouter()
+const route = useRoute()
 const showPassword = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
+const showConfirmedBanner = ref(false)
 
 const form = ref({
   username: '',
   password: '',
   remember: false
+})
+
+// If the user just clicked the confirmation link in their email, Supabase
+// redirects here with ?confirmed=true. Show a friendly banner instead of
+// silently dropping them on a blank login form, then clean the URL so a
+// page refresh doesn't keep showing it.
+onMounted(() => {
+  if (route.query.confirmed === 'true') {
+    showConfirmedBanner.value = true
+    router.replace({ path: route.path, query: {} })
+  }
 })
 
 const handleLogin = async () => {

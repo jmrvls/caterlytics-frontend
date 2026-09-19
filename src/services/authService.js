@@ -49,19 +49,35 @@ export async function registerUser(username, email, password, full_name) {
         role: 'Client',
       },
       // Where Supabase sends the user after they click the confirmation
-      // link in their email. Since we don't have a dedicated "welcome"
-      // page, send them straight back to the login screen.
-      emailRedirectTo: `${window.location.origin}/`,
+      // link in their email. We don't have a dedicated "welcome" page,
+      // so send them back to the login screen — the ?confirmed=true flag
+      // lets LoginView show a "your email is confirmed" banner instead
+      // of just silently dropping them on a blank login form.
+      emailRedirectTo: `${window.location.origin}/?confirmed=true`,
     },
   });
 
   if (error) throw new Error(error.message);
 
-  // NOTE: with "Confirm email" enabled in Supabase, the account exists but
-  // is unconfirmed at this point. No session is returned yet — the user
-  // must click the confirmation link emailed to them before they can log in.
+  // Supabase returns an empty identities array (and no error) when the email
+  // is already registered, to avoid leaking which emails exist.
+  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+    throw new Error('This email is already registered. Please sign in instead.');
+  }
+
+  // If "Confirm email" is ON in Supabase: no session yet, user must click
+  // the emailed link first.
+  // If "Confirm email" is OFF: a session is returned right away. This app
+  // keeps its own login state, so sign out and send the user to the login
+  // screen instead of leaving a half-logged-in session behind.
+  const needsEmailConfirmation = !data.session;
+  if (data.session) {
+    await supabase.auth.signOut();
+  }
+
   return {
-    message: 'Confirmation email sent.',
+    message: needsEmailConfirmation ? 'Confirmation email sent.' : 'Account created.',
+    needsEmailConfirmation,
     user: {
       user_id: data.user.id,
       username,
