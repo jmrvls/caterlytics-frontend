@@ -22,7 +22,7 @@
 
       <!-- Bottom Section: flush to bottom-left corner -->
       <div class="absolute bottom-10 left-8 right-8 z-20">
-        <h2 class="text-5xl font-black text-gray-900 leading-none tracking-tight">
+        <h2 class="text-3xl lg:text-4xl xl:text-5xl font-black text-gray-900 leading-tight lg:leading-none tracking-tight">
           Join us <br />
           and start <br />
           <span class="text-emerald-600">booking today.</span>
