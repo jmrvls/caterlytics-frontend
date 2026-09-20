@@ -40,11 +40,6 @@
           ✅ Your email is confirmed. You can log in now.
         </div>
 
-        <!-- Error Banner -->
-        <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl">
-          {{ errorMessage }}
-        </div>
-
         <!-- Form Heading -->
         <div>
           <h1 class="text-2xl font-black text-gray-900">Log in to Caterlytics</h1>
@@ -55,22 +50,16 @@
 
           <!-- Account Identity Field -->
           <div class="space-y-1.5">
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Username or Email</label>
-            <input type="text" v-model="form.username" placeholder="Enter your username or email" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+            <input type="text" v-model="form.username" placeholder="Enter your email" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
           </div>
 
           <!-- Account Security Field with Show/Hide Toggle -->
           <div class="space-y-1.5">
-            <div class="flex justify-between items-center">
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Password</label>
-              <router-link to="/forgot-password" class="text-xs font-bold text-emerald-600 hover:underline">Forgot password?</router-link>
-            </div>
-
             <div class="relative">
               <input
                 :type="showPassword ? 'text' : 'password'"
                 v-model="form.password"
-                placeholder=""
+                placeholder="Password"
                 class="w-full p-3.5 pr-12 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                 required
               />
@@ -93,10 +82,11 @@
             </div>
           </div>
 
-          <!-- Persistence State Mechanism -->
-          <div class="flex items-center">
-            <input id="remember-me" type="checkbox" v-model="form.remember" class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded" />
-            <label id="remember-me-label" for="remember-me" class="ml-2 block text-sm text-gray-600 font-medium cursor-pointer select-none">Remember this device</label>
+          <!-- Error Message + Forgot Password Link -->
+          <div class="flex justify-between items-center">
+            <span v-if="errorMessage" class="text-xs font-bold text-red-600">{{ errorMessage }}</span>
+            <span v-else></span>
+            <router-link to="/forgot-password" class="text-xs font-bold text-emerald-600 hover:underline">Forgot password?</router-link>
           </div>
 
           <!-- Form Submission Controller -->
@@ -171,7 +161,7 @@ const handleLogin = async () => {
     }
 
   } catch (error) {
-    errorMessage.value = error.message || 'Something went wrong. Please try again.'
+    errorMessage.value = 'Invalid username or password'
   } finally {
     isLoading.value = false
   }
