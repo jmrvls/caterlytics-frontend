@@ -116,7 +116,7 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="pageError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ pageError }}
         </div>
 
@@ -286,11 +286,11 @@
       <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">New Booking</h3>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="modalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ modalError }}
         </div>
 
-        <div v-if="conflictWarning" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-none mb-4 flex gap-2">
+        <div v-if="conflictWarning" class="text-amber-700 dark:text-amber-300 text-sm font-medium mb-4 flex gap-2">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
           </svg>
@@ -401,10 +401,10 @@
           {{ assignModalBooking.client_name }} — {{ formatDate(assignModalBooking.event_date) }}
         </p>
 
-        <div v-if="assignModalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="assignModalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ assignModalError }}
         </div>
-        <div v-if="assignModalConflict" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-none mb-4 flex gap-2">
+        <div v-if="assignModalConflict" class="text-amber-700 dark:text-amber-300 text-sm font-medium mb-4 flex gap-2">
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
           </svg>

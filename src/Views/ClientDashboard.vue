@@ -58,7 +58,7 @@
       <div v-if="successMessage" class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-medium p-3 rounded-xl mb-4">
         {{ successMessage }}
       </div>
-      <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-xl mb-4">
+      <div v-if="pageError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
         {{ pageError }}
       </div>
 
@@ -96,7 +96,7 @@
             </div>
           </div>
 
-          <div v-if="conflictWarning" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-xl flex gap-2">
+          <div v-if="conflictWarning" class="text-amber-700 dark:text-amber-300 text-sm font-medium flex gap-2">
             <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
             </svg>
@@ -238,7 +238,7 @@
               </div>
             </div>
 
-            <div v-if="editConflictWarning" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-xl">
+            <div v-if="editConflictWarning" class="text-amber-700 dark:text-amber-300 text-sm font-medium">
               {{ editConflictWarning }}
             </div>
 

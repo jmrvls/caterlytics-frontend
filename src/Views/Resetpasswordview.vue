@@ -12,11 +12,11 @@
         Choose a new password for your account.
       </p>
 
-      <div v-if="!sessionReady && !checkingSession" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+      <div v-if="!sessionReady && !checkingSession" class="text-red-600 text-sm font-medium mb-4">
         This reset link is invalid or has expired. Please request a new one.
       </div>
 
-      <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl mb-4">
+      <div v-if="errorMessage" class="text-red-600 text-sm font-medium mb-4">
         {{ errorMessage }}
       </div>
 

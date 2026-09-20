@@ -255,7 +255,7 @@
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{{ scheduleModalUser.full_name }}'s Schedule</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Mark specific dates this staff member is unavailable (leave, time off, etc). Booking-time assignment checks use this list.</p>
 
-        <div v-if="scheduleError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="scheduleError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ scheduleError }}
         </div>
 

@@ -43,7 +43,7 @@
 
           <form @submit.prevent="handleRegister" class="space-y-5">
 
-            <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-600 text-sm font-medium p-3 rounded-xl">
+            <div v-if="errorMessage" class="text-red-600 text-sm font-medium">
               {{ errorMessage }}
             </div>
 

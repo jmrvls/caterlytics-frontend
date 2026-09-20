@@ -171,7 +171,7 @@
                 <button
                   v-if="u.id !== currentUserId"
                   @click="confirmDeleteUser(u)"
-                  class="flex-1 py-2 rounded-none text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 active:bg-red-100 dark:active:bg-red-900/40"
+                  class="flex-1 py-2 text-xs font-semibold text-red-600 dark:text-red-400 active:bg-red-100 dark:active:bg-red-900/40"
                 >
                   Delete
                 </button>
@@ -264,7 +264,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Add New User</h3>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="modalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ modalError }}
         </div>
 
@@ -338,7 +338,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Edit Staff Member</h3>
 
-        <div v-if="editModalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="editModalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ editModalError }}
         </div>
 
@@ -409,7 +409,7 @@
           <span class="font-semibold text-gray-700 dark:text-gray-200">{{ userToDelete.full_name }}</span>
           ({{ userToDelete.role }}). This cannot be undone.
         </p>
-        <div v-if="deleteUserError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="deleteUserError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ deleteUserError }}
         </div>
         <div class="flex gap-3">
@@ -429,7 +429,7 @@
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{{ scheduleModalUser.full_name }}'s Schedule</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Mark specific dates this staff member is unavailable (leave, time off, etc). Booking-time assignment checks use this list.</p>
 
-        <div v-if="scheduleError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="scheduleError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ scheduleError }}
         </div>
 

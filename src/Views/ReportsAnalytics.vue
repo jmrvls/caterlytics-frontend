@@ -117,7 +117,7 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="pageError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ pageError }}
         </div>
 
@@ -346,7 +346,7 @@
 
           <!-- ============ INVENTORY REPORT TAB ============ -->
           <div v-else-if="activeTab === 'Inventory Report'">
-            <div v-if="lowStockItems.length > 0" class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium p-3 rounded-none mb-4 flex items-center gap-2">
+            <div v-if="lowStockItems.length > 0" class="text-amber-700 dark:text-amber-300 text-sm font-medium mb-4 flex items-center gap-2">
               <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
               </svg>
@@ -526,7 +526,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{{ editingExpenseId ? 'Edit Expense' : 'New Expense' }}</h3>
 
-        <div v-if="expenseFormError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="expenseFormError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ expenseFormError }}
         </div>
 

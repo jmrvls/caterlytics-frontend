@@ -18,7 +18,7 @@
       <div v-if="successMessage" class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-medium p-3 rounded-xl">
         {{ successMessage }}
       </div>
-      <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-sm font-medium p-3 rounded-xl">
+      <div v-if="pageError" class="text-red-600 dark:text-red-300 text-sm font-medium">
         {{ pageError }}
       </div>
 

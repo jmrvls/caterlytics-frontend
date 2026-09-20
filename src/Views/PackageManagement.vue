@@ -103,7 +103,7 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="pageError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ pageError }}
         </div>
 
@@ -180,7 +180,7 @@
           Set how much of each inventory item this package uses <span class="font-semibold">per guest</span>. Stock is auto-deducted using this once a booking is confirmed.
         </p>
 
-        <div v-if="ingredientsError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="ingredientsError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ ingredientsError }}
         </div>
 
@@ -249,7 +249,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">{{ isEditing ? 'Edit Package' : 'New Package' }}</h3>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="modalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ modalError }}
         </div>
 
@@ -286,7 +286,7 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
           This will permanently remove <span class="font-semibold text-gray-700 dark:text-gray-200">{{ packageToDelete.package_name }}</span>.
         </p>
-        <div v-if="deleteError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-3">
+        <div v-if="deleteError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-3">
           {{ deleteError }}
         </div>
         <div class="flex gap-3 mt-3">

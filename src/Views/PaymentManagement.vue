@@ -105,7 +105,7 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="pageError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ pageError }}
         </div>
 
@@ -261,7 +261,7 @@
       <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Add Payment</h3>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="modalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ modalError }}
         </div>
 
@@ -304,7 +304,7 @@
           Remaining balance: <span class="font-semibold text-gray-700 dark:text-gray-200">₱{{ Number(recordingPayment.balance).toLocaleString() }}</span>
         </p>
 
-        <div v-if="modalError" class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-sm font-medium p-3 rounded-none mb-4">
+        <div v-if="modalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ modalError }}
         </div>
 
