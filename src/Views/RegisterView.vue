@@ -53,6 +53,11 @@
             </div>
 
             <div class="space-y-1.5">
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Username</label>
+              <input type="text" v-model="form.username" placeholder="Choose a username" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+            </div>
+
+            <div class="space-y-1.5">
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Email</label>
               <input type="email" v-model="form.email" placeholder="you@example.com" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
               <p class="text-xs text-gray-400">We'll send a confirmation link here to verify it's really you.</p>
@@ -150,6 +155,7 @@ const accountCreated = ref(false)
 
 const form = ref({
   full_name: '',
+  username: '',
   email: '',
   password: '',
   confirmPassword: ''
@@ -176,11 +182,7 @@ const handleRegister = async () => {
   isLoading.value = true
 
   try {
-    // Clients no longer pick a username — they log in with their email.
-    // authService's usernameToEmail() already treats any "@"-containing
-    // value as an email directly, so we just store the email as the
-    // username too and everything downstream keeps working.
-    await registerUser(form.value.email, form.value.email, form.value.password, form.value.full_name)
+    await registerUser(form.value.username, form.value.email, form.value.password, form.value.full_name)
     accountCreated.value = true
   } catch (error) {
     if (error.response && error.response.data && error.response.data.error) {
