@@ -25,13 +25,6 @@
 
           <!-- Account menu, opens downward from the top nav -->
           <div v-if="showAccountMenu" class="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-50">
-            <button @click="showAccountMenu = false; router.push('/settings')" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Settings
-            </button>
             <button @click="handleLogout" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -79,11 +72,6 @@
           <div>
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Booked Under</label>
             <input type="text" :value="userName" disabled class="w-full mt-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 dark:text-gray-400" />
-          </div>
-
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Email (for booking confirmation)</label>
-            <input type="email" v-model="form.client_email" required placeholder="you@example.com" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -373,6 +361,7 @@ onMounted(() => {
   userName.value = user.full_name
   userInitial.value = user.full_name.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
+  form.value.client_email = user.email || ''
 
   loadPackages()
   loadMyBookings()
@@ -500,7 +489,7 @@ async function submitBooking() {
     })
 
     successMessage.value = 'Booking request submitted! We will confirm it shortly.'
-    form.value = { event_date: '', event_time: '', event_location: '', guest_count: null, package_name: '', client_email: '' }
+    form.value = { ...form.value, event_date: '', event_time: '', event_location: '', guest_count: null, package_name: '' }
     conflictWarning.value = ''
     await loadMyBookings()
     activeTab.value = 'My Bookings'

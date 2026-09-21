@@ -1,14 +1,21 @@
 import { supabase } from '../supabaseClient';
 
-function usernameToEmail(username) {
+async function usernameToEmail(username) {
   if (username.includes('@')) {
-    return username.toLowerCase(); 
+    return username.toLowerCase();
   }
-  return `${username.toLowerCase()}@caterlytics.local`; 
+  const { data, error } = await supabase.rpc('resolve_login_email', { p_username: username });
+  if (error || !data) {
+    // No matching username -- fall through with something that will
+    // never match a real account, so the caller gets the normal
+    // "Invalid username or password" error instead of a different one.
+    return `${username.toLowerCase()}@caterlytics.local`;
+  }
+  return data;
 }
 
 export async function loginUser(username, password) {
-  const email = usernameToEmail(username);
+  const email = await usernameToEmail(username);
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -34,11 +41,12 @@ export async function loginUser(username, password) {
       full_name: profile.full_name,
       role: profile.role,
       avatar_url: profile.avatar_url || '',
+      email: data.user.email,
     },
   };
 }
 
-export async function registerUser(username, email, password, full_name) {
+export async function registerUser(username, email, password, full_name, contact_number) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -46,6 +54,7 @@ export async function registerUser(username, email, password, full_name) {
       data: {
         username,
         full_name,
+        contact_number,
         role: 'Client',
       },
       // Where Supabase sends the user after they click the confirmation
