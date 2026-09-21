@@ -13,11 +13,11 @@
       />
 
       <!-- Center Visual Mockup Area: shrinks to fit remaining space, never overlaps text below -->
-      <div class="flex-1 min-h-0 flex items-center justify-center py-4">
+      <div class="flex-1 min-h-0 flex items-center justify-center py-2 lg:py-1 xl:py-2 2xl:py-4 overflow-hidden">
         <img
           :src="loginBgUrl"
           alt="Catering Display"
-          class="w-full h-full object-contain"
+          class="w-full h-full object-contain max-w-none scale-110 xl:scale-125 2xl:scale-100"
         />
       </div>
 

@@ -12,11 +12,11 @@
       />
 
       <!-- Center Visual Mockup Area: fills the entire panel edge-to-edge -->
-      <div class="absolute inset-0 flex items-center justify-center p-10">
+      <div class="absolute inset-0 flex items-center justify-center p-4 sm:p-6 lg:p-8 xl:p-6 2xl:p-10">
         <img
           :src="loginBgUrl"
           alt="Catering Display"
-          class="w-full h-full object-contain"
+          class="w-full h-full object-contain max-w-none scale-110 xl:scale-125 2xl:scale-100"
         />
       </div>
 
