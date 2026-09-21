@@ -25,48 +25,55 @@
       <div v-if="isLoading" class="text-center text-sm text-gray-400 py-10">Loading...</div>
 
       <template v-else>
-        <!-- PROFILE PICTURE -->
-        <section class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 transition-colors">
-          <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Profile Picture</h3>
-          <div class="flex items-center gap-5">
-            <div class="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-2xl overflow-hidden shrink-0">
-              <img v-if="profile.avatar_url" :src="profile.avatar_url" alt="Profile picture" class="w-full h-full object-cover" />
-              <span v-else>{{ userInitial }}</span>
-            </div>
-            <div>
-              <input ref="fileInput" type="file" accept="image/png, image/jpeg, image/webp" class="hidden text-gray-900 dark:text-gray-100" @change="handleAvatarChange" />
-              <button @click="fileInput.click()" :disabled="isUploadingAvatar" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
-                {{ isUploadingAvatar ? 'Uploading...' : 'Change Picture' }}
+        <!-- MY PROFILE (Account Info + Profile Picture, Shopee-style two-column card) -->
+        <section class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 transition-colors">
+          <h3 class="font-bold text-gray-800 dark:text-gray-100">Account Information</h3>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Manage and protect your account</p>
+          <hr class="border-gray-100 dark:border-gray-700 my-5" />
+
+          <div class="flex flex-col-reverse md:flex-row gap-8">
+            <!-- LEFT: form rows -->
+            <form @submit.prevent="handleSaveProfile" class="flex-1 space-y-5">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                <label class="w-40 shrink-0 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Username</label>
+                <input :value="profile.username" disabled class="flex-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400 dark:text-gray-500" />
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                <label class="w-40 shrink-0 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Full Name</label>
+                <input v-model="profileForm.full_name" type="text" required class="flex-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100" />
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                <label class="w-40 shrink-0 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contact Number</label>
+                <input v-model="profileForm.contact_number" type="text" class="flex-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100" />
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+                <label class="w-40 shrink-0 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Role</label>
+                <input :value="profile.role" disabled class="flex-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400 dark:text-gray-500" />
+              </div>
+              <button type="submit" :disabled="isSavingProfile" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+                {{ isSavingProfile ? 'Saving...' : 'Save Changes' }}
               </button>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">JPG, PNG, or WEBP. Max 2MB.</p>
+            </form>
+
+            <!-- divider -->
+            <div class="hidden md:block w-px bg-gray-100 dark:bg-gray-700"></div>
+            <div class="md:hidden h-px bg-gray-100 dark:bg-gray-700"></div>
+
+            <!-- RIGHT: profile picture -->
+            <div class="md:w-48 flex flex-row md:flex-col items-center md:items-center gap-4 md:gap-3 md:text-center">
+              <div class="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-2xl overflow-hidden shrink-0">
+                <img v-if="profile.avatar_url" :src="profile.avatar_url" alt="Profile picture" class="w-full h-full object-cover" />
+                <span v-else>{{ userInitial }}</span>
+              </div>
+              <div>
+                <input ref="fileInput" type="file" accept="image/png, image/jpeg, image/webp" class="hidden text-gray-900 dark:text-gray-100" @change="handleAvatarChange" />
+                <button @click="fileInput.click()" :disabled="isUploadingAvatar" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+                  {{ isUploadingAvatar ? 'Uploading...' : 'Change Picture' }}
+                </button>
+                <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">JPG, PNG, or WEBP. Max 2MB.</p>
+              </div>
             </div>
           </div>
-        </section>
-
-        <!-- ACCOUNT INFO -->
-        <section class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 transition-colors">
-          <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Account Information</h3>
-          <form @submit.prevent="handleSaveProfile" class="space-y-4">
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Full Name</label>
-              <input v-model="profileForm.full_name" type="text" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100" />
-            </div>
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contact Number</label>
-              <input v-model="profileForm.contact_number" type="text" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100" />
-            </div>
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Username</label>
-              <input :value="profile.username" disabled class="w-full mt-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400 dark:text-gray-500" />
-            </div>
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Role</label>
-              <input :value="profile.role" disabled class="w-full mt-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-400 dark:text-gray-500" />
-            </div>
-            <button type="submit" :disabled="isSavingProfile" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
-              {{ isSavingProfile ? 'Saving...' : 'Save Changes' }}
-            </button>
-          </form>
         </section>
 
         <!-- APPEARANCE -->
