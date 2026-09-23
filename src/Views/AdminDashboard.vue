@@ -22,7 +22,7 @@
       :class="[sidebarExpanded ? 'w-64' : 'w-20', isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']" 
       class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 h-screen fixed lg:sticky top-0 left-0 z-50 lg:z-auto"
     >
-      <div class="flex items-center p-4" :class="sidebarExpanded ? 'justify-between gap-2' : 'justify-center'">
+      <div class="flex items-center justify-between gap-2 p-4">
         <!-- COLLAPSED: logo itself is the toggle -->
         <div
           v-if="!sidebarExpanded"
@@ -70,7 +70,6 @@
       </div>
 
       <nav class="flex-1 px-3 mt-6 space-y-1 overflow-y-auto">
-        <p v-if="sidebarExpanded" class="text-xs font-semibold text-gray-400 dark:text-gray-500 px-3 mb-2 uppercase tracking-wide">Menu</p>
 
         <a v-for="item in navItems" :key="item.name"
           href="#"
