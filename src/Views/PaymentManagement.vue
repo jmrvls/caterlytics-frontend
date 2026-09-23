@@ -21,12 +21,52 @@
     <aside
       :class="[sidebarExpanded ? 'w-64' : 'w-20', isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']"
       class="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-transform duration-300 h-screen fixed lg:sticky top-0 left-0 z-50 lg:z-auto"
-      @mouseenter="isSidebarOpen = true"
-      @mouseleave="isSidebarOpen = false"
     >
-      <div class="flex items-center gap-2 overflow-hidden p-4">
-        <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
-        <span v-if="sidebarExpanded" class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
+      <div class="flex items-center p-4" :class="sidebarExpanded ? 'justify-between gap-2' : 'justify-center'">
+        <!-- COLLAPSED: logo itself is the toggle -->
+        <div
+          v-if="!sidebarExpanded"
+          class="relative flex items-center justify-center w-8 h-8 cursor-pointer select-none rounded-none hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          @mouseenter="isLogoHovered = true"
+          @mouseleave="isLogoHovered = false"
+          @click="toggleSidebar"
+        >
+          <img v-if="!isLogoHovered" :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
+          <svg v-else class="w-6 h-6 flex-shrink-0 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke-width="1.5" />
+            <line x1="9.5" y1="4.5" x2="9.5" y2="19.5" stroke-width="1.5" />
+          </svg>
+
+          <div v-if="isLogoHovered" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap shadow-lg z-[60] pointer-events-none">
+            Open sidebar
+          </div>
+        </div>
+
+        <!-- EXPANDED: static logo + name on the left -->
+        <div v-else class="flex items-center gap-2 overflow-hidden">
+          <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
+          <span class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
+        </div>
+
+        <!-- EXPANDED: dedicated toggle button on the right, like Gemini's collapse icon -->
+        <div v-if="sidebarExpanded" class="relative flex-shrink-0">
+          <button
+            type="button"
+            class="w-8 h-8 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            @mouseenter="isLogoHovered = true"
+            @mouseleave="isLogoHovered = false"
+            @click="toggleSidebar"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke-width="1.5" />
+              <line x1="9.5" y1="4.5" x2="9.5" y2="19.5" stroke-width="1.5" />
+            </svg>
+          </button>
+
+          <div v-if="isLogoHovered" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap shadow-lg z-[60] pointer-events-none">
+            Close sidebar
+          </div>
+        </div>
       </div>
 
       <nav class="flex-1 px-3 mt-6 space-y-1 overflow-y-auto">
@@ -370,6 +410,12 @@ import autoTable from 'jspdf-autotable'
 const router = useRouter()
 
 const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
+const isLogoHovered = ref(false)
+
+function toggleSidebar() {
+  isSidebarOpen.value = !isSidebarOpen.value
+  isLogoHovered.value = false
+}
 const showAccountMenu = ref(false)
 const userName = ref('User')
 const userRole = ref('Staff')
