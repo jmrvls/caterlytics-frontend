@@ -357,7 +357,7 @@ import { useSidebarState } from '../composables/useSidebarState'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPayments } from '../services/paymentService'
-import { getMyBusiness } from '../services/businessService'
+import { getMyBusiness } from '../services/businessservice'
 import {
   getMyAssignedBookings,
   getUnavailableDates,

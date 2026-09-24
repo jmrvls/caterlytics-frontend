@@ -20,7 +20,7 @@ import StaffManagement from './Views/StaffManagement.vue'
 import ReportsAnalytics from './Views/ReportsAnalytics.vue'
 import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
-import RegisterBusinessView from './Views/RegisterBusinessView.vue'
+import RegisterBusinessView from './Views/Registerbusinessview.vue'
 
 // Routes
 const routes = [

@@ -79,7 +79,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { registerBusiness } from '../services/businessService'
+import { registerBusiness } from '../services/businessservice'
 
 const router = useRouter()
 const isLoading = ref(false)

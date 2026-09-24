@@ -162,7 +162,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyProfile, updateMyProfile, uploadMyAvatar, changeMyPassword } from '../services/profileService'
-import { getMyBusiness, updateMyBusiness } from '../services/businessService'
+import { getMyBusiness, updateMyBusiness } from '../services/businessservice'
 import { getStoredTheme, setTheme } from '../theme'
 
 const router = useRouter()
