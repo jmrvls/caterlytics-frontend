@@ -464,6 +464,8 @@ function selectBusiness(id) {
   selectedBusinessId.value = id
   form.value.package_id = ''
   conflictWarning.value = ''
+  // A date may already be filled in from before; re-check it for this business.
+  if (form.value.event_date) handleDateCheck()
 }
 
 function clearBusiness() {
@@ -551,7 +553,7 @@ async function handleEditDateCheck() {
   if (!editForm.value.event_date || !bookingToEdit.value) return
   if (editForm.value.event_date === bookingToEdit.value.event_date) return
   try {
-    const result = await checkDateConflict(editForm.value.event_date)
+    const result = await checkDateConflict(editForm.value.event_date, editBusinessId.value || null, bookingToEdit.value.booking_id)
     if (result.conflict) {
       editConflictWarning.value = 'This date already has a booking. Please choose another date before saving.'
     }
@@ -589,7 +591,7 @@ async function handleDateCheck() {
   conflictWarning.value = ''
   if (!form.value.event_date) return
   try {
-    const result = await checkDateConflict(form.value.event_date)
+    const result = await checkDateConflict(form.value.event_date, selectedBusinessId.value || null)
     if (result.conflict) {
       conflictWarning.value = 'This date already has a booking. Please choose another date before submitting.'
     }
@@ -612,7 +614,8 @@ async function submitBooking() {
       event_location: form.value.event_location,
       guest_count: form.value.guest_count,
       package_name: selectedPackage.value?.package_name || null,
-      package_id: form.value.package_id || null
+      package_id: form.value.package_id || null,
+      business_id: selectedBusinessId.value || null
     })
 
     successMessage.value = 'Booking request submitted! We will confirm it shortly.'

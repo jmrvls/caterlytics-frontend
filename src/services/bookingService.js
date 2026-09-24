@@ -49,11 +49,15 @@ export async function createBooking(bookingData) {
   // Prevent double bookings: block if a Pending or Confirmed reservation
   // already exists on this event date (per the study's own definition of
   // a double booking). This is the actual enforcement, not just a warning.
-  const conflict = await checkDateConflict(bookingData.event_date);
+  // business_id is only passed by clients (who can't see other clients'
+  // bookings); staff/admin/owner rely on the business-scoped read below.
+  const conflict = await checkDateConflict(bookingData.event_date, bookingData.business_id || null);
   if (conflict.conflict) {
     const existing = conflict.existingBookings[0];
     throw new Error(
-      `There's already a booking on ${bookingData.event_date} (${existing.client_name}). Please choose another date.`
+      existing
+        ? `There's already a booking on ${bookingData.event_date} (${existing.client_name}). Please choose another date.`
+        : `${bookingData.event_date} is already booked with this caterer. Please choose another date.`
     );
   }
 
@@ -310,7 +314,20 @@ export async function getMyBookings() {
 }
 
 // Client-side conflict check before submit
-export async function checkDateConflict(eventDate) {
+export async function checkDateConflict(eventDate, businessId = null, excludeBookingId = null) {
+  // Clients can only read their OWN bookings (RLS), so they ask the database
+  // a yes/no question for a specific business instead. It never returns
+  // anyone else's booking details.
+  if (businessId) {
+    const { data, error } = await supabase.rpc('is_date_taken', {
+      p_business_id: businessId,
+      p_event_date: eventDate,
+      p_exclude_booking_id: excludeBookingId,
+    });
+    if (error) throw error;
+    return { conflict: Boolean(data), existingBookings: [] };
+  }
+
   const allBookings = await getAllBookings();
   const existing = allBookings.filter(
     (b) =>
