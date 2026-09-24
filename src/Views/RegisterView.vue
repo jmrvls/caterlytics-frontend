@@ -58,9 +58,8 @@
             </div>
 
             <div class="space-y-1.5">
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Email</label>
-              <input type="email" v-model="form.email" placeholder="you@example.com" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
-              <p class="text-xs text-gray-400">We'll send a confirmation link here to verify it's really you.</p>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Contact Number</label>
+              <input type="tel" v-model="form.contact_number" placeholder="e.g. 0917 123 4567" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
             </div>
 
             <div class="space-y-1.5">
@@ -109,21 +108,56 @@
           </div>
         </template>
 
-        <!-- Post-signup: tell them to check their inbox and click the link -->
-        <template v-else>
+        <!-- Post-signup: ask for the SMS OTP sent to their phone -->
+        <template v-else-if="!phoneVerified">
           <div class="space-y-2">
-            <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">Check your email</h3>
+            <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">Verify your number</h3>
             <p class="text-sm text-gray-500 font-medium">
-              We sent a confirmation link to <span class="font-bold text-gray-700">{{ form.email }}</span>. Click the link in that email to activate your account, then come back and sign in.
+              We sent a 6-digit code by SMS to <span class="font-bold text-gray-700">{{ form.contact_number }}</span>. Enter it below to activate your account.
             </p>
           </div>
 
-          <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium p-3 rounded-xl">
-            Didn't get it? Check your Spam or Promotions folder — it can take a minute to arrive.
+          <form @submit.prevent="handleVerifyOtp" class="space-y-5">
+            <div v-if="otpErrorMessage" class="text-red-600 text-sm font-medium">
+              {{ otpErrorMessage }}
+            </div>
+
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500">6-Digit Code</label>
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                v-model="otpCode"
+                placeholder="123456"
+                class="w-full p-3.5 text-center text-2xl tracking-[0.5em] bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                required
+              />
+            </div>
+
+            <button type="submit" :disabled="isVerifying" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md shadow-emerald-100 disabled:opacity-50">
+              {{ isVerifying ? 'Verifying...' : 'Verify & Activate Account' }}
+            </button>
+          </form>
+
+          <div class="text-center pt-2">
+            <button type="button" @click="handleResendOtp" :disabled="isResending" class="text-emerald-600 font-bold text-sm hover:underline disabled:opacity-50">
+              {{ isResending ? 'Resending...' : "Didn't get a code? Resend" }}
+            </button>
+          </div>
+        </template>
+
+        <!-- Account created: send them to sign in -->
+        <template v-else>
+          <div class="space-y-2">
+            <h3 class="text-3xl font-extrabold text-gray-900 tracking-tight">Account created!</h3>
+            <p class="text-sm text-gray-500 font-medium">
+              You can now sign in with your username and password.
+            </p>
           </div>
 
           <div class="text-center pt-2">
-            <router-link to="/" class="text-emerald-600 font-bold text-sm hover:underline">Back to Sign In</router-link>
+            <router-link to="/" class="text-emerald-600 font-bold text-sm hover:underline">Go to Sign In</router-link>
           </div>
         </template>
 
@@ -141,22 +175,28 @@
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
-import { registerUser } from '../services/authService'
+import { registerUser, verifyRegistrationOtp, resendRegistrationOtp } from '../services/authService'
 
 const showPassword = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-// Once true, we show the "check your email and click the link" screen
-// instead of the form. Supabase itself handles the link click (it
-// confirms the account and redirects back into the app) — we don't
-// need a code-entry step here.
+// Once true, we show the OTP-entry screen instead of the form.
 const accountCreated = ref(false)
+
+// Once true (after a correct OTP), we show the "go sign in" screen
+// instead of the OTP-entry screen.
+const phoneVerified = ref(false)
+
+const otpCode = ref('')
+const otpErrorMessage = ref('')
+const isVerifying = ref(false)
+const isResending = ref(false)
 
 const form = ref({
   full_name: '',
   username: '',
-  email: '',
+  contact_number: '',
   password: '',
   confirmPassword: ''
 })
@@ -182,7 +222,8 @@ const handleRegister = async () => {
   isLoading.value = true
 
   try {
-    await registerUser(form.value.username, form.value.email, form.value.password, form.value.full_name)
+    await registerUser(form.value.username, form.value.password, form.value.full_name, form.value.contact_number)
+    phoneVerified.value = true
     accountCreated.value = true
   } catch (error) {
     if (error.response && error.response.data && error.response.data.error) {
@@ -192,6 +233,33 @@ const handleRegister = async () => {
     }
   } finally {
     isLoading.value = false
+  }
+}
+
+const handleVerifyOtp = async () => {
+  otpErrorMessage.value = ''
+  isVerifying.value = true
+
+  try {
+    await verifyRegistrationOtp(form.value.contact_number, otpCode.value)
+    phoneVerified.value = true
+  } catch (error) {
+    otpErrorMessage.value = error.message || 'Invalid or expired code. Please try again.'
+  } finally {
+    isVerifying.value = false
+  }
+}
+
+const handleResendOtp = async () => {
+  otpErrorMessage.value = ''
+  isResending.value = true
+
+  try {
+    await resendRegistrationOtp(form.value.contact_number)
+  } catch (error) {
+    otpErrorMessage.value = error.message || 'Could not resend code. Please try again.'
+  } finally {
+    isResending.value = false
   }
 }
 </script>

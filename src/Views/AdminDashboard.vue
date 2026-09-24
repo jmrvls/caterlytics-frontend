@@ -45,7 +45,14 @@
         <!-- EXPANDED: static logo + name on the left -->
         <div v-else class="flex items-center gap-2 overflow-hidden">
           <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
-          <span class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">Caterlytics</span>
+          <div class="overflow-hidden">
+            <span class="font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap block leading-tight">Caterlytics</span>
+            <!-- Which business/tenant this Admin/Staff/Owner is currently
+                 acting under -- the only such indicator anywhere in the
+                 app, so a person shouldn't be left guessing whose data
+                 they're looking at. -->
+            <span v-if="businessName" class="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap truncate block leading-tight">{{ businessName }}</span>
+          </div>
         </div>
 
         <!-- EXPANDED: dedicated toggle button on the right, like Gemini's collapse icon -->
@@ -350,6 +357,7 @@ import { useSidebarState } from '../composables/useSidebarState'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPayments } from '../services/paymentService'
+import { getMyBusiness } from '../services/businessService'
 import {
   getMyAssignedBookings,
   getUnavailableDates,
@@ -379,6 +387,7 @@ const userRole = ref('Admin')
 const userInitial = ref('U')
 const userAvatarUrl = ref('')
 const currentUserId = ref('')
+const businessName = ref('')
 
 // ---------- Staff schedule (per-date unavailability) — self-service,
 // used from the Staff role's own "My Schedule" card on this Dashboard.
@@ -512,6 +521,10 @@ onMounted(() => {
   currentUserId.value = user.user_id
 
   fetchDashboardData(user.role)
+
+  getMyBusiness()
+    .then((biz) => { businessName.value = biz?.business_name || '' })
+    .catch((error) => console.error('Failed to load business name:', error))
 })
 
 async function openScheduleModal(user) {

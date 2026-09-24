@@ -43,6 +43,22 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Book a catering package or check the status of your reservations.</p>
       </div>
 
+      <!-- Business onboarding banner: every account starts as a plain
+           Client. This is the only entry point into becoming a business
+           owner (calls the register_business() RPC). -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 mb-6">
+        <div>
+          <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Run a catering business?</p>
+          <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">Register it on Caterlytics to manage your own bookings, inventory, and packages.</p>
+        </div>
+        <button
+          @click="router.push('/register-business')"
+          class="shrink-0 bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-emerald-700 transition"
+        >
+          Register My Business
+        </button>
+      </div>
+
       <!-- TABS -->
       <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-6 w-fit">
         <button
@@ -63,8 +79,60 @@
         {{ pageError }}
       </div>
 
-      <!-- ============ BOOK CATERING TAB ============ -->
-      <div v-if="activeTab === 'Book Catering'" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+      <!-- ============ STEP 1: PICK A CATERING BUSINESS ============ -->
+      <div v-if="activeTab === 'Book Catering' && !selectedBusinessId">
+        <h3 class="font-bold text-gray-800 dark:text-gray-100">Choose a Catering Business</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Tap the caterer you want, then fill in your event details.</p>
+
+        <div v-if="!businesses.length" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
+          No catering businesses are available yet.
+        </div>
+
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <button
+            v-for="b in businesses"
+            :key="b.business_id"
+            type="button"
+            @click="selectBusiness(b.business_id)"
+            class="group text-left bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-2xl p-5 transition focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-lg flex-shrink-0">
+                {{ b.business_name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="min-w-0">
+                <p class="font-bold text-gray-800 dark:text-gray-100 truncate">{{ b.business_name }}</p>
+                <p v-if="b.address" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ b.address }}</p>
+              </div>
+            </div>
+            <p v-if="b.contact_number" class="text-xs text-gray-500 dark:text-gray-400 mt-3">{{ b.contact_number }}</p>
+            <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{ b.package_count }} package{{ b.package_count === 1 ? '' : 's' }}</span>
+              <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">From ₱{{ formatPrice(b.min_price) }}/head</span>
+            </div>
+            <span class="mt-4 block w-full text-center bg-emerald-600 group-hover:bg-emerald-700 text-white py-2 rounded-xl text-sm font-semibold transition">Book with this caterer</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ STEP 2: BOOKING FORM ============ -->
+      <div v-else-if="activeTab === 'Book Catering'" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+        <div class="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-11 h-11 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold flex-shrink-0">
+              {{ (selectedBusiness?.business_name || '?').charAt(0).toUpperCase() }}
+            </div>
+            <div class="min-w-0">
+              <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Booking with</p>
+              <p class="font-bold text-gray-800 dark:text-gray-100 truncate">{{ selectedBusiness?.business_name }}</p>
+              <p v-if="selectedBusiness?.address || selectedBusiness?.contact_number" class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {{ [selectedBusiness.address, selectedBusiness.contact_number].filter(Boolean).join(' · ') }}
+              </p>
+            </div>
+          </div>
+          <button type="button" @click="clearBusiness" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline whitespace-nowrap">Change</button>
+        </div>
+
         <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">New Booking Request</h3>
 
         <form @submit.prevent="submitBooking" class="space-y-5">
@@ -111,9 +179,9 @@
             </div>
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Package</label>
-              <select v-model="form.package_name" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
-                <option value="">Select a package (optional)</option>
-                <option v-for="p in packages" :key="p.package_id" :value="p.package_name">
+              <select v-model="form.package_id" :disabled="!selectedBusinessId" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+                <option value="" disabled>{{ selectedBusinessId ? 'Select a package' : 'Select a business first' }}</option>
+                <option v-for="p in businessPackages" :key="p.package_id" :value="p.package_id">
                   {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head
                 </option>
               </select>
@@ -122,6 +190,7 @@
 
           <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
             <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ selectedPackage.package_name }}</p>
+            <p v-if="selectedPackage.tbl_business?.business_name" class="text-xs text-gray-500 dark:text-gray-400">by {{ selectedPackage.tbl_business.business_name }}</p>
             <p v-if="selectedPackage.description" class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-3">Includes</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ selectedPackage.description }}</p>
             <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
@@ -243,6 +312,18 @@
               <input type="text" v-model="editForm.event_location" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
             </div>
 
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Business</label>
+              <select v-model="editBusinessId" @change="editForm.package_id = ''" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+                <option value="" disabled>Select a catering business</option>
+                <option v-for="b in businesses" :key="b.business_id" :value="b.business_id">{{ b.business_name }}</option>
+              </select>
+              <p v-if="!businesses.length" class="text-xs text-gray-500 dark:text-gray-400 mt-1">No catering businesses are available yet.</p>
+              <p v-else-if="editBusiness?.address || editBusiness?.contact_number" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {{ [editBusiness.address, editBusiness.contact_number].filter(Boolean).join(' · ') }}
+              </p>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
@@ -250,9 +331,9 @@
               </div>
               <div>
                 <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Package</label>
-                <select v-model="editForm.package_name" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
-                  <option value="">Select a package (optional)</option>
-                  <option v-for="p in packages" :key="p.package_id" :value="p.package_name">
+                <select v-model="editForm.package_id" :disabled="!editBusinessId" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+                  <option value="" disabled>{{ editBusinessId ? 'Select a package' : 'Select a business first' }}</option>
+                  <option v-for="p in editBusinessPackages" :key="p.package_id" :value="p.package_id">
                     {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head
                   </option>
                 </select>
@@ -261,6 +342,7 @@
 
             <div v-if="selectedEditPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
               <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ selectedEditPackage.package_name }}</p>
+              <p v-if="selectedEditPackage.tbl_business?.business_name" class="text-xs text-gray-500 dark:text-gray-400">by {{ selectedEditPackage.tbl_business.business_name }}</p>
               <p v-if="selectedEditPackage.description" class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-3">Includes</p>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ selectedEditPackage.description }}</p>
               <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
@@ -312,6 +394,8 @@ const tabs = ['Book Catering', 'My Bookings']
 const activeTab = ref('Book Catering')
 
 const packages = ref([])
+const selectedBusinessId = ref('')
+const editBusinessId = ref('')
 const myBookings = ref([])
 const bookingToCancel = ref(null)
 const isCancelling = ref(false)
@@ -324,7 +408,7 @@ const editForm = ref({
   event_time: '',
   event_location: '',
   guest_count: null,
-  package_name: ''
+  package_id: ''
 })
 
 const isLoading = ref(false)
@@ -340,12 +424,53 @@ const form = ref({
   event_time: '',
   event_location: '',
   guest_count: null,
-  package_name: '',
+  package_id: '',
   client_email: ''
 })
 
-const selectedPackage = computed(() => packages.value.find((p) => p.package_name === form.value.package_name))
-const selectedEditPackage = computed(() => packages.value.find((p) => p.package_name === editForm.value.package_name))
+const selectedPackage = computed(() => packages.value.find((p) => p.package_id === form.value.package_id))
+const selectedEditPackage = computed(() => packages.value.find((p) => p.package_id === editForm.value.package_id))
+
+// Catering businesses the client can book from, derived from the packages
+// they can see (only businesses with at least one package show up).
+const businesses = computed(() => {
+  const map = new Map()
+  for (const p of packages.value) {
+    if (!p.business_id) continue
+    const price = Number(p.price_per_head) || 0
+    const existing = map.get(p.business_id)
+    if (existing) {
+      existing.package_count += 1
+      existing.min_price = Math.min(existing.min_price, price)
+    } else {
+      map.set(p.business_id, {
+        business_id: p.business_id,
+        business_name: p.tbl_business?.business_name || 'Unnamed business',
+        address: p.tbl_business?.address || '',
+        contact_number: p.tbl_business?.contact_number || '',
+        package_count: 1,
+        min_price: price
+      })
+    }
+  }
+  return [...map.values()].sort((a, b) => a.business_name.localeCompare(b.business_name))
+})
+const selectedBusiness = computed(() => businesses.value.find((b) => b.business_id === selectedBusinessId.value))
+const editBusiness = computed(() => businesses.value.find((b) => b.business_id === editBusinessId.value))
+const businessPackages = computed(() => packages.value.filter((p) => p.business_id === selectedBusinessId.value))
+const editBusinessPackages = computed(() => packages.value.filter((p) => p.business_id === editBusinessId.value))
+
+function selectBusiness(id) {
+  selectedBusinessId.value = id
+  form.value.package_id = ''
+  conflictWarning.value = ''
+}
+
+function clearBusiness() {
+  selectedBusinessId.value = ''
+  form.value.package_id = ''
+  conflictWarning.value = ''
+}
 
 onMounted(() => {
   const storedUser = sessionStorage.getItem('user')
@@ -416,8 +541,9 @@ function openEditModal(booking) {
     event_time: booking.event_time,
     event_location: booking.event_location,
     guest_count: booking.guest_count,
-    package_name: booking.package_name || ''
+    package_id: booking.package_id || ''
   }
+  editBusinessId.value = packages.value.find((p) => p.package_id === booking.package_id)?.business_id || ''
 }
 
 async function handleEditDateCheck() {
@@ -444,7 +570,7 @@ async function handleSaveEdit() {
       event_time: editForm.value.event_time,
       event_location: editForm.value.event_location,
       guest_count: editForm.value.guest_count,
-      package_name: editForm.value.package_name || null,
+      package_name: selectedEditPackage.value?.package_name || null,
       package_id: selectedEditPackage.value?.package_id || null
     })
     const target = myBookings.value.find((b) => b.booking_id === updated.booking_id)
@@ -485,11 +611,13 @@ async function submitBooking() {
       event_time: form.value.event_time,
       event_location: form.value.event_location,
       guest_count: form.value.guest_count,
-      package_name: form.value.package_name || null
+      package_name: selectedPackage.value?.package_name || null,
+      package_id: form.value.package_id || null
     })
 
     successMessage.value = 'Booking request submitted! We will confirm it shortly.'
-    form.value = { ...form.value, event_date: '', event_time: '', event_location: '', guest_count: null, package_name: '' }
+    form.value = { ...form.value, event_date: '', event_time: '', event_location: '', guest_count: null, package_id: '' }
+    selectedBusinessId.value = ''
     conflictWarning.value = ''
     await loadMyBookings()
     activeTab.value = 'My Bookings'

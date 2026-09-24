@@ -76,6 +76,47 @@
           </div>
         </section>
 
+        <!-- BUSINESS INFO: only shown to accounts that belong to a business
+             (Admin / Staff / Owner-Manager). A plain Client has no
+             business_id and won't see this at all. -->
+        <section v-if="business" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 sm:p-8 transition-colors">
+          <h3 class="font-bold text-gray-800 dark:text-gray-100">Business Information</h3>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            {{ isBusinessOwner ? 'Manage your business details' : 'Only the business owner can edit these details' }}
+          </p>
+          <hr class="border-gray-100 dark:border-gray-700 my-5" />
+
+          <div v-if="businessError" class="text-red-600 dark:text-red-300 text-sm font-medium mb-4">
+            {{ businessError }}
+          </div>
+
+          <form @submit.prevent="handleSaveBusiness" class="space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+              <label class="w-40 shrink-0 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Business Name</label>
+              <input v-model="businessForm.business_name" :disabled="!isBusinessOwner" type="text" required
+                class="flex-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400" />
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+              <label class="w-40 shrink-0 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contact Email</label>
+              <input v-model="businessForm.contact_email" :disabled="!isBusinessOwner" type="email"
+                class="flex-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400" />
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+              <label class="w-40 shrink-0 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contact Number</label>
+              <input v-model="businessForm.contact_number" :disabled="!isBusinessOwner" type="text"
+                class="flex-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400" />
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+              <label class="w-40 shrink-0 text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Address</label>
+              <input v-model="businessForm.address" :disabled="!isBusinessOwner" type="text"
+                class="flex-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400" />
+            </div>
+            <button v-if="isBusinessOwner" type="submit" :disabled="isSavingBusiness" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+              {{ isSavingBusiness ? 'Saving...' : 'Save Changes' }}
+            </button>
+          </form>
+        </section>
+
         <!-- APPEARANCE -->
         <section class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 transition-colors">
           <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">Appearance</h3>
@@ -121,6 +162,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyProfile, updateMyProfile, uploadMyAvatar, changeMyPassword } from '../services/profileService'
+import { getMyBusiness, updateMyBusiness } from '../services/businessService'
 import { getStoredTheme, setTheme } from '../theme'
 
 const router = useRouter()
@@ -144,6 +186,53 @@ const isChangingPassword = ref(false)
 
 const currentUser = JSON.parse(sessionStorage.getItem('user') || '{}')
 const userInitial = computed(() => (profile.value.full_name || currentUser.full_name || '?').charAt(0).toUpperCase())
+
+// ---------- Business Info (Admin / Staff / Owner-Manager only; a plain
+// Client has no business_id, so `business` stays null and the whole
+// section is hidden via v-if in the template).
+const business = ref(null)
+const businessForm = ref({ business_name: '', contact_email: '', contact_number: '', address: '' })
+const businessError = ref('')
+const isSavingBusiness = ref(false)
+
+// Editing is restricted to the original registrant (tbl_business.owner_id)
+// per RLS ("owner update own business") — other Admins in the same
+// business can view but not edit here.
+const isBusinessOwner = computed(() => business.value && business.value.owner_id === currentUser.user_id)
+
+async function fetchBusiness() {
+  try {
+    const data = await getMyBusiness()
+    if (data) {
+      business.value = data
+      businessForm.value = {
+        business_name: data.business_name || '',
+        contact_email: data.contact_email || '',
+        contact_number: data.contact_number || '',
+        address: data.address || '',
+      }
+    }
+  } catch (error) {
+    // Non-fatal: a Client account (or any load hiccup) just won't see
+    // the Business Info section rather than blocking the whole page.
+    console.error('Failed to load business info:', error)
+  }
+}
+
+async function handleSaveBusiness() {
+  if (!business.value) return
+  isSavingBusiness.value = true
+  businessError.value = ''
+  try {
+    const updated = await updateMyBusiness(business.value.business_id, businessForm.value)
+    business.value = { ...business.value, ...updated }
+    flash(successMessage, 'Business info updated.')
+  } catch (error) {
+    businessError.value = error.message || 'Failed to update business info.'
+  } finally {
+    isSavingBusiness.value = false
+  }
+}
 
 function goBack() {
   router.back()
@@ -231,5 +320,8 @@ async function handleChangePassword() {
   }
 }
 
-onMounted(fetchProfile)
+onMounted(() => {
+  fetchProfile()
+  fetchBusiness()
+})
 </script>

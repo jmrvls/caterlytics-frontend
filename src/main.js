@@ -20,6 +20,7 @@ import StaffManagement from './Views/StaffManagement.vue'
 import ReportsAnalytics from './Views/ReportsAnalytics.vue'
 import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
+import RegisterBusinessView from './Views/RegisterBusinessView.vue'
 
 // Routes
 const routes = [
@@ -35,7 +36,16 @@ const routes = [
   { path: '/admin/staff', component: StaffManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/reports', component: ReportsAnalytics, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/client/bookings', component: ClientDashboard, meta: { requiresAuth: true, roles: ['Client'] } },
-  { path: '/settings', component: SettingsView, meta: { requiresAuth: true, roles: ['Admin'] } }
+  // Self-service business onboarding: only plain Client accounts can
+  // register a new business (matches the guard inside register_business()
+  // itself — an account already attached to a business will get a clear
+  // error from that RPC rather than a confusing route bounce).
+  { path: '/register-business', component: RegisterBusinessView, meta: { requiresAuth: true, roles: ['Client'] } },
+  // FIXED: this was Admin-only, which meant an Owner/Manager (the role
+  // register_business() actually assigns to a new business owner) or Staff
+  // could never reach their own account settings. Everyone who's logged in
+  // needs to be able to view/edit their own profile here.
+  { path: '/settings', component: SettingsView, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager', 'Client'] } }
 ]
 
 const router = createRouter({

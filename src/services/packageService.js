@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 export async function getAllPackages() {
   const { data, error } = await supabase
     .from('tbl_menu_packages')
-    .select('*')
+    .select('*, tbl_business(business_id, business_name, address, contact_number)')
     .order('package_id', { ascending: true });
 
   if (error) throw error;
