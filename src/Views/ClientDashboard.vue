@@ -179,7 +179,7 @@
             </div>
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Package</label>
-              <select v-model="form.package_id" :disabled="!selectedBusinessId" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+              <select v-model="form.package_id" @change="loadPackageMenu(form.package_id)" :disabled="!selectedBusinessId" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
                 <option value="" disabled>{{ selectedBusinessId ? 'Select a package' : 'Select a business first' }}</option>
                 <option v-for="p in businessPackages" :key="p.package_id" :value="p.package_id">
                   {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head
@@ -196,6 +196,41 @@
             <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
               Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0)) }}
             </p>
+          </div>
+
+          <!-- ============ CHOOSE YOUR MENU (main module) ============ -->
+          <div v-if="isLoadingPackageMenu" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
+            Loading menu choices...
+          </div>
+          <div v-else-if="packageMenuCategories.length" class="space-y-4">
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Choose Your Menu</p>
+            <div v-for="cat in packageMenuCategories" :key="cat.category" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ cat.category }}</p>
+                <span
+                  class="text-xs font-bold"
+                  :class="(selectedMenuItems[cat.category]?.length || 0) >= cat.max ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'"
+                >
+                  {{ selectedMenuItems[cat.category]?.length || 0 }} / {{ cat.max }} selected
+                </span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                <label
+                  v-for="item in cat.items"
+                  :key="item.item_id"
+                  class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="(selectedMenuItems[cat.category] || []).includes(item.item_id)"
+                    :disabled="!(selectedMenuItems[cat.category] || []).includes(item.item_id) && (selectedMenuItems[cat.category]?.length || 0) >= cat.max"
+                    @change="toggleMenuItem(cat.category, item.item_id, cat.max)"
+                    class="rounded-none accent-emerald-600"
+                  />
+                  {{ item.item_name }}
+                </label>
+              </div>
+            </div>
           </div>
 
           <button type="submit" :disabled="isSubmitting" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-50">
@@ -371,8 +406,8 @@ import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking, updateMyBooking } from '../services/bookingService'
-import { getAllPackages } from '../services/packageService'
+import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking, updateMyBooking, setBookingSelections } from '../services/bookingService'
+import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -428,6 +463,67 @@ const form = ref({
   client_email: ''
 })
 
+// Package menu (main module): which items the client may choose from,
+// per category, and how many per category, for the package they picked.
+const packageMenu = ref({ limits: [], itemsByCategory: {} })
+const selectedMenuItems = ref({}) // { [category]: [item_id, ...] }
+const isLoadingPackageMenu = ref(false)
+
+// Only categories that actually have a limit configured for this package
+// are shown -- packages with no menu set up yet behave exactly as before.
+const packageMenuCategories = computed(() =>
+  MENU_CATEGORIES
+    .map((cat) => ({
+      category: cat,
+      max: packageMenu.value.limits.find((l) => l.category === cat)?.max_selections || 0,
+      items: (packageMenu.value.itemsByCategory[cat] || [])
+        .map((id) => allMenuItemsFlat.value.find((i) => i.item_id === id))
+        .filter(Boolean)
+    }))
+    .filter((c) => c.max > 0 && c.items.length > 0)
+)
+
+// itemsByCategory only stores ids, so keep a lookup of id -> {item_id, item_name}
+// built from whatever the menu endpoint returned inline.
+const allMenuItemsFlat = ref([])
+
+async function loadPackageMenu(packageId) {
+  selectedMenuItems.value = {}
+  packageMenu.value = { limits: [], itemsByCategory: {} }
+  allMenuItemsFlat.value = []
+  if (!packageId) return
+
+  isLoadingPackageMenu.value = true
+  try {
+    packageMenu.value = await getPackageMenu(packageId)
+    // getPackageMenu only returns item_ids; fetch names via tbl_menu_items
+    // through the packages the client can already see is overkill here, so
+    // pull names from the same RLS-safe table directly.
+    const { supabase } = await import('../supabaseClient')
+    const ids = Object.values(packageMenu.value.itemsByCategory).flat()
+    if (ids.length) {
+      const { data } = await supabase.from('tbl_menu_items').select('item_id, item_name').in('item_id', ids)
+      allMenuItemsFlat.value = data || []
+    }
+  } catch (error) {
+    console.error('Failed to load package menu:', error)
+  } finally {
+    isLoadingPackageMenu.value = false
+  }
+}
+
+function toggleMenuItem(category, itemId, max) {
+  const current = selectedMenuItems.value[category] || []
+  const idx = current.indexOf(itemId)
+  if (idx >= 0) {
+    current.splice(idx, 1)
+  } else {
+    if (current.length >= max) return
+    current.push(itemId)
+  }
+  selectedMenuItems.value = { ...selectedMenuItems.value, [category]: current }
+}
+
 const selectedPackage = computed(() => packages.value.find((p) => p.package_id === form.value.package_id))
 const selectedEditPackage = computed(() => packages.value.find((p) => p.package_id === editForm.value.package_id))
 
@@ -464,6 +560,8 @@ function selectBusiness(id) {
   selectedBusinessId.value = id
   form.value.package_id = ''
   conflictWarning.value = ''
+  selectedMenuItems.value = {}
+  packageMenu.value = { limits: [], itemsByCategory: {} }
   // A date may already be filled in from before; re-check it for this business.
   if (form.value.event_date) handleDateCheck()
 }
@@ -472,6 +570,8 @@ function clearBusiness() {
   selectedBusinessId.value = ''
   form.value.package_id = ''
   conflictWarning.value = ''
+  selectedMenuItems.value = {}
+  packageMenu.value = { limits: [], itemsByCategory: {} }
 }
 
 onMounted(() => {
@@ -606,7 +706,7 @@ async function submitBooking() {
   isSubmitting.value = true
 
   try {
-    await createBooking({
+    const newBooking = await createBooking({
       client_name: userName.value,
       client_email: form.value.client_email,
       event_date: form.value.event_date,
@@ -618,9 +718,25 @@ async function submitBooking() {
       business_id: selectedBusinessId.value || null
     })
 
+    // Save the client's per-category menu picks against the new booking
+    // (only relevant when this package actually has a menu configured).
+    const flatSelections = Object.values(selectedMenuItems.value)
+      .flat()
+      .map((item_id) => ({ item_id }))
+    if (flatSelections.length) {
+      try {
+        await setBookingSelections(newBooking.booking_id, flatSelections)
+      } catch (selError) {
+        console.error('Failed to save menu selections:', selError)
+        pageError.value = 'Booking was submitted, but we couldn\'t save your menu picks. Please edit the booking to try again.'
+      }
+    }
+
     successMessage.value = 'Booking request submitted! We will confirm it shortly.'
     form.value = { ...form.value, event_date: '', event_time: '', event_location: '', guest_count: null, package_id: '' }
     selectedBusinessId.value = ''
+    selectedMenuItems.value = {}
+    packageMenu.value = { limits: [], itemsByCategory: {} }
     conflictWarning.value = ''
     await loadMyBookings()
     activeTab.value = 'My Bookings'

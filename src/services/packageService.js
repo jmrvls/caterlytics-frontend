@@ -104,3 +104,92 @@ export async function setPackageIngredients(packageId, ingredients) {
   if (error) throw new Error('Failed to update package ingredients.');
   return data || [];
 }
+
+// ---------- Menu Categories (Main Course / Side Dish / Dessert / Drinks) ----------
+// This is the "main module": each package is composed of menu items grouped
+// by category, and the client can only pick up to N items per category
+// (e.g. Package 1 = choose 2 Main Course, Package 2 = choose 3).
+
+export const MENU_CATEGORIES = ['Main Course', 'Side Dish', 'Dessert', 'Drinks'];
+
+// Full catalog of menu items this business offers, across all packages.
+export async function getAllMenuItems() {
+  const { data, error } = await supabase
+    .from('tbl_menu_items')
+    .select('*')
+    .order('category', { ascending: true })
+    .order('item_name', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createMenuItem(item) {
+  const { data, error } = await supabase
+    .from('tbl_menu_items')
+    .insert({
+      item_name: item.item_name,
+      category: item.category,
+      is_active: item.is_active ?? true,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateMenuItem(itemId, item) {
+  const { data, error } = await supabase
+    .from('tbl_menu_items')
+    .update({
+      item_name: item.item_name,
+      category: item.category,
+      is_active: item.is_active ?? true,
+    })
+    .eq('item_id', itemId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteMenuItem(itemId) {
+  const { error } = await supabase.from('tbl_menu_items').delete().eq('item_id', itemId);
+  if (error) throw error;
+  return { message: 'Menu item deleted successfully' };
+}
+
+// The menu setup for one package: which items are offered per category,
+// and how many the client may pick per category.
+// Returns { limits: [{ category, max_selections }], itemsByCategory: { category: [item_id,...] } }
+export async function getPackageMenu(packageId) {
+  const [{ data: limits, error: limitsErr }, { data: items, error: itemsErr }] = await Promise.all([
+    supabase.from('tbl_package_category_limits').select('category, max_selections').eq('package_id', packageId),
+    supabase.from('tbl_package_menu_items').select('category, item_id').eq('package_id', packageId),
+  ]);
+
+  if (limitsErr) throw limitsErr;
+  if (itemsErr) throw itemsErr;
+
+  const itemsByCategory = {};
+  for (const row of items || []) {
+    if (!itemsByCategory[row.category]) itemsByCategory[row.category] = [];
+    itemsByCategory[row.category].push(row.item_id);
+  }
+
+  return { limits: limits || [], itemsByCategory };
+}
+
+// Replace a package's whole menu setup atomically.
+// categories = [{ category, max_selections, item_ids: [1,2,3] }, ...]
+export async function setPackageMenu(packageId, categories) {
+  const { data, error } = await supabase.rpc('set_package_menu', {
+    p_package_id: packageId,
+    p_categories: categories,
+  });
+
+  if (error) throw new Error('Failed to update package menu.');
+  return data;
+}

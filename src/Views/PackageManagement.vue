@@ -178,6 +178,11 @@
                 </svg>
               </div>
               <div class="flex items-center gap-1">
+                <button @click="openMenuModal(pkg)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/30" title="Manage menu">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                  </svg>
+                </button>
                 <button @click="openIngredientsModal(pkg)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30" title="Manage ingredients">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
@@ -218,6 +223,71 @@
 
       </div>
     </main>
+
+    <!-- ============ MANAGE MENU MODAL (main module) ============ -->
+    <div v-if="showMenuModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Menu — {{ menuPackage?.package_name }}</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
+          Set which menu items are offered in this package, per category, and how many the client may pick from each.
+        </p>
+
+        <div v-if="menuError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
+          {{ menuError }}
+        </div>
+
+        <div v-if="isLoadingMenu" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
+          Loading menu...
+        </div>
+
+        <div v-else class="space-y-4">
+          <div v-for="cat in MENU_CATEGORIES" :key="cat" class="border border-gray-100 dark:border-gray-700 rounded-none p-4">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <h4 class="font-semibold text-gray-800 dark:text-gray-100">{{ cat }}</h4>
+              <div class="flex items-center gap-2 text-sm flex-shrink-0">
+                <label class="text-gray-500 dark:text-gray-400 whitespace-nowrap">Client picks</label>
+                <input
+                  type="number" min="0" step="1"
+                  v-model.number="menuForm[cat].max_selections"
+                  placeholder="0"
+                  class="w-16 p-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+            </div>
+
+            <div v-if="menuItemsByCategory[cat]?.length" class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 mb-3">
+              <label v-for="item in menuItemsByCategory[cat]" :key="item.item_id" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer">
+                <input type="checkbox" :value="item.item_id" v-model="menuForm[cat].item_ids" class="rounded-none accent-emerald-600" />
+                {{ item.item_name }}
+              </label>
+            </div>
+            <p v-else class="text-xs text-gray-400 dark:text-gray-500 mb-3">No {{ cat }} items yet. Add one below.</p>
+
+            <div class="flex gap-2">
+              <input
+                type="text"
+                v-model="newItemName[cat]"
+                @keyup.enter.prevent="handleAddMenuItem(cat)"
+                :placeholder="`New ${cat.toLowerCase()} item...`"
+                class="flex-1 p-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+              />
+              <button type="button" @click="handleAddMenuItem(cat)" class="px-3 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-none hover:bg-gray-200 dark:hover:bg-gray-600 flex-shrink-0">
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 pt-6">
+          <button type="button" @click="closeMenuModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            Cancel
+          </button>
+          <button type="button" @click="handleSaveMenu" :disabled="isSavingMenu" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+            {{ isSavingMenu ? 'Saving...' : 'Save Menu' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ============ MANAGE INGREDIENTS MODAL ============ -->
     <div v-if="showIngredientsModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
@@ -363,7 +433,12 @@ import {
   deletePackage,
   getPackageIngredients,
   setPackageIngredients,
-  getAllPackageCosting
+  getAllPackageCosting,
+  MENU_CATEGORIES,
+  getAllMenuItems,
+  createMenuItem,
+  getPackageMenu,
+  setPackageMenu
 } from '../services/packageService'
 import { getAllInventory } from '../services/inventoryService'
 
@@ -406,6 +481,31 @@ const isLoadingIngredients = ref(false)
 const isSavingIngredients = ref(false)
 const ingredientsError = ref('')
 let ingredientRowKey = 0
+
+// ---------- Manage Menu (main module: categorized, limited selections) ----------
+const showMenuModal = ref(false)
+const menuPackage = ref(null)
+const allMenuItems = ref([])
+const isLoadingMenu = ref(false)
+const isSavingMenu = ref(false)
+const menuError = ref('')
+const menuForm = ref({})
+const newItemName = ref({})
+
+const menuItemsByCategory = computed(() => {
+  const map = {}
+  for (const cat of MENU_CATEGORIES) map[cat] = []
+  for (const item of allMenuItems.value) {
+    if (map[item.category]) map[item.category].push(item)
+  }
+  return map
+})
+
+function emptyMenuForm() {
+  const f = {}
+  for (const cat of MENU_CATEGORIES) f[cat] = { max_selections: null, item_ids: [] }
+  return f
+}
 
 const emptyForm = () => ({
   package_name: '',
@@ -593,6 +693,74 @@ async function handleSaveIngredients() {
     console.error(error)
   } finally {
     isSavingIngredients.value = false
+  }
+}
+
+async function openMenuModal(pkg) {
+  menuPackage.value = pkg
+  menuError.value = ''
+  showMenuModal.value = true
+  isLoadingMenu.value = true
+  newItemName.value = {}
+
+  try {
+    const [items, menu] = await Promise.all([getAllMenuItems(), getPackageMenu(pkg.package_id)])
+    allMenuItems.value = items
+    const f = emptyMenuForm()
+    for (const row of menu.limits) {
+      if (f[row.category]) f[row.category].max_selections = row.max_selections
+    }
+    for (const cat of Object.keys(menu.itemsByCategory)) {
+      if (f[cat]) f[cat].item_ids = [...menu.itemsByCategory[cat]]
+    }
+    menuForm.value = f
+  } catch (error) {
+    menuError.value = 'Failed to load menu. Please try again.'
+    console.error(error)
+  } finally {
+    isLoadingMenu.value = false
+  }
+}
+
+function closeMenuModal() {
+  showMenuModal.value = false
+  menuPackage.value = null
+  menuForm.value = {}
+}
+
+async function handleAddMenuItem(category) {
+  const name = (newItemName.value[category] || '').trim()
+  if (!name) return
+  menuError.value = ''
+  try {
+    const created = await createMenuItem({ item_name: name, category })
+    allMenuItems.value.push(created)
+    menuForm.value[category].item_ids.push(created.item_id)
+    newItemName.value[category] = ''
+  } catch (error) {
+    menuError.value = `Failed to add "${name}". Please try again.`
+    console.error(error)
+  }
+}
+
+async function handleSaveMenu() {
+  menuError.value = ''
+  isSavingMenu.value = true
+  try {
+    const categories = MENU_CATEGORIES
+      .filter((cat) => menuForm.value[cat]?.max_selections > 0)
+      .map((cat) => ({
+        category: cat,
+        max_selections: menuForm.value[cat].max_selections,
+        item_ids: menuForm.value[cat].item_ids
+      }))
+    await setPackageMenu(menuPackage.value.package_id, categories)
+    showMenuModal.value = false
+  } catch (error) {
+    menuError.value = error?.message || 'Failed to save menu. Please try again.'
+    console.error(error)
+  } finally {
+    isSavingMenu.value = false
   }
 }
 

@@ -1,5 +1,4 @@
 import { supabase } from '../supabaseClient';
-import { adjustInventoryStock } from './inventoryService';
 import { toTitleCase } from '../utils/textFormat';
 
 export async function getAllBookings() {
@@ -138,64 +137,9 @@ export async function updateBookingStatus(id, status) {
     throw error;
   }
 
-  let stockWarning = null;
-  if (status === 'Cancelled' && currentBooking.booking_status === 'Confirmed') {
-    // A previously-Confirmed booking is being cancelled: give the
-    // deducted ingredients back to inventory.
-    const failedItems = await adjustStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id, 1);
-    if (failedItems.length > 0) {
-      stockWarning = `Stock restoration failed for: ${failedItems.join(', ')}. Please adjust inventory manually.`;
-    }
-  }
-
-  return { ...data, stockWarning };
-}
-
-// Auto Deduct/Restore Stock: matches the booking's package to its ingredient
-// list (tbl_package_ingredients) and adds/subtracts quantity_per_guest x
-// guest_count to/from tbl_inventory for each ingredient.
-// direction: -1 to deduct (booking confirmed), +1 to restore (booking cancelled).
-async function adjustStockForBooking(packageName, guestCount, packageId, direction) {
-  const failedItems = [];
-
-  let pkg = null;
-  if (packageId) {
-    const { data } = await supabase
-      .from('tbl_menu_packages')
-      .select('package_id')
-      .eq('package_id', packageId)
-      .maybeSingle();
-    pkg = data;
-  } else {
-    const { data } = await supabase
-      .from('tbl_menu_packages')
-      .select('package_id')
-      .eq('package_name', packageName)
-      .maybeSingle();
-    pkg = data;
-  }
-
-  if (!pkg) return failedItems;
-
-  const { data: ingredients } = await supabase
-    .from('tbl_package_ingredients')
-    .select('item_id, quantity_per_guest, tbl_inventory(item_name)')
-    .eq('package_id', pkg.package_id);
-
-  if (!ingredients || ingredients.length === 0) return failedItems;
-
-  for (const ing of ingredients) {
-    const totalNeeded = Number(ing.quantity_per_guest) * Number(guestCount || 1);
-    if (totalNeeded > 0) {
-      try {
-        await adjustInventoryStock(ing.item_id, direction * totalNeeded);
-      } catch (err) {
-        failedItems.push(ing.tbl_inventory?.item_name || `item_id ${ing.item_id}`);
-      }
-    }
-  }
-
-  return failedItems;
+  // Stock restore (Cancelled / back to Pending / deleted / guest change) is
+  // handled by the database trigger on tbl_bookings, so nothing to do here.
+  return { ...data, stockWarning: null };
 }
 
 export async function deleteBooking(id) {
@@ -212,14 +156,8 @@ export async function deleteBooking(id) {
 // booking policy) enforces that a Client can only touch their own
 // bookings, only while Pending/Confirmed, and can only move to Cancelled.
 export async function cancelMyBooking(id) {
-  const { data: currentBooking, error: fetchError } = await supabase
-    .from('tbl_bookings')
-    .select('booking_status, package_name, package_id, guest_count')
-    .eq('booking_id', id)
-    .single();
-
-  if (fetchError) throw new Error('Failed to cancel booking. Please try again.');
-
+  // If the booking was Confirmed, the database trigger gives the deducted
+  // ingredients back to inventory automatically.
   const { data, error } = await supabase
     .from('tbl_bookings')
     .update({ booking_status: 'Cancelled' })
@@ -228,12 +166,6 @@ export async function cancelMyBooking(id) {
     .single();
 
   if (error) throw new Error('Failed to cancel booking. Please try again.');
-
-  // If it was already Confirmed (stock was deducted), give it back.
-  if (currentBooking.booking_status === 'Confirmed') {
-    await adjustStockForBooking(currentBooking.package_name, currentBooking.guest_count, currentBooking.package_id, 1);
-  }
-
   return data;
 }
 
@@ -310,6 +242,32 @@ export async function getMyBookings() {
     .order('event_date', { ascending: true });
 
   if (error) throw error;
+  return data || [];
+}
+
+// ---------- Menu Selections (client's picks within a package) ----------
+
+// The client's currently-saved menu picks for one booking, grouped by category.
+export async function getBookingSelections(bookingId) {
+  const { data, error } = await supabase
+    .from('tbl_booking_selected_items')
+    .select('item_id, category, tbl_menu_items(item_name)')
+    .eq('booking_id', bookingId);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Replace the client's menu picks for a booking, atomically, with the
+// per-category limits enforced server-side (set_booking_selected_items).
+// selections = [{ item_id }, ...]
+export async function setBookingSelections(bookingId, selections) {
+  const { data, error } = await supabase.rpc('set_booking_selected_items', {
+    p_booking_id: bookingId,
+    p_selections: selections,
+  });
+
+  if (error) throw new Error(error.message || 'Failed to save menu selections.');
   return data || [];
 }
 
