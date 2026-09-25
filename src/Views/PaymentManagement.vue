@@ -325,7 +325,7 @@
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Total Amount</label>
             <input type="number" min="0" step="0.01" v-model.number="createForm.total_amount" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Auto-filled from the package price — edit kung may discount o custom quote.</p>
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Auto-filled from the package price — edit if there's a discount or custom quote.</p>
           </div>
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Initial Down Payment (optional)</label>
