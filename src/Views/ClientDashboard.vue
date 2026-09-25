@@ -349,7 +349,7 @@
 
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Business</label>
-              <select v-model="editBusinessId" @change="editForm.package_id = ''" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+              <select v-model="editBusinessId" @change="editForm.package_id = ''; loadEditPackageMenu('')" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
                 <option value="" disabled>Select a catering business</option>
                 <option v-for="b in businesses" :key="b.business_id" :value="b.business_id">{{ b.business_name }}</option>
               </select>
@@ -366,7 +366,7 @@
               </div>
               <div>
                 <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Package</label>
-                <select v-model="editForm.package_id" :disabled="!editBusinessId" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+                <select v-model="editForm.package_id" @change="handleEditPackageChange" :disabled="!editBusinessId" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
                   <option value="" disabled>{{ editBusinessId ? 'Select a package' : 'Select a business first' }}</option>
                   <option v-for="p in editBusinessPackages" :key="p.package_id" :value="p.package_id">
                     {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head
@@ -383,6 +383,41 @@
               <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
                 Est. Total: ₱{{ formatPrice((selectedEditPackage.price_per_head || 0) * (editForm.guest_count || 0)) }}
               </p>
+            </div>
+
+            <!-- ============ CHOOSE YOUR MENU (edit) ============ -->
+            <div v-if="isLoadingEditPackageMenu" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
+              Loading menu choices...
+            </div>
+            <div v-else-if="editPackageMenuCategories.length" class="space-y-4">
+              <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Choose Your Menu</p>
+              <div v-for="cat in editPackageMenuCategories" :key="cat.category" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ cat.category }}</p>
+                  <span
+                    class="text-xs font-bold"
+                    :class="(editSelectedMenuItems[cat.category]?.length || 0) >= cat.max ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'"
+                  >
+                    {{ editSelectedMenuItems[cat.category]?.length || 0 }} / {{ cat.max }} selected
+                  </span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                  <label
+                    v-for="item in cat.items"
+                    :key="item.item_id"
+                    class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="(editSelectedMenuItems[cat.category] || []).includes(item.item_id)"
+                      :disabled="!(editSelectedMenuItems[cat.category] || []).includes(item.item_id) && (editSelectedMenuItems[cat.category]?.length || 0) >= cat.max"
+                      @change="toggleEditMenuItem(cat.category, item.item_id, cat.max)"
+                      class="rounded-none accent-emerald-600"
+                    />
+                    {{ item.item_name }}
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div class="flex gap-3 pt-2">
@@ -406,7 +441,7 @@ import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking, updateMyBooking, setBookingSelections } from '../services/bookingService'
+import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -445,6 +480,14 @@ const editForm = ref({
   guest_count: null,
   package_id: ''
 })
+
+// Package menu for the EDIT modal -- mirrors the "Choose Your Menu" state
+// below, but kept separate so editing a booking doesn't clobber the new
+// booking form's in-progress selections.
+const editPackageMenu = ref({ limits: [], itemsByCategory: {} })
+const editSelectedMenuItems = ref({}) // { [category]: [item_id, ...] }
+const isLoadingEditPackageMenu = ref(false)
+const editAllMenuItemsFlat = ref([])
 
 const isLoading = ref(false)
 const isSubmitting = ref(false)
@@ -522,6 +565,61 @@ function toggleMenuItem(category, itemId, max) {
     current.push(itemId)
   }
   selectedMenuItems.value = { ...selectedMenuItems.value, [category]: current }
+}
+
+// Same shape as packageMenuCategories/loadPackageMenu/toggleMenuItem above,
+// but for the Edit Booking modal so changing the package there also lets
+// the client re-pick their menu instead of leaving stale selections behind.
+const editPackageMenuCategories = computed(() =>
+  MENU_CATEGORIES
+    .map((cat) => ({
+      category: cat,
+      max: editPackageMenu.value.limits.find((l) => l.category === cat)?.max_selections || 0,
+      items: (editPackageMenu.value.itemsByCategory[cat] || [])
+        .map((id) => editAllMenuItemsFlat.value.find((i) => i.item_id === id))
+        .filter(Boolean)
+    }))
+    .filter((c) => c.max > 0 && c.items.length > 0)
+)
+
+async function loadEditPackageMenu(packageId, { preserveSelections = false } = {}) {
+  if (!preserveSelections) editSelectedMenuItems.value = {}
+  editPackageMenu.value = { limits: [], itemsByCategory: {} }
+  editAllMenuItemsFlat.value = []
+  if (!packageId) return
+
+  isLoadingEditPackageMenu.value = true
+  try {
+    editPackageMenu.value = await getPackageMenu(packageId)
+    const { supabase } = await import('../supabaseClient')
+    const ids = Object.values(editPackageMenu.value.itemsByCategory).flat()
+    if (ids.length) {
+      const { data } = await supabase.from('tbl_menu_items').select('item_id, item_name').in('item_id', ids)
+      editAllMenuItemsFlat.value = data || []
+    }
+  } catch (error) {
+    console.error('Failed to load package menu:', error)
+  } finally {
+    isLoadingEditPackageMenu.value = false
+  }
+}
+
+function toggleEditMenuItem(category, itemId, max) {
+  const current = editSelectedMenuItems.value[category] || []
+  const idx = current.indexOf(itemId)
+  if (idx >= 0) {
+    current.splice(idx, 1)
+  } else {
+    if (current.length >= max) return
+    current.push(itemId)
+  }
+  editSelectedMenuItems.value = { ...editSelectedMenuItems.value, [category]: current }
+}
+
+// editForm.package_id has no @change of its own in the template (only
+// editBusinessId does), so this is called directly from the select.
+function handleEditPackageChange() {
+  loadEditPackageMenu(editForm.value.package_id)
 }
 
 const selectedPackage = computed(() => packages.value.find((p) => p.package_id === form.value.package_id))
@@ -635,7 +733,7 @@ async function handleCancelBooking() {
   }
 }
 
-function openEditModal(booking) {
+async function openEditModal(booking) {
   bookingToEdit.value = booking
   editConflictWarning.value = ''
   editForm.value = {
@@ -646,6 +744,27 @@ function openEditModal(booking) {
     package_id: booking.package_id || ''
   }
   editBusinessId.value = packages.value.find((p) => p.package_id === booking.package_id)?.business_id || ''
+
+  // Load this package's menu setup, then prefill with whatever the client
+  // already picked for this booking (so opening Edit doesn't wipe their picks).
+  editSelectedMenuItems.value = {}
+  if (editForm.value.package_id) {
+    await loadEditPackageMenu(editForm.value.package_id, { preserveSelections: true })
+    try {
+      const existing = await getBookingSelections(booking.booking_id)
+      const byCategory = {}
+      for (const row of existing) {
+        if (!byCategory[row.category]) byCategory[row.category] = []
+        byCategory[row.category].push(row.item_id)
+      }
+      editSelectedMenuItems.value = byCategory
+    } catch (error) {
+      console.error('Failed to load existing menu selections:', error)
+    }
+  } else {
+    editPackageMenu.value = { limits: [], itemsByCategory: {} }
+    editAllMenuItemsFlat.value = []
+  }
 }
 
 async function handleEditDateCheck() {
@@ -675,6 +794,21 @@ async function handleSaveEdit() {
       package_name: selectedEditPackage.value?.package_name || null,
       package_id: selectedEditPackage.value?.package_id || null
     })
+
+    // Always sync menu picks against whatever package is now saved on the
+    // booking -- even an empty selection -- so switching packages (or to a
+    // package with no menu configured) can never leave stale selections
+    // from the old package sitting against this booking_id.
+    const flatEditSelections = Object.values(editSelectedMenuItems.value)
+      .flat()
+      .map((item_id) => ({ item_id }))
+    try {
+      await setBookingSelections(updated.booking_id, flatEditSelections)
+    } catch (selError) {
+      console.error('Failed to save menu selections:', selError)
+      pageError.value = 'Booking was updated, but we couldn\'t save your menu picks. Please edit again to try.'
+    }
+
     const target = myBookings.value.find((b) => b.booking_id === updated.booking_id)
     if (target) Object.assign(target, updated)
     successMessage.value = 'Booking updated!'
