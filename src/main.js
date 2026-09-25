@@ -21,6 +21,7 @@ import ReportsAnalytics from './Views/ReportsAnalytics.vue'
 import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
 import RegisterBusinessView from './Views/Registerbusinessview.vue'
+import SuperAdminDashboard from './Views/SuperAdminDashboard.vue'
 
 // Routes
 const routes = [
@@ -28,6 +29,10 @@ const routes = [
   { path: '/register', component: RegisterView },
   { path: '/forgot-password', component: ForgotPasswordView },
   { path: '/reset-password', component: ResetPasswordView },
+  // Platform-level: manages tenant (business) approvals/suspensions across
+  // the whole system. Distinct from the business-scoped 'Admin' role above,
+  // which only ever sees its own single business.
+  { path: '/super-admin/dashboard', component: SuperAdminDashboard, meta: { requiresAuth: true, roles: ['Super Admin'] } },
   { path: '/admin/dashboard', component: AdminDashboard, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/bookings', component: BookingManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/packages', component: PackageManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
@@ -78,6 +83,8 @@ router.beforeEach((to) => {
       return '/admin/payments'
     } else if (user.role === 'Client') {
       return '/client/bookings'
+    } else if (user.role === 'Super Admin') {
+      return '/super-admin/dashboard'
     } else {
       return '/'
     }

@@ -15,7 +15,12 @@
         {{ errorMessage }}
       </div>
 
-      <form @submit.prevent="handleRegister" class="space-y-5">
+      <div v-if="submitted" class="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl p-4 text-sm font-medium space-y-3">
+        <p>Business submitted! It's now pending approval by the platform admin — you'll be able to log in as its owner once it's approved.</p>
+        <router-link to="/" class="inline-block font-bold underline">Back to login</router-link>
+      </div>
+
+      <form v-else @submit.prevent="handleRegister" class="space-y-5">
         <div class="space-y-1.5">
           <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Business Name</label>
           <input
@@ -80,10 +85,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { registerBusiness } from '../services/businessservice'
+import { logoutUser } from '../services/authService'
 
 const router = useRouter()
 const isLoading = ref(false)
 const errorMessage = ref('')
+const submitted = ref(false)
 
 const form = ref({
   business_name: '',
@@ -97,19 +104,19 @@ const handleRegister = async () => {
   isLoading.value = true
 
   try {
-    const businessId = await registerBusiness(form.value)
+    await registerBusiness(form.value)
 
-    // Keep the cached session user in sync so the rest of the app (route
-    // guard in main.js, sidebars, etc.) immediately sees the new role
-    // without requiring a fresh login.
-    const storedUser = JSON.parse(sessionStorage.getItem('user') || '{}')
-    sessionStorage.setItem('user', JSON.stringify({
-      ...storedUser,
-      role: 'Owner/Manager',
-      business_id: businessId,
-    }))
-
-    router.push('/admin/dashboard')
+    // A brand-new business starts as 'Pending' and can't be used until the
+    // platform Super Admin approves it (see set_business_status()) -- so
+    // unlike the old behavior, we deliberately do NOT drop the new owner
+    // straight into /admin/dashboard here. That would let them use the
+    // dashboard immediately, bypassing the approval gate entirely (the gate
+    // only runs at login). Sign them out and send them back to login,
+    // same as the normal Client sign-up flow already does.
+    await logoutUser()
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
+    submitted.value = true
   } catch (error) {
     errorMessage.value = error.message || 'Something went wrong. Please try again.'
   } finally {

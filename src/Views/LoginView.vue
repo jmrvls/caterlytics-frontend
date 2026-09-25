@@ -156,12 +156,14 @@ const handleLogin = async () => {
 
     if (result.user.role === 'Client') {
       router.push('/client/bookings')
+    } else if (result.user.role === 'Super Admin') {
+      router.push('/super-admin/dashboard')
     } else {
       router.push('/admin/dashboard')
     }
 
   } catch (error) {
-    errorMessage.value = 'Invalid username or password'
+    errorMessage.value = error?.message || 'Invalid username or password'
   } finally {
     isLoading.value = false
   }

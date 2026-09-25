@@ -38,11 +38,40 @@ export async function loginUser(identifier, password) {
 
   const { data: profile, error: profileError } = await supabase
     .from('tbl_profiles')
-    .select('username, full_name, role, avatar_url')
+    .select('username, full_name, role, avatar_url, business_id')
     .eq('id', data.user.id)
     .single();
 
   if (profileError) throw new Error('Failed to load user profile.');
+
+  // Multi-tenant gate: a business-scoped account (Admin/Staff/Owner-Manager)
+  // can only log in while its business is Active. A brand-new self-service
+  // registration starts as 'Pending' until the platform Super Admin approves
+  // it; a tenant the Super Admin has since suspended is locked out the same
+  // way. Client accounts (no business yet) and the Super Admin itself
+  // (no business at all) skip this check entirely.
+  if (profile.business_id) {
+    const { data: business, error: businessError } = await supabase
+      .from('tbl_business')
+      .select('status, business_name')
+      .eq('business_id', profile.business_id)
+      .maybeSingle();
+
+    if (!businessError && business) {
+      if (business.status === 'Pending') {
+        await supabase.auth.signOut();
+        throw new Error('Your business registration is still pending approval by the platform admin.');
+      }
+      if (business.status === 'Suspended') {
+        await supabase.auth.signOut();
+        throw new Error('This business account has been suspended. Contact the platform admin.');
+      }
+      if (business.status === 'Rejected') {
+        await supabase.auth.signOut();
+        throw new Error('This business registration was not approved. Contact the platform admin.');
+      }
+    }
+  }
 
   return {
     message: 'Login successful',
