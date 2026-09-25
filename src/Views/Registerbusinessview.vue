@@ -43,12 +43,13 @@
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contact Number</label>
+          <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Contact Number <span class="text-red-500">*</span></label>
           <input
             type="tel"
             v-model="form.contact_number"
             placeholder="e.g. 0917 123 4567"
             class="w-full p-3.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+            required
           />
         </div>
 
@@ -101,6 +102,17 @@ const form = ref({
 
 const handleRegister = async () => {
   errorMessage.value = ''
+
+  if (!form.value.contact_number || !form.value.contact_number.trim()) {
+    errorMessage.value = 'Contact number is required.'
+    return
+  }
+
+  if (!/^[+]?[\d\s-]{7,}$/.test(form.value.contact_number.trim())) {
+    errorMessage.value = 'Please enter a valid contact number.'
+    return
+  }
+
   isLoading.value = true
 
   try {

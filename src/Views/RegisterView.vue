@@ -204,6 +204,16 @@ const form = ref({
 const handleRegister = async () => {
   errorMessage.value = ''
 
+  if (!form.value.contact_number || !form.value.contact_number.trim()) {
+    errorMessage.value = 'Contact number is required.'
+    return
+  }
+
+  if (!/^[+]?[\d\s-]{7,}$/.test(form.value.contact_number.trim())) {
+    errorMessage.value = 'Please enter a valid contact number.'
+    return
+  }
+
   if (form.value.password !== form.value.confirmPassword) {
     errorMessage.value = 'Passwords do not match.'
     return

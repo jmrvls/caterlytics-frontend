@@ -1,0 +1,13 @@
+[33mcommit ecd22f9d4b0ab126db4fab74a2e5bc72a1d18423[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Jomari Dorado <jomaridorado99@gmail.com>
+Date:   Fri Sep 25 14:36:17 2026 +0800
+
+    add other featured
+
+ src/Views/LoginView.vue            |   4 [32m+[m[31m-[m
+ src/Views/Registerbusinessview.vue |  35 [32m+++[m[31m--[m
+ src/Views/Superadmindashboard.vue  | 270 [32m+++++++++++++++++++++++++++++++++++++[m
+ src/main.js                        |   7 [32m+[m
+ src/services/authService.js        |  31 [32m++++[m[31m-[m
+ src/services/superadminservice.js  |  33 [32m+++++[m
+ 6 files changed, 364 insertions(+), 16 deletions(-)

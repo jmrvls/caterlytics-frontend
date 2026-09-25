@@ -84,13 +84,29 @@
         <h3 class="font-bold text-gray-800 dark:text-gray-100">Choose a Catering Business</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Tap the caterer you want, then fill in your event details.</p>
 
+        <div v-if="businesses.length" class="relative mb-4">
+          <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            v-model="businessSearch"
+            placeholder="Search by name or address..."
+            class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+          />
+        </div>
+
         <div v-if="!businesses.length" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
           No catering businesses are available yet.
         </div>
 
+        <div v-else-if="!filteredBusinessesForBooking.length" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500 text-sm">
+          No businesses match "{{ businessSearch }}".
+        </div>
+
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <button
-            v-for="b in businesses"
+            v-for="b in filteredBusinessesForBooking"
             :key="b.business_id"
             type="button"
             @click="selectBusiness(b.business_id)"
@@ -241,6 +257,23 @@
 
       <!-- ============ MY BOOKINGS TAB ============ -->
       <div v-else-if="activeTab === 'My Bookings'">
+        <div
+          v-for="change in statusChangeAlerts"
+          :key="change.booking.booking_id"
+          class="flex items-start justify-between gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-3"
+        >
+          <p class="text-sm text-blue-800 dark:text-blue-300">
+            <span class="font-semibold">{{ change.booking.package_name || 'Your booking' }}</span>
+            for {{ formatDate(change.booking.event_date) }} is now
+            <span class="font-bold">{{ change.to }}</span>.
+          </p>
+          <button @click="dismissStatusAlert(change.booking.booking_id)" class="text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 flex-shrink-0" aria-label="Dismiss">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
         <div v-if="isLoading" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500">
           Loading your bookings...
         </div>
@@ -299,8 +332,14 @@
       <div v-if="bookingToCancel" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
           <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Cancel this booking?</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
             This is for <span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDate(bookingToCancel.event_date) }}</span> at {{ bookingToCancel.event_location }}. This can't be undone once cancelled.
+          </p>
+          <p
+            v-if="bookingToCancel.tbl_payments && Number(bookingToCancel.tbl_payments.amount_paid) > 0"
+            class="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-5"
+          >
+            You've already paid ₱{{ formatPrice(bookingToCancel.tbl_payments.amount_paid) }} toward this booking. Refunds for cancelled bookings are handled directly with the business — please coordinate with them after cancelling.
           </p>
           <div class="flex gap-3">
             <button @click="bookingToCancel = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -495,6 +534,13 @@ const successMessage = ref('')
 const pageError = ref('')
 const conflictWarning = ref('')
 
+// Booking status-change alerts: since a client isn't paying online or being
+// emailed, this is how they find out a Pending booking got Confirmed/Rejected
+// since their last visit. No backend table needed -- just remembers what was
+// last seen, per user, in localStorage.
+const statusChangeAlerts = ref([])
+let currentUserId = ''
+
 const todayStr = new Date().toISOString().split('T')[0]
 
 const form = ref({
@@ -649,6 +695,16 @@ const businesses = computed(() => {
   }
   return [...map.values()].sort((a, b) => a.business_name.localeCompare(b.business_name))
 })
+// Search/filter for Step 1's business grid -- matches on name or address.
+const businessSearch = ref('')
+const filteredBusinessesForBooking = computed(() => {
+  const q = businessSearch.value.trim().toLowerCase()
+  if (!q) return businesses.value
+  return businesses.value.filter((b) =>
+    b.business_name.toLowerCase().includes(q) || (b.address || '').toLowerCase().includes(q)
+  )
+})
+
 const selectedBusiness = computed(() => businesses.value.find((b) => b.business_id === selectedBusinessId.value))
 const editBusiness = computed(() => businesses.value.find((b) => b.business_id === editBusinessId.value))
 const businessPackages = computed(() => packages.value.filter((p) => p.business_id === selectedBusinessId.value))
@@ -687,10 +743,49 @@ onMounted(() => {
   userInitial.value = user.full_name.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
   form.value.client_email = user.email || ''
+  currentUserId = user.user_id || user.id || user.email || ''
 
   loadPackages()
   loadMyBookings()
 })
+
+// Compares freshly-fetched bookings against what was last seen (localStorage,
+// per user) and surfaces anything whose status changed since then -- e.g. a
+// Pending booking that just got Confirmed or Rejected.
+function checkStatusChanges(freshBookings) {
+  if (!currentUserId) return
+  const storageKey = `caterlytics_seen_statuses_${currentUserId}`
+  let previous = {}
+  try {
+    previous = JSON.parse(localStorage.getItem(storageKey) || '{}')
+  } catch {
+    previous = {}
+  }
+
+  const hadPreviousData = Object.keys(previous).length > 0
+  const changes = []
+  const nextSnapshot = {}
+
+  for (const b of freshBookings) {
+    nextSnapshot[b.booking_id] = b.booking_status
+    const oldStatus = previous[b.booking_id]
+    if (hadPreviousData && oldStatus && oldStatus !== b.booking_status) {
+      changes.push({ booking: b, from: oldStatus, to: b.booking_status })
+    }
+  }
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(nextSnapshot))
+  } catch {
+    // localStorage unavailable -- alerts just won't persist across visits.
+  }
+
+  statusChangeAlerts.value = changes
+}
+
+function dismissStatusAlert(bookingId) {
+  statusChangeAlerts.value = statusChangeAlerts.value.filter((c) => c.booking.booking_id !== bookingId)
+}
 
 async function loadPackages() {
   try {
@@ -704,6 +799,7 @@ async function loadMyBookings() {
   isLoading.value = true
   try {
     myBookings.value = await getMyBookings()
+    checkStatusChanges(myBookings.value)
   } catch (error) {
     pageError.value = 'Failed to load your bookings.'
     console.error(error)
