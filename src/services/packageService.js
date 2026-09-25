@@ -3,7 +3,7 @@ import { supabase } from '../supabaseClient';
 export async function getAllPackages() {
   const { data, error } = await supabase
     .from('tbl_menu_packages')
-    .select('*, tbl_business(business_id, business_name, address, contact_number)')
+    .select('*, tbl_business(business_id, business_name, address, contact_number, logo_url)')
     .order('package_id', { ascending: true });
 
   if (error) throw error;
@@ -49,6 +49,36 @@ export async function deletePackage(id) {
 
   if (error) throw error;
   return { message: 'Package deleted successfully' };
+}
+
+// Uploads a package photo and updates tbl_menu_packages.image_url. Reuses the
+// same "avatars" storage bucket/RLS as user profile pictures and the business
+// logo — the folder segment just needs to match auth.uid(), which holds here
+// since ownerId is always the currently signed-in user.
+export async function uploadPackageImage(ownerId, packageId, file) {
+  const ext = file.name.split('.').pop();
+  const filePath = `${ownerId}/package-${packageId}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, { upsert: true, cacheControl: '3600' });
+
+  if (uploadError) throw new Error('Failed to upload image.');
+
+  const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  // Cache-bust so the new image shows immediately instead of the browser
+  // reusing a stale cached image at the same URL.
+  const image_url = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+  const { data, error } = await supabase
+    .from('tbl_menu_packages')
+    .update({ image_url })
+    .eq('package_id', packageId)
+    .select()
+    .single();
+
+  if (error) throw new Error('Failed to save image.');
+  return data;
 }
 
 // ---------- Food Costing / Margin ----------

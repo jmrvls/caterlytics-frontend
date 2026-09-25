@@ -26,10 +26,41 @@ export async function registerBusiness({ business_name, contact_email, contact_n
 export async function getMyBusiness() {
   const { data, error } = await supabase
     .from('tbl_business')
-    .select('business_id, business_name, owner_id, contact_email, contact_number, address, created_at')
+    .select('business_id, business_name, owner_id, contact_email, contact_number, address, logo_url, created_at')
     .maybeSingle();
 
   if (error) throw new Error('Failed to load business info.');
+  return data;
+}
+
+// Uploads a new business logo and updates tbl_business.logo_url. Reuses the
+// same "avatars" storage bucket/RLS as user profile pictures — the folder
+// segment just needs to match auth.uid(), which is true here since only the
+// business owner (tbl_business.owner_id === auth.uid()) can call this.
+export async function uploadBusinessLogo(ownerId, businessId, file) {
+  const ext = file.name.split('.').pop();
+  const filePath = `${ownerId}/business-logo-${businessId}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, { upsert: true, cacheControl: '3600' });
+
+  if (uploadError) throw new Error('Failed to upload logo.');
+
+  const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  // Cache-bust so the new logo shows immediately instead of the browser
+  // reusing a stale cached image at the same URL.
+  const logo_url = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+  const { data, error } = await supabase
+    .from('tbl_business')
+    .update({ logo_url })
+    .eq('business_id', businessId)
+    .select()
+    .maybeSingle();
+
+  if (error) throw new Error('Failed to save logo.');
+  if (!data) throw new Error('Only the business owner can edit these details.');
   return data;
 }
 

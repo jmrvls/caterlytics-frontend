@@ -140,6 +140,12 @@
             <div class="hidden lg:block">
               <NotificationBell />
             </div>
+            <button @click="openAddonsModal" class="flex items-center justify-center gap-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition whitespace-nowrap">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Add-Ons
+            </button>
             <button @click="openCreateModal" class="flex items-center justify-center gap-2 bg-emerald-600 text-white px-3 py-2.5 sm:px-4 rounded-none font-semibold text-sm hover:bg-emerald-700 transition whitespace-nowrap min-w-[172px]">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -171,12 +177,17 @@
             :key="pkg.package_id"
             class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 p-5 flex flex-col hover:border-emerald-200 dark:hover:border-emerald-700 transition"
           >
+            <div v-if="pkg.image_url" class="-mx-5 -mt-5 mb-3 h-32 overflow-hidden bg-gray-100 dark:bg-gray-900">
+              <img :src="pkg.image_url" :alt="pkg.package_name" class="w-full h-full object-cover" />
+            </div>
+
             <div class="flex items-start justify-between mb-2">
-              <div class="w-10 h-10 rounded-none bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+              <div v-if="!pkg.image_url" class="w-10 h-10 rounded-none bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </div>
+              <div v-else></div>
               <div class="flex items-center gap-1">
                 <button @click="openMenuModal(pkg)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/30" title="Manage menu">
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -367,6 +378,21 @@
 
         <form @submit.prevent="handleSavePackage" class="space-y-4">
           <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Package Photo</label>
+            <div class="mt-1 flex items-center gap-3">
+              <div class="w-20 h-20 rounded-none bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 overflow-hidden flex items-center justify-center flex-shrink-0">
+                <img v-if="imagePreviewUrl" :src="imagePreviewUrl" alt="Package photo" class="w-full h-full object-cover" />
+                <svg v-else class="w-8 h-8 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                </svg>
+              </div>
+              <input ref="imageInput" type="file" accept="image/png, image/jpeg, image/webp" class="hidden" @change="handleImageChange" />
+              <button type="button" @click="imageInput.click()" :disabled="isUploadingImage" class="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 px-3 py-2 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+                {{ imagePreviewUrl ? 'Change Photo' : 'Upload Photo' }}
+              </button>
+            </div>
+          </div>
+          <div>
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Package Name</label>
             <input type="text" v-model="form.package_name" placeholder="e.g. Silver Package" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
@@ -388,6 +414,112 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ============ MANAGE ADD-ONS MODAL (ala carte extras) ============ -->
+    <div v-if="showAddonsModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Add-Ons</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
+          Extra items or services clients can attach to any booking on top of a package (e.g. Extra Lechon, Extra Waiter, Photobooth).
+        </p>
+
+        <div v-if="addonsError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
+          {{ addonsError }}
+        </div>
+
+        <div v-if="isLoadingAddons" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
+          Loading add-ons...
+        </div>
+
+        <div v-else class="space-y-2 mb-5">
+          <div v-if="addons.length === 0" class="text-sm text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-none p-4 text-center">
+            No add-ons yet. Add your first one below.
+          </div>
+          <div
+            v-for="a in addons"
+            :key="a.addon_id"
+            class="flex items-center justify-between gap-3 border border-gray-100 dark:border-gray-700 rounded-none p-3"
+          >
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate" :class="{ 'opacity-50 line-through': !a.is_active }">{{ a.addon_name }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">₱{{ formatPrice(a.price) }} · {{ a.unit_label }}</p>
+            </div>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <button type="button" @click="toggleAddonActive(a)" class="text-xs font-semibold px-2 py-1 rounded-none" :class="a.is_active ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                {{ a.is_active ? 'Active' : 'Hidden' }}
+              </button>
+              <button type="button" @click="startEditAddon(a)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Edit">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button type="button" @click="confirmDeleteAddon(a)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add / Edit form -->
+        <div class="border-t border-gray-100 dark:border-gray-700 pt-4">
+          <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">{{ editingAddonId ? 'Edit Add-On' : 'New Add-On' }}</p>
+          <div v-if="addonFormError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-3">{{ addonFormError }}</div>
+          <form @submit.prevent="handleSaveAddon" class="space-y-3">
+            <input
+              type="text" v-model="addonForm.addon_name" placeholder="Add-on name, e.g. Extra Lechon"
+              class="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required
+            />
+            <div class="grid grid-cols-2 gap-3">
+              <input
+                type="number" min="0" step="0.01" v-model.number="addonForm.price" placeholder="Price (₱)"
+                class="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required
+              />
+              <select v-model="addonForm.unit_label" class="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+                <option value="per booking">per booking</option>
+                <option value="per head">per head</option>
+                <option value="per piece">per piece</option>
+                <option value="per hour">per hour</option>
+              </select>
+            </div>
+            <textarea v-model="addonForm.description" rows="2" placeholder="Short description (optional)" class="w-full p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none text-gray-900 dark:text-gray-100"></textarea>
+            <div class="flex gap-3">
+              <button v-if="editingAddonId" type="button" @click="cancelEditAddon" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+                Cancel
+              </button>
+              <button type="submit" :disabled="isSavingAddon" class="flex-1 bg-emerald-600 text-white py-2 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+                {{ isSavingAddon ? 'Saving...' : (editingAddonId ? 'Save Changes' : 'Add') }}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="flex gap-3 pt-6">
+          <button type="button" @click="closeAddonsModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ DELETE ADD-ON CONFIRM MODAL ============ -->
+    <div v-if="addonToDelete" class="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Delete this add-on?</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          <span class="font-semibold text-gray-700 dark:text-gray-200">{{ addonToDelete.addon_name }}</span> will no longer be offered to clients. Bookings that already included it keep their own saved copy.
+        </p>
+        <div class="flex gap-3 mt-3">
+          <button @click="addonToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            Cancel
+          </button>
+          <button @click="handleDeleteAddon" :disabled="isDeletingAddon" class="flex-1 bg-red-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+            {{ isDeletingAddon ? 'Deleting...' : 'Delete' }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -426,6 +558,7 @@ import {
   createPackage,
   updatePackage,
   deletePackage,
+  uploadPackageImage,
   getPackageIngredients,
   setPackageIngredients,
   getAllPackageCosting,
@@ -436,6 +569,7 @@ import {
   setPackageMenu
 } from '../services/packageService'
 import { getAllInventory } from '../services/inventoryService'
+import { getMyAddons, createAddon, updateAddon, deleteAddon } from '../services/addonService'
 
 const router = useRouter()
 
@@ -451,6 +585,7 @@ const userName = ref('User')
 const userRole = ref('Staff')
 const userInitial = ref('U')
 const userAvatarUrl = ref('')
+const currentUserId = ref(null)
 
 const packages = ref([])
 const isLoading = ref(false)
@@ -509,6 +644,124 @@ const emptyForm = () => ({
 })
 const form = ref(emptyForm())
 
+// ---------- Add-Ons (ala carte extras, sold alongside any package) ----------
+const showAddonsModal = ref(false)
+const addons = ref([])
+const isLoadingAddons = ref(false)
+const addonsError = ref('')
+const editingAddonId = ref(null)
+const isSavingAddon = ref(false)
+const addonFormError = ref('')
+const addonToDelete = ref(null)
+const isDeletingAddon = ref(false)
+
+const emptyAddonForm = () => ({ addon_name: '', description: '', price: null, unit_label: 'per booking', is_active: true })
+const addonForm = ref(emptyAddonForm())
+
+async function openAddonsModal() {
+  showAddonsModal.value = true
+  await loadAddons()
+}
+
+function closeAddonsModal() {
+  showAddonsModal.value = false
+  cancelEditAddon()
+}
+
+async function loadAddons() {
+  isLoadingAddons.value = true
+  addonsError.value = ''
+  try {
+    addons.value = await getMyAddons()
+  } catch (err) {
+    addonsError.value = err.message || 'Failed to load add-ons.'
+  } finally {
+    isLoadingAddons.value = false
+  }
+}
+
+function startEditAddon(addon) {
+  editingAddonId.value = addon.addon_id
+  addonForm.value = {
+    addon_name: addon.addon_name,
+    description: addon.description || '',
+    price: addon.price,
+    unit_label: addon.unit_label,
+    is_active: addon.is_active,
+  }
+  addonFormError.value = ''
+}
+
+function cancelEditAddon() {
+  editingAddonId.value = null
+  addonForm.value = emptyAddonForm()
+  addonFormError.value = ''
+}
+
+async function handleSaveAddon() {
+  isSavingAddon.value = true
+  addonFormError.value = ''
+  try {
+    if (editingAddonId.value) {
+      await updateAddon(editingAddonId.value, addonForm.value)
+    } else {
+      await createAddon(addonForm.value)
+    }
+    cancelEditAddon()
+    await loadAddons()
+  } catch (err) {
+    addonFormError.value = err.message || 'Failed to save add-on.'
+  } finally {
+    isSavingAddon.value = false
+  }
+}
+
+async function toggleAddonActive(addon) {
+  try {
+    await updateAddon(addon.addon_id, { ...addon, is_active: !addon.is_active })
+    await loadAddons()
+  } catch (err) {
+    addonsError.value = err.message || 'Failed to update add-on.'
+  }
+}
+
+function confirmDeleteAddon(addon) {
+  addonToDelete.value = addon
+}
+
+async function handleDeleteAddon() {
+  if (!addonToDelete.value) return
+  isDeletingAddon.value = true
+  try {
+    await deleteAddon(addonToDelete.value.addon_id)
+    addonToDelete.value = null
+    await loadAddons()
+  } catch (err) {
+    addonsError.value = err.message || 'Failed to delete add-on.'
+    addonToDelete.value = null
+  } finally {
+    isDeletingAddon.value = false
+  }
+}
+
+// ---------- Package Image ----------
+const imageInput = ref(null)
+const selectedImageFile = ref(null)
+const imagePreviewUrl = ref('')
+const isUploadingImage = ref(false)
+
+function handleImageChange(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  if (file.size > 2 * 1024 * 1024) {
+    modalError.value = 'Image must be 2MB or smaller.'
+    return
+  }
+  modalError.value = ''
+  selectedImageFile.value = file
+  imagePreviewUrl.value = URL.createObjectURL(file)
+}
+
 onMounted(() => {
   const storedUser = sessionStorage.getItem('user')
   if (!storedUser) {
@@ -524,6 +777,7 @@ onMounted(() => {
   userRole.value = user.role
   userInitial.value = user.full_name.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
+  currentUserId.value = user.user_id
 
   fetchPackages()
 })
@@ -568,6 +822,8 @@ function openCreateModal() {
   editingId.value = null
   form.value = emptyForm()
   modalError.value = ''
+  selectedImageFile.value = null
+  imagePreviewUrl.value = ''
   showFormModal.value = true
 }
 
@@ -580,28 +836,43 @@ function openEditModal(pkg) {
     price_per_head: pkg.price_per_head
   }
   modalError.value = ''
+  selectedImageFile.value = null
+  imagePreviewUrl.value = pkg.image_url || ''
   showFormModal.value = true
 }
 
 function closeFormModal() {
   showFormModal.value = false
+  selectedImageFile.value = null
+  imagePreviewUrl.value = ''
 }
 
 async function handleSavePackage() {
   modalError.value = ''
   isSaving.value = true
   try {
+    let savedPackage
     if (isEditing.value) {
-      await updatePackage(editingId.value, form.value)
+      savedPackage = await updatePackage(editingId.value, form.value)
     } else {
-      await createPackage(form.value)
+      savedPackage = await createPackage(form.value)
     }
+
+    if (selectedImageFile.value && savedPackage?.package_id) {
+      isUploadingImage.value = true
+      await uploadPackageImage(currentUserId.value, savedPackage.package_id, selectedImageFile.value)
+      isUploadingImage.value = false
+    }
+
     showFormModal.value = false
+    selectedImageFile.value = null
+    imagePreviewUrl.value = ''
     fetchPackages()
   } catch (error) {
-    modalError.value = error?.response?.data?.error || 'Something went wrong. Please try again.'
+    modalError.value = error?.response?.data?.error || error?.message || 'Something went wrong. Please try again.'
   } finally {
     isSaving.value = false
+    isUploadingImage.value = false
   }
 }
 

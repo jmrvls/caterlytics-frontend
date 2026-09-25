@@ -325,7 +325,7 @@
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Total Amount</label>
             <input type="number" min="0" step="0.01" v-model.number="createForm.total_amount" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Auto-filled from the package price — edit if there's a discount or custom quote.</p>
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Auto-filled from the package price plus any add-ons the client selected — edit if there's a discount or custom quote.</p>
           </div>
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Initial Down Payment (optional)</label>
@@ -405,6 +405,7 @@ import { useRouter } from 'vue-router'
 import { getPaymentsPage, getPaymentStatusCounts, getAllPaymentBookingIds, createPayment, recordPayment, deletePayment } from '../services/paymentService'
 import { getAllBookings } from '../services/bookingService'
 import { getAllPackages } from '../services/packageService'
+import { getBookingAddons, sumAddons } from '../services/addonService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -539,17 +540,31 @@ function openCreateModal() {
 }
 
 // Auto-fill the Total Amount when a booking is picked, using that
-// booking's package price × guest count. Staff can still edit it after
-// (e.g. for a discount or custom quote) -- this is just a smart default.
-watch(() => createForm.value.booking_id, (bookingId) => {
+// booking's package price × guest count, PLUS whatever ala-carte add-ons
+// the client attached to it. Staff can still edit it after (e.g. for a
+// discount or custom quote) -- this is just a smart default.
+watch(() => createForm.value.booking_id, async (bookingId) => {
   if (!bookingId) return
 
   const booking = bookings.value.find((b) => b.booking_id === bookingId)
   if (!booking) return
 
   const pkg = packages.value.find((p) => p.package_id === booking.package_id)
-  if (pkg && pkg.price_per_head != null && booking.guest_count) {
-    createForm.value.total_amount = Number(pkg.price_per_head) * Number(booking.guest_count)
+  const packageTotal = pkg && pkg.price_per_head != null && booking.guest_count
+    ? Number(pkg.price_per_head) * Number(booking.guest_count)
+    : 0
+
+  let addonsTotal = 0
+  try {
+    addonsTotal = sumAddons(await getBookingAddons(bookingId))
+  } catch (error) {
+    console.error('Failed to load add-ons for total autofill:', error)
+  }
+
+  // Only overwrite if we could actually compute something -- avoids
+  // clobbering a value staff may have already started typing.
+  if (packageTotal || addonsTotal) {
+    createForm.value.total_amount = packageTotal + addonsTotal
   }
 })
 

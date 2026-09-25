@@ -113,7 +113,13 @@
             class="group text-left bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-2xl p-5 transition focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-lg flex-shrink-0">
+              <img
+                v-if="b.logo_url"
+                :src="b.logo_url"
+                :alt="b.business_name"
+                class="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700"
+              />
+              <div v-else class="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-lg flex-shrink-0">
                 {{ b.business_name.charAt(0).toUpperCase() }}
               </div>
               <div class="min-w-0">
@@ -135,7 +141,13 @@
       <div v-else-if="activeTab === 'Book Catering'" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
         <div class="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-gray-100 dark:border-gray-700">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-11 h-11 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold flex-shrink-0">
+            <img
+              v-if="selectedBusiness?.logo_url"
+              :src="selectedBusiness.logo_url"
+              :alt="selectedBusiness.business_name"
+              class="w-11 h-11 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700"
+            />
+            <div v-else class="w-11 h-11 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold flex-shrink-0">
               {{ (selectedBusiness?.business_name || '?').charAt(0).toUpperCase() }}
             </div>
             <div class="min-w-0">
@@ -204,14 +216,39 @@
             </div>
           </div>
 
-          <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+          <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
+            <img v-if="selectedPackage.image_url" :src="selectedPackage.image_url" :alt="selectedPackage.package_name" class="w-full h-32 object-cover" />
+            <div class="p-4">
             <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ selectedPackage.package_name }}</p>
             <p v-if="selectedPackage.tbl_business?.business_name" class="text-xs text-gray-500 dark:text-gray-400">by {{ selectedPackage.tbl_business.business_name }}</p>
             <p v-if="selectedPackage.description" class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-3">Includes</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ selectedPackage.description }}</p>
             <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
-              Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0)) }}
+              Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
             </p>
+            </div>
+          </div>
+
+          <!-- ============ EXTRA ADD-ONS (ala carte, optional) ============ -->
+          <div v-if="isLoadingAddons" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
+            Loading add-ons...
+          </div>
+          <div v-else-if="businessAddons.length" class="space-y-2">
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Extra Add-Ons (optional)</p>
+            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+              <div v-for="a in businessAddons" :key="a.addon_id" class="flex items-center justify-between gap-3 p-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ a.addon_name }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">₱{{ formatPrice(a.price) }} · {{ a.unit_label }}<span v-if="a.description"> — {{ a.description }}</span></p>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) - 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">−</button>
+                  <span class="w-5 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{{ addonQuantities[a.addon_id] || 0 }}</span>
+                  <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) + 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">+</button>
+                </div>
+              </div>
+            </div>
+            <p v-if="addonsSubtotal > 0" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 text-right">+ ₱{{ formatPrice(addonsSubtotal) }} in add-ons</p>
           </div>
 
           <!-- ============ CHOOSE YOUR MENU (main module) ============ -->
@@ -289,6 +326,9 @@
               <p class="font-bold text-gray-800 dark:text-gray-100">{{ b.package_name || 'Custom Booking' }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">{{ formatDate(b.event_date) }} at {{ b.event_time }} — <span class="capitalize">{{ b.event_location }}</span></p>
               <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">{{ b.guest_count }} guests</p>
+              <p v-if="b.addons?.length" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Add-ons: {{ b.addons.map(a => `${a.addon_name} ×${a.quantity}`).join(', ') }} (+₱{{ formatPrice(sumAddons(b.addons)) }})
+              </p>
 
               <div v-if="b.tbl_payments" class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span :class="paymentBadgeClass(b.tbl_payments.payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
@@ -388,7 +428,7 @@
 
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Business</label>
-              <select v-model="editBusinessId" @change="editForm.package_id = ''; loadEditPackageMenu('')" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+              <select v-model="editBusinessId" @change="editForm.package_id = ''; loadEditPackageMenu(''); loadEditBusinessAddons(editBusinessId)" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
                 <option value="" disabled>Select a catering business</option>
                 <option v-for="b in businesses" :key="b.business_id" :value="b.business_id">{{ b.business_name }}</option>
               </select>
@@ -420,8 +460,29 @@
               <p v-if="selectedEditPackage.description" class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-3">Includes</p>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ selectedEditPackage.description }}</p>
               <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
-                Est. Total: ₱{{ formatPrice((selectedEditPackage.price_per_head || 0) * (editForm.guest_count || 0)) }}
+                Est. Total: ₱{{ formatPrice((selectedEditPackage.price_per_head || 0) * (editForm.guest_count || 0) + editAddonsSubtotal) }}
               </p>
+            </div>
+
+            <!-- ============ EXTRA ADD-ONS (edit, ala carte, optional) ============ -->
+            <div v-if="isLoadingEditAddons" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
+              Loading add-ons...
+            </div>
+            <div v-else-if="editBusinessAddons.length" class="space-y-2">
+              <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Extra Add-Ons (optional)</p>
+              <div class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+                <div v-for="a in editBusinessAddons" :key="a.addon_id" class="flex items-center justify-between gap-3 p-3">
+                  <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ a.addon_name }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">₱{{ formatPrice(a.price) }} · {{ a.unit_label }}</p>
+                  </div>
+                  <div class="flex items-center gap-2 flex-shrink-0">
+                    <button type="button" @click="setEditAddonQuantity(a.addon_id, (editAddonQuantities[a.addon_id] || 0) - 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">−</button>
+                    <span class="w-5 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{{ editAddonQuantities[a.addon_id] || 0 }}</span>
+                    <button type="button" @click="setEditAddonQuantity(a.addon_id, (editAddonQuantities[a.addon_id] || 0) + 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">+</button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- ============ CHOOSE YOUR MENU (edit) ============ -->
@@ -482,6 +543,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
+import { getBusinessAddons, getBookingAddons, setBookingAddons, sumAddons } from '../services/addonService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -575,6 +637,60 @@ const packageMenuCategories = computed(() =>
 // itemsByCategory only stores ids, so keep a lookup of id -> {item_id, item_name}
 // built from whatever the menu endpoint returned inline.
 const allMenuItemsFlat = ref([])
+
+// ---------- Extra Add-Ons (ala carte, sold alongside the package) ----------
+const businessAddons = ref([])       // this business's active add-ons (new booking form)
+const addonQuantities = ref({})      // { [addon_id]: quantity }, 0/absent = not selected
+const isLoadingAddons = ref(false)
+const addonsSubtotal = computed(() =>
+  businessAddons.value.reduce((sum, a) => sum + (Number(addonQuantities.value[a.addon_id]) || 0) * Number(a.price), 0)
+)
+
+function setAddonQuantity(addonId, qty) {
+  const n = Math.max(0, Math.floor(Number(qty) || 0))
+  addonQuantities.value = { ...addonQuantities.value, [addonId]: n }
+}
+
+async function loadBusinessAddons(businessId) {
+  addonQuantities.value = {}
+  businessAddons.value = []
+  if (!businessId) return
+  isLoadingAddons.value = true
+  try {
+    businessAddons.value = await getBusinessAddons(businessId)
+  } catch (error) {
+    console.error('Failed to load add-ons:', error)
+  } finally {
+    isLoadingAddons.value = false
+  }
+}
+
+// Same shape, but for the Edit Booking modal.
+const editBusinessAddons = ref([])
+const editAddonQuantities = ref({})
+const isLoadingEditAddons = ref(false)
+const editAddonsSubtotal = computed(() =>
+  editBusinessAddons.value.reduce((sum, a) => sum + (Number(editAddonQuantities.value[a.addon_id]) || 0) * Number(a.price), 0)
+)
+
+function setEditAddonQuantity(addonId, qty) {
+  const n = Math.max(0, Math.floor(Number(qty) || 0))
+  editAddonQuantities.value = { ...editAddonQuantities.value, [addonId]: n }
+}
+
+async function loadEditBusinessAddons(businessId, { preserveSelections = false } = {}) {
+  if (!preserveSelections) editAddonQuantities.value = {}
+  editBusinessAddons.value = []
+  if (!businessId) return
+  isLoadingEditAddons.value = true
+  try {
+    editBusinessAddons.value = await getBusinessAddons(businessId)
+  } catch (error) {
+    console.error('Failed to load add-ons:', error)
+  } finally {
+    isLoadingEditAddons.value = false
+  }
+}
 
 async function loadPackageMenu(packageId) {
   selectedMenuItems.value = {}
@@ -688,6 +804,7 @@ const businesses = computed(() => {
         business_name: p.tbl_business?.business_name || 'Unnamed business',
         address: p.tbl_business?.address || '',
         contact_number: p.tbl_business?.contact_number || '',
+        logo_url: p.tbl_business?.logo_url || '',
         package_count: 1,
         min_price: price
       })
@@ -716,6 +833,7 @@ function selectBusiness(id) {
   conflictWarning.value = ''
   selectedMenuItems.value = {}
   packageMenu.value = { limits: [], itemsByCategory: {} }
+  loadBusinessAddons(id)
   // A date may already be filled in from before; re-check it for this business.
   if (form.value.event_date) handleDateCheck()
 }
@@ -726,6 +844,8 @@ function clearBusiness() {
   conflictWarning.value = ''
   selectedMenuItems.value = {}
   packageMenu.value = { limits: [], itemsByCategory: {} }
+  addonQuantities.value = {}
+  businessAddons.value = []
 }
 
 onMounted(() => {
@@ -800,6 +920,15 @@ async function loadMyBookings() {
   try {
     myBookings.value = await getMyBookings()
     checkStatusChanges(myBookings.value)
+    // Attach each booking's saved add-ons for display (My Bookings + receipt).
+    await Promise.all(myBookings.value.map(async (b) => {
+      try {
+        b.addons = await getBookingAddons(b.booking_id)
+      } catch (error) {
+        console.error('Failed to load add-ons for booking', b.booking_id, error)
+        b.addons = []
+      }
+    }))
   } catch (error) {
     pageError.value = 'Failed to load your bookings.'
     console.error(error)
@@ -861,6 +990,23 @@ async function openEditModal(booking) {
     editPackageMenu.value = { limits: [], itemsByCategory: {} }
     editAllMenuItemsFlat.value = []
   }
+
+  // Same idea for add-ons: load this business's catalog, then prefill
+  // whichever ones (and quantities) are already saved on this booking.
+  editAddonQuantities.value = {}
+  if (editBusinessId.value) {
+    await loadEditBusinessAddons(editBusinessId.value, { preserveSelections: true })
+    try {
+      const existingAddons = booking.addons || (await getBookingAddons(booking.booking_id))
+      const quantities = {}
+      for (const row of existingAddons) quantities[row.addon_id] = row.quantity
+      editAddonQuantities.value = quantities
+    } catch (error) {
+      console.error('Failed to load existing add-on selections:', error)
+    }
+  } else {
+    editBusinessAddons.value = []
+  }
 }
 
 async function handleEditDateCheck() {
@@ -903,6 +1049,17 @@ async function handleSaveEdit() {
     } catch (selError) {
       console.error('Failed to save menu selections:', selError)
       pageError.value = 'Booking was updated, but we couldn\'t save your menu picks. Please edit again to try.'
+    }
+
+    // Same "always sync, even to empty" treatment for add-ons.
+    const flatEditAddons = editBusinessAddons.value
+      .map((a) => ({ addon_id: a.addon_id, quantity: editAddonQuantities.value[a.addon_id] || 0 }))
+      .filter((a) => a.quantity > 0)
+    try {
+      updated.addons = await setBookingAddons(updated.booking_id, flatEditAddons)
+    } catch (addonError) {
+      console.error('Failed to save add-ons:', addonError)
+      pageError.value = 'Booking was updated, but we couldn\'t save your add-ons. Please edit again to try.'
     }
 
     const target = myBookings.value.find((b) => b.booking_id === updated.booking_id)
@@ -962,11 +1119,26 @@ async function submitBooking() {
       }
     }
 
+    // Save the client's selected add-ons (quantity > 0 only) against the new booking.
+    const flatAddons = businessAddons.value
+      .map((a) => ({ addon_id: a.addon_id, quantity: addonQuantities.value[a.addon_id] || 0 }))
+      .filter((a) => a.quantity > 0)
+    if (flatAddons.length) {
+      try {
+        await setBookingAddons(newBooking.booking_id, flatAddons)
+      } catch (addonError) {
+        console.error('Failed to save add-ons:', addonError)
+        pageError.value = 'Booking was submitted, but we couldn\'t save your add-ons. Please edit the booking to try again.'
+      }
+    }
+
     successMessage.value = 'Booking request submitted! We will confirm it shortly.'
     form.value = { ...form.value, event_date: '', event_time: '', event_location: '', guest_count: null, package_id: '' }
     selectedBusinessId.value = ''
     selectedMenuItems.value = {}
     packageMenu.value = { limits: [], itemsByCategory: {} }
+    addonQuantities.value = {}
+    businessAddons.value = []
     conflictWarning.value = ''
     await loadMyBookings()
     activeTab.value = 'My Bookings'
@@ -1045,10 +1217,20 @@ function downloadReceipt(booking) {
     columnStyles: { 0: { fontStyle: 'bold', textColor: [107, 114, 128], cellWidth: 45 } },
   })
 
+  // Add-ons are itemized here for transparency (booked at the snapshot price
+  // saved on the booking). The business enters payment.total_amount itself
+  // when creating the payment record and is expected to already include
+  // these — this table just shows the client what made up that figure.
+  const addonRows = (booking.addons || []).map((a) => [
+    `Add-on: ${a.addon_name} × ${a.quantity}`,
+    `PHP ${Number(a.subtotal).toLocaleString()}`,
+  ])
+
   autoTable(doc, {
     startY: doc.lastAutoTable.finalY + 6,
     head: [['Description', 'Amount']],
     body: [
+      ...addonRows,
       ['Total Package Cost', `PHP ${Number(payment.total_amount).toLocaleString()}`],
       ['Amount Paid to Date', `PHP ${Number(payment.amount_paid).toLocaleString()}`],
       ['Remaining Balance', `PHP ${Number(payment.balance).toLocaleString()}`],

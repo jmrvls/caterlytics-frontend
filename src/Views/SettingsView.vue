@@ -86,8 +86,25 @@
           </p>
           <hr class="border-gray-100 dark:border-gray-700 my-5" />
 
+          <div v-if="businessSuccess" class="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-medium p-3 rounded-xl mb-4">
+            {{ businessSuccess }}
+          </div>
           <div v-if="businessError" class="text-red-600 dark:text-red-300 text-sm font-medium mb-4">
             {{ businessError }}
+          </div>
+
+          <div class="flex flex-row items-center gap-4 mb-6">
+            <div class="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-2xl overflow-hidden shrink-0">
+              <img v-if="business.logo_url" :src="business.logo_url" alt="Business logo" class="w-full h-full object-cover" />
+              <span v-else>{{ (business.business_name || '?').charAt(0).toUpperCase() }}</span>
+            </div>
+            <div v-if="isBusinessOwner">
+              <input ref="logoInput" type="file" accept="image/png, image/jpeg, image/webp" class="hidden" @change="handleLogoChange" />
+              <button type="button" @click="logoInput.click()" :disabled="isUploadingLogo" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+                {{ isUploadingLogo ? 'Uploading...' : 'Change Logo' }}
+              </button>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">JPG, PNG, or WEBP. Max 2MB.</p>
+            </div>
           </div>
 
           <form @submit.prevent="handleSaveBusiness" class="space-y-5">
@@ -162,7 +179,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMyProfile, updateMyProfile, uploadMyAvatar, changeMyPassword } from '../services/profileService'
-import { getMyBusiness, updateMyBusiness } from '../services/businessservice'
+import { getMyBusiness, updateMyBusiness, uploadBusinessLogo } from '../services/businessservice'
 import { getStoredTheme, setTheme } from '../theme'
 
 const router = useRouter()
@@ -193,7 +210,10 @@ const userInitial = computed(() => (profile.value.full_name || currentUser.full_
 const business = ref(null)
 const businessForm = ref({ business_name: '', contact_email: '', contact_number: '', address: '' })
 const businessError = ref('')
+const businessSuccess = ref('')
 const isSavingBusiness = ref(false)
+const logoInput = ref(null)
+const isUploadingLogo = ref(false)
 
 // Editing is restricted to the original registrant (tbl_business.owner_id)
 // per RLS ("owner update own business") — other Admins in the same
@@ -223,10 +243,11 @@ async function handleSaveBusiness() {
   if (!business.value) return
   isSavingBusiness.value = true
   businessError.value = ''
+  businessSuccess.value = ''
   try {
     const updated = await updateMyBusiness(business.value.business_id, businessForm.value)
     business.value = { ...business.value, ...updated }
-    flash(successMessage, 'Business info updated.')
+    flash(businessSuccess, 'Business info updated.')
   } catch (error) {
     businessError.value = error.message || 'Failed to update business info.'
   } finally {
@@ -292,6 +313,28 @@ async function handleAvatarChange(event) {
     pageError.value = error.message || 'Failed to upload picture.'
   } finally {
     isUploadingAvatar.value = false
+    event.target.value = ''
+  }
+}
+
+async function handleLogoChange(event) {
+  const file = event.target.files[0]
+  if (!file) return
+  if (file.size > 2 * 1024 * 1024) {
+    businessError.value = 'Logo is too large. Max size is 2MB.'
+    return
+  }
+  isUploadingLogo.value = true
+  businessError.value = ''
+  businessSuccess.value = ''
+  try {
+    const updated = await uploadBusinessLogo(currentUser.user_id, business.value.business_id, file)
+    business.value = { ...business.value, logo_url: updated.logo_url }
+    flash(businessSuccess, 'Business logo updated.')
+  } catch (error) {
+    businessError.value = error.message || 'Failed to upload logo.'
+  } finally {
+    isUploadingLogo.value = false
     event.target.value = ''
   }
 }
