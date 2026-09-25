@@ -317,11 +317,13 @@
               <input
                 type="number"
                 min="0"
-                step="0.01"
-                v-model.number="row.quantity_per_guest"
-                placeholder="Qty / guest"
-                class="flex-1 sm:w-32 p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+                step="any"
+                :value="getDisplayQty(row)"
+                @input="setDisplayQty(row, $event.target.value)"
+                :placeholder="`Qty / guest (${rowDisplayUnit(row).label})`"
+                class="flex-1 sm:w-36 p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
               />
+              <span class="text-xs text-gray-400 dark:text-gray-500 w-8 shrink-0">{{ rowDisplayUnit(row).label }}</span>
               <button type="button" @click="removeIngredientRow(index)" class="p-2.5 sm:p-2 rounded-none text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex-shrink-0" title="Remove">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -639,6 +641,7 @@ async function openIngredientsModal(pkg) {
     ingredientRows.value = currentIngredients.map((ing) => ({
       key: ingredientRowKey++,
       item_id: ing.item_id,
+      // Stored in the database in that item's own stock unit (kg, L, pcs...).
       quantity_per_guest: ing.quantity_per_guest
     }))
   } catch (error) {
@@ -657,6 +660,36 @@ function closeIngredientsModal() {
 
 function addIngredientRow() {
   ingredientRows.value.push({ key: ingredientRowKey++, item_id: null, quantity_per_guest: null })
+}
+
+// A small unit-per-guest number (like 0.08 kg or 0.15 L) is hard for a
+// non-technical owner/admin to read, so we show it in a friendlier,
+// whole-number-sized unit instead: kg -> grams, L -> milliliters.
+// Anything already counted in pieces/packs/grams/mL is shown as-is.
+function displayUnitFor(unit) {
+  if (unit === 'kg') return { factor: 1000, label: 'g' }
+  if (unit === 'L') return { factor: 1000, label: 'mL' }
+  return { factor: 1, label: unit || 'pcs' }
+}
+
+function rowDisplayUnit(row) {
+  const item = inventoryItems.value.find((i) => i.item_id === row.item_id)
+  return displayUnitFor(item?.unit)
+}
+
+// Reads the row's stored (database-unit) quantity and converts it to the
+// friendlier display unit for the input box.
+function getDisplayQty(row) {
+  if (row.quantity_per_guest == null) return null
+  const { factor } = rowDisplayUnit(row)
+  return Math.round(row.quantity_per_guest * factor * 1000) / 1000
+}
+
+// Takes what the admin typed (in the friendly display unit) and converts
+// it back to the database unit before storing it on the row.
+function setDisplayQty(row, rawValue) {
+  const { factor } = rowDisplayUnit(row)
+  row.quantity_per_guest = rawValue === '' || rawValue == null ? null : Number(rawValue) / factor
 }
 
 function removeIngredientRow(index) {

@@ -184,7 +184,7 @@
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-3">
                 <button @click="adjustStock(i, -1)" class="w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 active:bg-gray-50 dark:active:bg-gray-700 text-lg" title="Deduct 1">−</button>
-                <span class="text-lg font-bold text-gray-800 dark:text-gray-100 min-w-[2ch] text-center">{{ i.quantity }}</span>
+                <span class="text-lg font-bold text-gray-800 dark:text-gray-100 min-w-[2ch] text-center">{{ i.quantity }} <span class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ i.unit || 'kg' }}</span></span>
                 <button @click="adjustStock(i, 1)" class="w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 active:bg-gray-50 dark:active:bg-gray-700 text-lg" title="Add 1">+</button>
               </div>
               <p class="text-xs text-gray-400 dark:text-gray-500">Threshold: {{ i.low_stock_threshold }}</p>
@@ -237,7 +237,7 @@
                 </tr>
                 <tr v-for="i in filteredItems" :key="i.item_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
                   <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ i.item_name }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }} {{ i.unit || 'kg' }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatCost(i.unit_cost) }}</td>
                   <td class="px-6 py-3.5 align-middle">
@@ -286,16 +286,29 @@
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Quantity</label>
-              <input type="number" min="0" v-model.number="form.quantity" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Unit</label>
+              <select v-model="form.unit" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required>
+                <option value="kg">Kilograms (kg)</option>
+                <option value="g">Grams (g)</option>
+                <option value="L">Liters (L)</option>
+                <option value="mL">Milliliters (mL)</option>
+                <option value="pcs">Pieces (pcs)</option>
+                <option value="pack">Pack</option>
+              </select>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Anong paraan binibilang ang item na ito sa bodega.</p>
             </div>
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Low Stock Threshold</label>
-              <input type="number" min="0" v-model.number="form.low_stock_threshold" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Quantity ({{ form.unit }})</label>
+              <input type="number" min="0" v-model.number="form.quantity" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
             </div>
           </div>
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Unit Cost (₱ per unit)</label>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Low Stock Threshold ({{ form.unit }})</label>
+            <input type="number" min="0" v-model.number="form.low_stock_threshold" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Mag-a-alert ang system kapag umabot dito o mas mababa ang stock.</p>
+          </div>
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Unit Cost (₱ per {{ form.unit }})</label>
             <input type="number" min="0" step="0.01" v-model.number="form.unit_cost" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
             <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Used to compute food costing/margin per package.</p>
           </div>
@@ -375,7 +388,7 @@ const modalError = ref('')
 const itemToDelete = ref(null)
 const isDeleting = ref(false)
 
-const emptyForm = () => ({ item_name: '', quantity: 0, low_stock_threshold: 5, unit_cost: 0 })
+const emptyForm = () => ({ item_name: '', quantity: 0, low_stock_threshold: 5, unit_cost: 0, unit: 'kg' })
 
 // Displays a unit cost as e.g. "12.50" regardless of whether it comes back
 // as a number or a numeric-string from Postgres.
@@ -435,7 +448,7 @@ function openCreateModal() {
 
 function openEditModal(item) {
   editingItem.value = item
-  form.value = { item_name: item.item_name, quantity: item.quantity, low_stock_threshold: item.low_stock_threshold, unit_cost: item.unit_cost }
+  form.value = { item_name: item.item_name, quantity: item.quantity, low_stock_threshold: item.low_stock_threshold, unit_cost: item.unit_cost, unit: item.unit || 'kg' }
   modalError.value = ''
   showFormModal.value = true
 }
