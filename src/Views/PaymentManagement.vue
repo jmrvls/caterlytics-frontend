@@ -325,6 +325,7 @@
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Total Amount</label>
             <input type="number" min="0" step="0.01" v-model.number="createForm.total_amount" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Auto-filled from the package price — edit kung may discount o custom quote.</p>
           </div>
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Initial Down Payment (optional)</label>
@@ -397,12 +398,13 @@
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useRouter } from 'vue-router'
 import { getPaymentsPage, getPaymentStatusCounts, getAllPaymentBookingIds, createPayment, recordPayment, deletePayment } from '../services/paymentService'
 import { getAllBookings } from '../services/bookingService'
+import { getAllPackages } from '../services/packageService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -423,6 +425,7 @@ const userAvatarUrl = ref('')
 
 const payments = ref([])
 const bookings = ref([])
+const packages = ref([])
 const isLoading = ref(false)
 const pageError = ref('')
 const searchQuery = ref('')
@@ -468,17 +471,19 @@ async function fetchData() {
   isLoading.value = true
   pageError.value = ''
   try {
-    const [page, counts, bookedIds, bookingsData] = await Promise.all([
+    const [page, counts, bookedIds, bookingsData, packagesData] = await Promise.all([
       getPaymentsPage({ offset: 0, limit: PAGE_SIZE }),
       getPaymentStatusCounts(),
       getAllPaymentBookingIds(),
-      getAllBookings()
+      getAllBookings(),
+      getAllPackages()
     ])
     payments.value = page.rows
     totalPayments.value = page.total
     statusCounts.value = counts
     paidBookingIds.value = new Set(bookedIds)
     bookings.value = bookingsData
+    packages.value = packagesData
   } catch (error) {
     pageError.value = 'Failed to load payments. Please refresh the page.'
     console.error(error)
@@ -532,6 +537,21 @@ function openCreateModal() {
   modalError.value = ''
   showCreateModal.value = true
 }
+
+// Auto-fill the Total Amount when a booking is picked, using that
+// booking's package price × guest count. Staff can still edit it after
+// (e.g. for a discount or custom quote) -- this is just a smart default.
+watch(() => createForm.value.booking_id, (bookingId) => {
+  if (!bookingId) return
+
+  const booking = bookings.value.find((b) => b.booking_id === bookingId)
+  if (!booking) return
+
+  const pkg = packages.value.find((p) => p.package_id === booking.package_id)
+  if (pkg && pkg.price_per_head != null && booking.guest_count) {
+    createForm.value.total_amount = Number(pkg.price_per_head) * Number(booking.guest_count)
+  }
+})
 
 async function handleCreatePayment() {
   modalError.value = ''
