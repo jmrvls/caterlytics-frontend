@@ -295,7 +295,7 @@
                 <option value="pcs">Pieces (pcs)</option>
                 <option value="pack">Pack</option>
               </select>
-              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Anong paraan binibilang ang item na ito sa bodega.</p>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">How this item is counted in the storeroom.</p>
             </div>
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Quantity ({{ form.unit }})</label>
@@ -305,7 +305,7 @@
           <div>
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Low Stock Threshold ({{ form.unit }})</label>
             <input type="number" min="0" v-model.number="form.low_stock_threshold" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
-            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Mag-a-alert ang system kapag umabot dito o mas mababa ang stock.</p>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">The system will alert you when stock reaches this level or lower.</p>
           </div>
           <div>
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Unit Cost (₱ per {{ form.unit }})</label>
