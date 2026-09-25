@@ -210,13 +210,6 @@
             </div>
             <div class="mt-2 flex items-center justify-between text-xs">
               <span class="text-gray-400 dark:text-gray-500">Cost: ₱{{ formatPrice(pkg.cost_per_head) }} / head</span>
-              <span
-                v-if="pkg.margin_percent !== null"
-                :class="pkg.margin_percent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'"
-                class="font-semibold"
-              >
-                {{ pkg.margin_percent >= 0 ? '+' : '' }}{{ pkg.margin_percent }}% margin
-              </span>
             </div>
           </div>
         </div>
