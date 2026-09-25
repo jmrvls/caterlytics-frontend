@@ -172,7 +172,12 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Date</label>
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Date</label>
+                <button v-if="selectedBusinessId" type="button" @click="showCalendar = !showCalendar" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                  {{ showCalendar ? 'Hide calendar' : 'Check availability' }}
+                </button>
+              </div>
               <input
                 type="date"
                 v-model="form.event_date"
@@ -185,6 +190,37 @@
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Time</label>
               <input type="time" v-model="form.event_time" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+            </div>
+          </div>
+
+          <div v-if="selectedBusinessId && showCalendar" class="max-w-[320px] mx-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <button type="button" @click="goToPrevMonth" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">‹</button>
+              <p class="text-sm font-bold text-gray-700 dark:text-gray-200">{{ calendarMonthLabel }}</p>
+              <button type="button" @click="goToNextMonth" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">›</button>
+            </div>
+            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1.5">
+              <span v-for="wd in ['S','M','T','W','T','F','S']" :key="wd">{{ wd }}</span>
+            </div>
+            <div v-if="isLoadingCalendar" class="text-xs text-gray-400 dark:text-gray-500 text-center py-6">Loading…</div>
+            <div v-else class="grid grid-cols-7 gap-1">
+              <button
+                v-for="(day, idx) in calendarDays"
+                :key="idx"
+                type="button"
+                :disabled="!day.inMonth || day.isPast || day.isTaken"
+                @click="pickCalendarDate(day)"
+                class="h-9 w-9 rounded-lg text-xs font-semibold flex items-center justify-center transition mx-auto"
+                :class="!day.inMonth ? 'invisible' :
+                  day.isSelected ? 'bg-emerald-600 text-white' :
+                  day.isTaken ? 'bg-red-100 dark:bg-red-900/30 text-red-400 line-through cursor-not-allowed' :
+                  day.isPast ? 'text-gray-300 dark:text-gray-700 cursor-not-allowed' :
+                  'text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'"
+              >{{ day.day }}</button>
+            </div>
+            <div class="flex items-center justify-center gap-4 mt-3 text-[10px] text-gray-400 dark:text-gray-500">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-200 dark:bg-red-900/50 inline-block"></span> Booked</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-600 inline-block"></span> Selected</span>
             </div>
           </div>
 
@@ -541,7 +577,7 @@ import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { createBooking, getMyBookings, checkDateConflict, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
+import { createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
 import { getBusinessAddons, getBookingAddons, setBookingAddons, sumAddons } from '../services/addonService'
 import jsPDF from 'jspdf'
@@ -604,6 +640,98 @@ const statusChangeAlerts = ref([])
 let currentUserId = ''
 
 const todayStr = new Date().toISOString().split('T')[0]
+
+// ---------- Availability calendar (Book Catering step) ----------
+// Shows a whole month of a business's Pending/Confirmed dates up front, so
+// the client sees what's already taken before typing/picking a date instead
+// of only finding out after (handleDateCheck still runs as the final,
+// race-condition-safe check right before submit).
+const calendarViewDate = ref(startOfMonth(new Date())) // first day of the month currently shown
+const takenDates = ref(new Set()) // Set of 'YYYY-MM-DD' strings, for the viewed month
+const isLoadingCalendar = ref(false)
+const showCalendar = ref(false)
+
+function startOfMonth(d) {
+  return new Date(d.getFullYear(), d.getMonth(), 1)
+}
+
+function toDateStr(d) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const calendarMonthLabel = computed(() =>
+  calendarViewDate.value.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+)
+
+// Sun-first 6x7 grid: leading/trailing days from adjacent months are shown
+// (dimmed, unclickable) purely so the grid lines up, matching how native
+// date pickers look.
+const calendarDays = computed(() => {
+  const first = calendarViewDate.value
+  const startWeekday = first.getDay() // 0 = Sun
+  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
+  const days = []
+
+  for (let i = 0; i < startWeekday; i++) {
+    days.push({ inMonth: false })
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(first.getFullYear(), first.getMonth(), d)
+    const dateStr = toDateStr(date)
+    days.push({
+      inMonth: true,
+      day: d,
+      dateStr,
+      isPast: dateStr < todayStr,
+      isTaken: takenDates.value.has(dateStr),
+      isSelected: form.value.event_date === dateStr,
+    })
+  }
+  while (days.length % 7 !== 0) {
+    days.push({ inMonth: false })
+  }
+  return days
+})
+
+async function loadCalendarMonth() {
+  if (!selectedBusinessId.value) return
+  const first = calendarViewDate.value
+  const last = new Date(first.getFullYear(), first.getMonth() + 1, 0)
+  isLoadingCalendar.value = true
+  try {
+    const dates = await getTakenDates(selectedBusinessId.value, toDateStr(first), toDateStr(last))
+    takenDates.value = new Set(dates)
+  } catch (error) {
+    console.error('Failed to load calendar availability:', error)
+    takenDates.value = new Set()
+  } finally {
+    isLoadingCalendar.value = false
+  }
+}
+
+function goToPrevMonth() {
+  const d = calendarViewDate.value
+  calendarViewDate.value = new Date(d.getFullYear(), d.getMonth() - 1, 1)
+  loadCalendarMonth()
+}
+
+function goToNextMonth() {
+  const d = calendarViewDate.value
+  calendarViewDate.value = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+  loadCalendarMonth()
+}
+
+// Clicking an open day on the calendar fills the date input and runs the
+// same authoritative check as typing a date directly would.
+function pickCalendarDate(day) {
+  if (!day.inMonth || day.isPast || day.isTaken) return
+  form.value.event_date = day.dateStr
+  handleDateCheck()
+  showCalendar.value = false
+}
 
 const form = ref({
   event_date: '',
@@ -834,6 +962,9 @@ function selectBusiness(id) {
   selectedMenuItems.value = {}
   packageMenu.value = { limits: [], itemsByCategory: {} }
   loadBusinessAddons(id)
+  calendarViewDate.value = startOfMonth(new Date())
+  showCalendar.value = false
+  loadCalendarMonth()
   // A date may already be filled in from before; re-check it for this business.
   if (form.value.event_date) handleDateCheck()
 }
@@ -846,6 +977,8 @@ function clearBusiness() {
   packageMenu.value = { limits: [], itemsByCategory: {} }
   addonQuantities.value = {}
   businessAddons.value = []
+  takenDates.value = new Set()
+  showCalendar.value = false
 }
 
 onMounted(() => {
@@ -1139,6 +1272,7 @@ async function submitBooking() {
     packageMenu.value = { limits: [], itemsByCategory: {} }
     addonQuantities.value = {}
     businessAddons.value = []
+    takenDates.value = new Set()
     conflictWarning.value = ''
     await loadMyBookings()
     activeTab.value = 'My Bookings'

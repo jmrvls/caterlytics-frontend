@@ -271,6 +271,21 @@ export async function setBookingSelections(bookingId, selections) {
   return data || [];
 }
 
+// Dates (no client details) already booked (Pending/Confirmed) for one
+// business within a range — powers the calendar view so a client can see
+// what's already taken before picking a date, instead of only finding out
+// after via checkDateConflict().
+export async function getTakenDates(businessId, startDate, endDate) {
+  const { data, error } = await supabase.rpc('get_taken_dates', {
+    p_business_id: businessId,
+    p_start_date: startDate,
+    p_end_date: endDate,
+  });
+
+  if (error) throw error;
+  return (data || []).map((row) => (typeof row === 'string' ? row : row.get_taken_dates));
+}
+
 // Client-side conflict check before submit
 export async function checkDateConflict(eventDate, businessId = null, excludeBookingId = null) {
   // Clients can only read their OWN bookings (RLS), so they ask the database
