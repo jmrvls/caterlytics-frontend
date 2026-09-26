@@ -218,11 +218,6 @@
                   <div v-else class="w-full h-full bg-gray-100 dark:bg-gray-900"></div>
                 </div>
               </div>
-
-              <template v-if="selectedPackage?.description">
-                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-5">What's included</p>
-                <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-line">{{ selectedPackage.description }}</p>
-              </template>
             </div>
 
             <!-- RIGHT: buy box -- package price, then all booking details -->
@@ -233,11 +228,6 @@
                   <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(selectedPackage?.price_per_head) }}</span>
                   <span class="text-xs font-medium text-gray-400 dark:text-gray-500">/ head</span>
                 </div>
-              </div>
-
-              <div>
-                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Booked Under</label>
-                <input type="text" :value="userName" disabled class="w-full mt-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 dark:text-gray-400" />
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -379,6 +369,24 @@
               </button>
             </div>
           </div>
+
+          <!-- ============ WHAT'S INCLUDED (full-width, below the buy box) ============ -->
+          <div v-if="packageDescriptionLines.length" class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+            <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">What's Included</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1">
+              <template v-for="(line, idx) in packageDescriptionLines" :key="idx">
+                <p v-if="line.type === 'header'" class="text-sm font-bold text-gray-800 dark:text-gray-100 mt-3 first:mt-0 sm:col-span-2">
+                  {{ line.text }}
+                </p>
+                <p v-else class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                  <svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{{ line.text }}</span>
+                </p>
+              </template>
+            </div>
+          </div>
         </form>
       </div>
 
@@ -401,6 +409,48 @@
           </button>
         </div>
 
+        <!-- Filter / search bar -- only worth showing once there's something to filter -->
+        <div v-if="!isLoading && myBookings.length > 0" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 mb-4 space-y-3">
+          <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+              <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                v-model="bookingSearchQuery"
+                placeholder="Search package or location..."
+                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+              />
+            </div>
+            <select
+              v-model="bookingStatusFilter"
+              class="px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+            >
+              <option v-for="s in bookingStatusOptions" :key="s" :value="s">{{ s === 'All' ? 'All statuses' : s }}</option>
+            </select>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+              <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">From</label>
+              <input type="date" v-model="bookingDateFrom" class="p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">To</label>
+              <input type="date" v-model="bookingDateTo" class="p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <button
+              v-if="hasActiveBookingFilters"
+              type="button"
+              @click="clearBookingFilters"
+              class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              Clear filters
+            </button>
+            <span class="text-xs text-gray-400 dark:text-gray-500 ml-auto">{{ filteredMyBookings.length }} of {{ myBookings.length }} booking{{ myBookings.length === 1 ? '' : 's' }}</span>
+          </div>
+        </div>
+
         <div v-if="isLoading" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14 text-gray-400 dark:text-gray-500">
           Loading your bookings...
         </div>
@@ -410,8 +460,14 @@
             Book your first event
           </button>
         </div>
+        <div v-else-if="filteredMyBookings.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 text-center py-14">
+          <p class="text-gray-400 dark:text-gray-500 text-sm">No bookings match your filters.</p>
+          <button @click="clearBookingFilters" class="mt-3 text-emerald-600 dark:text-emerald-400 font-semibold text-sm hover:underline">
+            Clear filters
+          </button>
+        </div>
         <div v-else class="grid gap-4">
-          <div v-for="b in myBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div v-for="b in filteredMyBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="min-w-0">
               <p class="font-bold text-gray-800 dark:text-gray-100">{{ b.package_name || 'Custom Booking' }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">{{ formatDate(b.event_date) }} at {{ b.event_time }} — <span class="capitalize">{{ b.event_location }}</span></p>
@@ -977,6 +1033,24 @@ function backToPackages() {
 }
 
 const selectedPackage = computed(() => packages.value.find((p) => p.package_id === form.value.package_id))
+
+// Splits a package's free-text description into display lines for the
+// full-width "What's Included" section. A line ending in ':' with no
+// leading '-' (e.g. "3 Main Courses:") is treated as a category header;
+// everything else is a checklist item, with any leading "- " stripped.
+const packageDescriptionLines = computed(() => {
+  const text = selectedPackage.value?.description || ''
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      if (/:$/.test(line) && !line.startsWith('-')) {
+        return { type: 'header', text: line }
+      }
+      return { type: 'item', text: line.replace(/^-\s*/, '') }
+    })
+})
 const selectedEditPackage = computed(() => packages.value.find((p) => p.package_id === editForm.value.package_id))
 
 // Catering businesses the client can book from, derived from the packages
@@ -1012,6 +1086,36 @@ const filteredBusinessesForBooking = computed(() => {
   return businesses.value.filter((b) =>
     b.business_name.toLowerCase().includes(q) || (b.address || '').toLowerCase().includes(q)
   )
+})
+
+// Search/filter for the My Bookings tab -- status, text search (package
+// name or event location), and an optional event-date range.
+const bookingStatusOptions = ['All', 'Pending', 'Confirmed', 'Completed', 'Cancelled']
+const bookingStatusFilter = ref('All')
+const bookingSearchQuery = ref('')
+const bookingDateFrom = ref('')
+const bookingDateTo = ref('')
+const hasActiveBookingFilters = computed(() =>
+  bookingStatusFilter.value !== 'All' || !!bookingSearchQuery.value || !!bookingDateFrom.value || !!bookingDateTo.value
+)
+function clearBookingFilters() {
+  bookingStatusFilter.value = 'All'
+  bookingSearchQuery.value = ''
+  bookingDateFrom.value = ''
+  bookingDateTo.value = ''
+}
+const filteredMyBookings = computed(() => {
+  const q = bookingSearchQuery.value.trim().toLowerCase()
+  return myBookings.value.filter((b) => {
+    if (bookingStatusFilter.value !== 'All' && b.booking_status !== bookingStatusFilter.value) return false
+    if (bookingDateFrom.value && b.event_date < bookingDateFrom.value) return false
+    if (bookingDateTo.value && b.event_date > bookingDateTo.value) return false
+    if (q) {
+      const haystack = `${b.package_name || ''} ${b.event_location || ''}`.toLowerCase()
+      if (!haystack.includes(q)) return false
+    }
+    return true
+  })
 })
 
 const selectedBusiness = computed(() => businesses.value.find((b) => b.business_id === selectedBusinessId.value))
