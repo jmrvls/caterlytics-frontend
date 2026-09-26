@@ -45,11 +45,6 @@
 
     <main class="w-full px-4 sm:px-6 lg:px-10 py-8">
 
-      <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Book a catering package or check the status of your reservations.</p>
-      </div>
-
       <!-- Business onboarding banner: every account starts as a plain
            Client. This is the only entry point into becoming a business
            owner (calls the register_business() RPC). -->
@@ -658,13 +653,6 @@ const userName = ref('')
 const userInitial = ref('U')
 const userAvatarUrl = ref('')
 const showAccountMenu = ref(false)
-
-const greeting = (() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
-})()
 
 const tabs = ['Book Catering', 'My Bookings']
 const activeTab = ref('Book Catering')
