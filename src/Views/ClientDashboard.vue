@@ -249,19 +249,38 @@
             <input type="text" v-model="form.event_location" required placeholder="e.g. Barangay Hall, Roxas City" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
-              <input type="number" v-model.number="form.guest_count" required min="1" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
-            </div>
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Package</label>
-              <select v-model="form.package_id" @change="loadPackageMenu(form.package_id)" :disabled="!selectedBusinessId" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
-                <option value="" disabled>{{ selectedBusinessId ? 'Select a package' : 'Select a business first' }}</option>
-                <option v-for="p in businessPackages" :key="p.package_id" :value="p.package_id">
-                  {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head
-                </option>
-              </select>
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
+            <input type="number" v-model.number="form.guest_count" required min="1" class="w-full sm:w-1/2 mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          </div>
+
+          <!-- ============ CATERING PACKAGE (card selector) ============ -->
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-2">Catering Package</label>
+
+            <p v-if="!selectedBusinessId" class="text-sm text-gray-400 dark:text-gray-500">Select a business first.</p>
+            <p v-else-if="!businessPackages.length" class="text-sm text-gray-400 dark:text-gray-500">This business has no packages yet.</p>
+
+            <div v-else class="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:mx-0 sm:px-0">
+              <button
+                v-for="p in businessPackages"
+                :key="p.package_id"
+                type="button"
+                @click="form.package_id = p.package_id; loadPackageMenu(p.package_id)"
+                class="flex-shrink-0 w-40 sm:w-full text-left rounded-xl border-2 overflow-hidden transition"
+                :class="form.package_id === p.package_id
+                  ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50 dark:bg-emerald-900/20'
+                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:border-emerald-300 dark:hover:border-emerald-700'"
+              >
+                <div class="w-full h-24 bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                  <img v-if="p.image_url" :src="p.image_url" :alt="p.package_name" class="w-full h-full object-cover" />
+                  <div v-else class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 text-[11px]">No image</div>
+                </div>
+                <div class="p-2.5">
+                  <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{{ p.package_name }}</p>
+                  <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">₱{{ formatPrice(p.price_per_head) }}/head</p>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -1236,6 +1255,15 @@ async function handleDateCheck() {
 async function submitBooking() {
   successMessage.value = ''
   pageError.value = ''
+
+  // The package picker is now a card selector, not a native <select
+  // required>, so the browser's built-in validation no longer catches an
+  // empty pick -- enforce it here instead.
+  if (!form.value.package_id) {
+    pageError.value = 'Please select a catering package.'
+    return
+  }
+
   isSubmitting.value = true
 
   try {
