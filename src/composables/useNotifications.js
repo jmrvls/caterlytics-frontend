@@ -46,13 +46,37 @@ async function refreshStock() {
   }
 }
 
-// Adds a freshly-inserted booking row to the live feed. Only bookings
-// created *after* the bell first mounted are pushed here (via the Realtime
-// INSERT event below) -- we don't back-fill old bookings as "new".
+// Adds a freshly-inserted booking row to the live feed (via the Realtime
+// INSERT event below).
 function pushNewBooking(booking) {
   newBookings.value = [booking, ...newBookings.value].slice(0, 10)
   bookingUnreadCount.value = newBookings.value.filter((b) => !seenBookingIds.has(b.booking_id)).length
   recomputeUnread()
+}
+
+// Initial load: bookings that are still Pending, regardless of whether
+// they were created before or after the bell mounted. Without this, a
+// booking made while nobody had the dashboard open (e.g. overnight, or
+// before this browser session started) would never surface -- Realtime
+// only reports inserts that happen *while* subscribed, not what already
+// exists. RLS ("staff view own business bookings") already scopes this
+// to the caller's own business, same as everywhere else.
+async function refreshBookings() {
+  try {
+    const { data, error } = await supabase
+      .from('tbl_bookings')
+      .select('booking_id, client_name, event_date, guest_count, booking_status, created_at')
+      .eq('booking_status', 'Pending')
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (error) throw error
+    newBookings.value = data || []
+    bookingUnreadCount.value = newBookings.value.filter((b) => !seenBookingIds.has(b.booking_id)).length
+    recomputeUnread()
+  } catch (err) {
+    console.error('Failed to load booking notifications:', err)
+  }
 }
 
 function markAllRead() {
@@ -92,6 +116,10 @@ export function useNotifications() {
       storedUser = null
     }
     const businessId = storedUser?.business_id || null
+
+    if (businessId) {
+      refreshBookings()
+    }
 
     if (!bookingChannel && businessId) {
       bookingChannel = supabase
