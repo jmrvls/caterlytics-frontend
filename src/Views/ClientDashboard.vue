@@ -32,6 +32,12 @@
               </svg>
               Settings
             </button>
+            <button @click="showAccountMenu = false; router.push('/register-business')" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6M9 9v.01M9 12v.01M9 15v.01" />
+              </svg>
+              Register My Business
+            </button>
             <button @click="handleLogout" class="w-full flex items-center gap-2.5 text-left px-4 py-2.5 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -44,22 +50,6 @@
     </header>
 
     <main class="w-full px-4 sm:px-6 lg:px-10 py-8">
-
-      <!-- Business onboarding banner: every account starts as a plain
-           Client. This is the only entry point into becoming a business
-           owner (calls the register_business() RPC). -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 mb-6">
-        <div>
-          <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Run a catering business?</p>
-          <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">Register it on Caterlytics to manage your own bookings, inventory, and packages.</p>
-        </div>
-        <button
-          @click="router.push('/register-business')"
-          class="shrink-0 bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-emerald-700 transition"
-        >
-          Register My Business
-        </button>
-      </div>
 
       <!-- TABS -->
       <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-6 w-fit">
