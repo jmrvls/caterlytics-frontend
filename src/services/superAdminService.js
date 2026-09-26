@@ -31,3 +31,14 @@ export async function setBusinessStatus(businessId, status) {
   });
   if (error) throw new Error(error.message || 'Failed to update business status.');
 }
+
+// Audit trail for one business's status changes (who approved/rejected/
+// suspended it, and when). Requires the get_business_status_audit() RPC —
+// see supabase_migration_audit_notifications.sql.
+export async function getBusinessStatusAudit(businessId) {
+  const { data, error } = await supabase.rpc('get_business_status_audit', {
+    p_business_id: businessId,
+  });
+  if (error) throw new Error(error.message || 'Failed to load audit trail.');
+  return data || [];
+}

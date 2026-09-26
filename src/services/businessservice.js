@@ -80,3 +80,25 @@ export async function updateMyBusiness(businessId, { business_name, contact_emai
   if (!data) throw new Error('Only the business owner can edit these details.');
   return data;
 }
+
+// Notifications for the caller's own business (e.g. "Your business was
+// approved") -- dropped by the Super Admin approving/suspending/rejecting a
+// business. Requires get_my_business_notifications() -- see
+// supabase_migration_audit_notifications.sql. Returns [] (instead of
+// throwing) if that migration hasn't been run yet, so the dashboard doesn't
+// break for accounts that don't have it.
+export async function getMyBusinessNotifications() {
+  const { data, error } = await supabase.rpc('get_my_business_notifications');
+  if (error) {
+    console.error('Failed to load business notifications:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+export async function markBusinessNotificationRead(notificationId) {
+  const { error } = await supabase.rpc('mark_business_notification_read', {
+    p_notification_id: notificationId,
+  });
+  if (error) throw new Error(error.message || 'Failed to mark notification as read.');
+}

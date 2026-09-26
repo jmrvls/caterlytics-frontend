@@ -188,6 +188,21 @@
         <!-- ============ DASHBOARD SECTION (ADMIN / OWNER) ============ -->
         <div v-if="activeSection === 'Dashboard' && userRole !== 'Staff'">
 
+          <!-- Business status notifications (approved/suspended/rejected by
+               the Super Admin). Dismissible per-item via "Mark as read". -->
+          <div v-if="unreadBusinessNotifications.length" class="space-y-2 mb-6">
+            <div
+              v-for="n in unreadBusinessNotifications" :key="n.notification_id"
+              class="flex items-start justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-none p-3 text-sm"
+            >
+              <p class="text-amber-800 dark:text-amber-300">{{ n.message }}</p>
+              <button
+                @click="dismissBusinessNotification(n.notification_id)"
+                class="shrink-0 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline whitespace-nowrap"
+              >Mark as read</button>
+            </div>
+          </div>
+
           <!-- Welcome Banner -->
           <div class="flex items-start justify-between mb-8">
             <div>
@@ -357,7 +372,7 @@ import { useSidebarState } from '../composables/useSidebarState'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPayments } from '../services/paymentService'
-import { getMyBusiness } from '../services/businessservice'
+import { getMyBusiness, getMyBusinessNotifications, markBusinessNotificationRead } from '../services/businessservice'
 import {
   getMyAssignedBookings,
   getUnavailableDates,
@@ -388,6 +403,21 @@ const userInitial = ref('U')
 const userAvatarUrl = ref('')
 const currentUserId = ref('')
 const businessName = ref('')
+const unreadBusinessNotifications = ref([])
+
+async function dismissBusinessNotification(notificationId) {
+  // Optimistic: drop it from the list right away, then persist the read
+  // state. If the persist fails, put it back and let the error be visible
+  // on next reload rather than silently losing it.
+  const removed = unreadBusinessNotifications.value.find(n => n.notification_id === notificationId)
+  unreadBusinessNotifications.value = unreadBusinessNotifications.value.filter(n => n.notification_id !== notificationId)
+  try {
+    await markBusinessNotificationRead(notificationId)
+  } catch (error) {
+    console.error('Failed to mark notification read:', error)
+    if (removed) unreadBusinessNotifications.value = [removed, ...unreadBusinessNotifications.value]
+  }
+}
 
 // ---------- Staff schedule (per-date unavailability) — self-service,
 // used from the Staff role's own "My Schedule" card on this Dashboard.
@@ -525,6 +555,12 @@ onMounted(() => {
   getMyBusiness()
     .then((biz) => { businessName.value = biz?.business_name || '' })
     .catch((error) => console.error('Failed to load business name:', error))
+
+  if (user.role !== 'Staff') {
+    getMyBusinessNotifications()
+      .then((rows) => { unreadBusinessNotifications.value = rows.filter(n => !n.is_read) })
+      .catch((error) => console.error('Failed to load business notifications:', error))
+  }
 })
 
 async function openScheduleModal(user) {

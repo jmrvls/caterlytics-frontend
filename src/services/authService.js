@@ -8,20 +8,26 @@ function looksLikePhoneNumber(identifier) {
 }
 
 async function loginIdentifierToEmail(identifier) {
-  if (looksLikePhoneNumber(identifier)) {
-    const { data, error } = await supabase.rpc('resolve_login_email_by_phone', { p_contact_number: identifier });
+  // Stray leading/trailing whitespace (very common from autofill or
+  // copy-paste out of a password manager) would otherwise make an
+  // otherwise-correct username fail to resolve to its email, since the
+  // lookup below is case-insensitive but not whitespace-insensitive.
+  const cleanIdentifier = identifier.trim();
+
+  if (looksLikePhoneNumber(cleanIdentifier)) {
+    const { data, error } = await supabase.rpc('resolve_login_email_by_phone', { p_contact_number: cleanIdentifier });
     if (error || !data) {
       // No matching number -- fall through with something that will
       // never match a real account, so the caller gets the normal
       // "Invalid username or password" error instead of a different one.
-      return `${identifier.replace(/\D/g, '')}@gmail.com`;
+      return `${cleanIdentifier.replace(/\D/g, '')}@gmail.com`;
     }
     return data;
   }
 
-  const { data, error } = await supabase.rpc('resolve_login_email', { p_username: identifier });
+  const { data, error } = await supabase.rpc('resolve_login_email', { p_username: cleanIdentifier });
   if (error || !data) {
-    return `${identifier.toLowerCase()}@gmail.com`;
+    return `${cleanIdentifier.toLowerCase()}@gmail.com`;
   }
   return data;
 }
@@ -29,9 +35,12 @@ async function loginIdentifierToEmail(identifier) {
 export async function loginUser(identifier, password) {
   const email = await loginIdentifierToEmail(identifier);
 
+  // Trim the password too -- a trailing space picked up from autofill/paste
+  // is invisible in the masked field and silently breaks the exact-match
+  // bcrypt comparison Supabase Auth does.
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
-    password,
+    password: password.trim(),
   });
 
   if (error) throw new Error('Invalid username or password.');

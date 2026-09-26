@@ -84,12 +84,27 @@
           </div>
         </div>
 
+        <!-- SEARCH -->
+        <div class="p-4 border-b border-gray-100 dark:border-gray-700">
+          <div class="relative max-w-sm">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              v-model="businessSearch"
+              placeholder="Search by business, owner, email, or number..."
+              class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+            />
+          </div>
+        </div>
+
         <div v-if="errorMessage" class="p-4 text-sm text-red-600 bg-red-50 dark:bg-red-900/20">{{ errorMessage }}</div>
 
         <div v-if="isLoading" class="p-8 text-center text-gray-400 text-sm">Loading businesses…</div>
 
         <div v-else-if="filteredBusinesses.length === 0" class="p-8 text-center text-gray-400 text-sm">
-          No businesses match this filter.
+          No businesses match this filter{{ businessSearch ? ' / search' : '' }}.
         </div>
 
         <div v-else class="overflow-x-auto">
@@ -128,6 +143,10 @@
                 <td class="px-4 py-3">
                   <div class="flex items-center justify-end gap-2 flex-wrap">
                     <button
+                      @click="openDetails(b)"
+                      class="text-xs font-bold px-3 py-1.5 rounded-none bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    >Details</button>
+                    <button
                       v-if="b.status === 'Pending'"
                       @click="changeStatus(b, 'Active')"
                       :disabled="pendingActionId === b.business_id"
@@ -165,6 +184,83 @@
         from logging in until it's reactivated.
       </p>
     </main>
+
+    <!-- BUSINESS DETAILS / AUDIT TRAIL MODAL -->
+    <div v-if="detailsBusiness" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div @click="closeDetails" class="absolute inset-0 bg-black/50"></div>
+      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full max-w-lg max-h-[85vh] overflow-y-auto">
+        <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+          <h3 class="font-bold text-gray-900 dark:text-gray-100">{{ detailsBusiness.business_name }}</h3>
+          <button @click="closeDetails" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">&times;</button>
+        </div>
+
+        <div class="p-4 space-y-4">
+          <!-- Basic info -->
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-semibold">Status</p>
+              <span class="inline-block mt-1 px-2 py-1 rounded-none text-xs font-bold" :class="statusBadgeClass(detailsBusiness.status)">{{ detailsBusiness.status }}</span>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-semibold">Registered</p>
+              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ formatDate(detailsBusiness.created_at) }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-semibold">Owner</p>
+              <p class="text-gray-700 dark:text-gray-300 mt-1">
+                {{ detailsBusiness.owner_full_name || '—' }}
+                <span v-if="detailsBusiness.owner_username" class="block text-xs text-gray-400">@{{ detailsBusiness.owner_username }}</span>
+              </p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-semibold">Contact</p>
+              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.contact_email || detailsBusiness.owner_contact_number || '—' }}</p>
+            </div>
+            <div class="col-span-2">
+              <p class="text-xs text-gray-400 uppercase font-semibold">Address</p>
+              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.address || '—' }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-semibold">Staff</p>
+              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.staff_count }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-semibold">Packages</p>
+              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.packages_count }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-gray-400 uppercase font-semibold">Bookings</p>
+              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.bookings_count }}</p>
+            </div>
+          </div>
+
+          <!-- Audit trail -->
+          <div class="pt-3 border-t border-gray-100 dark:border-gray-700">
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-2">Status History</p>
+
+            <div v-if="isLoadingAudit" class="text-sm text-gray-400">Loading history…</div>
+
+            <div v-else-if="auditError" class="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-none">
+              {{ auditError }}
+            </div>
+
+            <div v-else-if="auditTrail.length === 0" class="text-sm text-gray-400">No status changes recorded yet.</div>
+
+            <ul v-else class="space-y-2">
+              <li v-for="entry in auditTrail" :key="entry.audit_id" class="text-sm flex items-start justify-between gap-3">
+                <div>
+                  <span class="font-semibold text-gray-800 dark:text-gray-100">
+                    {{ entry.old_status || 'New' }} → {{ entry.new_status }}
+                  </span>
+                  <span class="block text-xs text-gray-400">by {{ entry.changed_by_name || 'Unknown' }}</span>
+                </div>
+                <span class="text-xs text-gray-400 whitespace-nowrap">{{ formatDate(entry.created_at) }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -172,7 +268,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import logoUrl from '../Assets/logofinal.png'
-import { getPlatformStats, getPlatformBusinesses, setBusinessStatus } from '../services/superAdminService'
+import { getPlatformStats, getPlatformBusinesses, setBusinessStatus, getBusinessStatusAudit } from '../services/superAdminService'
 
 const router = useRouter()
 
@@ -181,6 +277,7 @@ const isLoading = ref(true)
 const errorMessage = ref('')
 const statusFilter = ref('All')
 const pendingActionId = ref(null)
+const businessSearch = ref('')
 
 const stats = ref({
   total_businesses: 0, pending_businesses: 0, active_businesses: 0,
@@ -188,11 +285,45 @@ const stats = ref({
 })
 const businesses = ref([])
 
-const filteredBusinesses = computed(() =>
-  statusFilter.value === 'All'
+const filteredBusinesses = computed(() => {
+  let list = statusFilter.value === 'All'
     ? businesses.value
     : businesses.value.filter(b => b.status === statusFilter.value)
-)
+
+  const q = businessSearch.value.trim().toLowerCase()
+  if (!q) return list
+
+  return list.filter(b => [
+    b.business_name, b.owner_full_name, b.owner_username,
+    b.contact_email, b.owner_contact_number, b.address,
+  ].some(field => (field || '').toLowerCase().includes(q)))
+})
+
+// ---------- Details / audit trail modal ----------
+const detailsBusiness = ref(null)
+const auditTrail = ref([])
+const isLoadingAudit = ref(false)
+const auditError = ref('')
+
+async function openDetails(business) {
+  detailsBusiness.value = business
+  auditTrail.value = []
+  auditError.value = ''
+  isLoadingAudit.value = true
+  try {
+    auditTrail.value = await getBusinessStatusAudit(business.business_id)
+  } catch (error) {
+    // Most likely cause: supabase_migration_audit_notifications.sql hasn't
+    // been run yet, so the get_business_status_audit() RPC doesn't exist.
+    auditError.value = 'Status history isn\'t available yet — the audit trail migration needs to be run on this project.'
+  } finally {
+    isLoadingAudit.value = false
+  }
+}
+
+function closeDetails() {
+  detailsBusiness.value = null
+}
 
 function formatDate(iso) {
   if (!iso) return '—'
