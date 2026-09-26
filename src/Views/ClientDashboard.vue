@@ -144,8 +144,8 @@
         </div>
       </div>
 
-      <!-- ============ STEP 2: BOOKING FORM ============ -->
-      <div v-else-if="activeTab === 'Book Catering'" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+      <!-- ============ STEP 2: CHOOSE A PACKAGE (Shopee-style browse grid) ============ -->
+      <div v-else-if="activeTab === 'Book Catering' && !form.package_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
         <button type="button" @click="clearBusiness" class="flex items-center gap-1.5 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 mb-4">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -174,190 +174,226 @@
           <button type="button" @click="clearBusiness" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline whitespace-nowrap">Change</button>
         </div>
 
-        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-4">New Booking Request</h3>
+        <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-1">Choose a Package</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Tap a package to see the full details and fill in your event info.</p>
 
-        <form @submit.prevent="submitBooking" class="space-y-5">
+        <p v-if="!businessPackages.length" class="text-sm text-gray-400 dark:text-gray-500 text-center py-14">This business has no packages yet.</p>
 
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Booked Under</label>
-            <input type="text" :value="userName" disabled class="w-full mt-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 dark:text-gray-400" />
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Date</label>
-                <button v-if="selectedBusinessId" type="button" @click="showCalendar = !showCalendar" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
-                  {{ showCalendar ? 'Hide calendar' : 'Check availability' }}
-                </button>
+        <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          <button
+            v-for="p in businessPackages"
+            :key="p.package_id"
+            type="button"
+            @click="viewPackageDetails(p)"
+            class="text-left rounded-lg overflow-hidden transition bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
+          >
+            <div class="relative w-full aspect-square bg-gray-100 dark:bg-gray-800 overflow-hidden">
+              <img v-if="p.image_url" :src="p.image_url" :alt="p.package_name" class="w-full h-full object-cover" />
+              <div v-else class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs">No image</div>
+            </div>
+            <div class="p-2.5">
+              <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-200 leading-snug line-clamp-2 min-h-[2.5em]">{{ p.package_name }}</p>
+              <div class="flex items-baseline gap-1 mt-1.5">
+                <span class="text-sm sm:text-base text-emerald-600 dark:text-emerald-400 font-bold">₱{{ formatPrice(p.price_per_head) }}</span>
               </div>
-              <input
-                type="date"
-                v-model="form.event_date"
-                @change="handleDateCheck"
-                required
-                :min="todayStr"
-                class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
-              />
+              <div class="flex items-center justify-between mt-1">
+                <span class="text-[10px] text-gray-400 dark:text-gray-500">per head</span>
+                <span class="text-[10px] text-gray-400 dark:text-gray-500">View details ›</span>
+              </div>
             </div>
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Time</label>
-              <input type="time" v-model="form.event_time" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
-            </div>
-          </div>
+          </button>
+        </div>
+      </div>
 
-          <div v-if="selectedBusinessId && showCalendar" class="max-w-[320px] mx-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-3">
-              <button type="button" @click="goToPrevMonth" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">‹</button>
-              <p class="text-sm font-bold text-gray-700 dark:text-gray-200">{{ calendarMonthLabel }}</p>
-              <button type="button" @click="goToNextMonth" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">›</button>
-            </div>
-            <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1.5">
-              <span v-for="wd in ['S','M','T','W','T','F','S']" :key="wd">{{ wd }}</span>
-            </div>
-            <div v-if="isLoadingCalendar" class="text-xs text-gray-400 dark:text-gray-500 text-center py-6">Loading…</div>
-            <div v-else class="grid grid-cols-7 gap-1">
-              <button
-                v-for="(day, idx) in calendarDays"
-                :key="idx"
-                type="button"
-                :disabled="!day.inMonth || day.isPast || day.isTaken"
-                @click="pickCalendarDate(day)"
-                class="h-9 w-9 rounded-lg text-xs font-semibold flex items-center justify-center transition mx-auto"
-                :class="!day.inMonth ? 'invisible' :
-                  day.isSelected ? 'bg-emerald-600 text-white' :
-                  day.isTaken ? 'bg-red-100 dark:bg-red-900/30 text-red-400 line-through cursor-not-allowed' :
-                  day.isPast ? 'text-gray-300 dark:text-gray-700 cursor-not-allowed' :
-                  'text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'"
-              >{{ day.day }}</button>
-            </div>
-            <div class="flex items-center justify-center gap-4 mt-3 text-[10px] text-gray-400 dark:text-gray-500">
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-200 dark:bg-red-900/50 inline-block"></span> Booked</span>
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-600 inline-block"></span> Selected</span>
-            </div>
-          </div>
+      <!-- ============ STEP 3: PACKAGE PAGE + BOOKING FORM (Shopee product-page style) ============ -->
+      <div v-else-if="activeTab === 'Book Catering'" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
+        <button type="button" @click="backToPackages" class="flex items-center gap-1.5 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 mb-4">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to packages
+        </button>
 
-          <div v-if="conflictWarning" class="text-amber-700 dark:text-amber-300 text-sm font-medium flex gap-2">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
-            </svg>
-            <span>{{ conflictWarning }}</span>
-          </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mb-4 truncate">
+          {{ selectedBusiness?.business_name }} <span class="mx-1">›</span> <span class="text-gray-600 dark:text-gray-300 font-medium">{{ selectedPackage?.package_name }}</span>
+        </p>
 
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Location</label>
-            <input type="text" v-model="form.event_location" required placeholder="e.g. Barangay Hall, Roxas City" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
-          </div>
+        <form @submit.prevent="submitBooking">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
 
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
-            <input type="number" v-model.number="form.guest_count" required min="1" class="w-full sm:w-1/2 mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
-          </div>
-
-          <!-- ============ CATERING PACKAGE (card selector) ============ -->
-          <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-2">Catering Package</label>
-
-            <p v-if="!selectedBusinessId" class="text-sm text-gray-400 dark:text-gray-500">Select a business first.</p>
-            <p v-else-if="!businessPackages.length" class="text-sm text-gray-400 dark:text-gray-500">This business has no packages yet.</p>
-
-            <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <button
-                v-for="p in businessPackages"
-                :key="p.package_id"
-                type="button"
-                @click="form.package_id = p.package_id; loadPackageMenu(p.package_id)"
-                class="text-left rounded-xl border-2 overflow-hidden transition shadow-sm hover:shadow-md"
-                :class="form.package_id === p.package_id
-                  ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50 dark:bg-emerald-900/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-emerald-300 dark:hover:border-emerald-700'"
-              >
-                <div class="w-full aspect-square bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                  <img v-if="p.image_url" :src="p.image_url" :alt="p.package_name" class="w-full h-full object-cover" />
-                  <div v-else class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs">No image</div>
+            <!-- LEFT: product image, stays put while the buy-box scrolls -->
+            <div class="lg:sticky lg:top-24 lg:self-start">
+              <div class="w-full aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
+                <img v-if="selectedPackage?.image_url" :src="selectedPackage.image_url" :alt="selectedPackage.package_name" class="w-full h-full object-cover" />
+                <div v-else class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm">No image</div>
+              </div>
+              <div class="flex gap-2 mt-3">
+                <div class="w-14 h-14 rounded-md overflow-hidden border-2 border-emerald-500 flex-shrink-0">
+                  <img v-if="selectedPackage?.image_url" :src="selectedPackage.image_url" :alt="selectedPackage.package_name" class="w-full h-full object-cover" />
+                  <div v-else class="w-full h-full bg-gray-100 dark:bg-gray-900"></div>
                 </div>
-                <div class="p-3">
-                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-snug line-clamp-2">{{ p.package_name }}</p>
-                  <p class="text-base sm:text-lg text-emerald-600 dark:text-emerald-400 font-black mt-1">₱{{ formatPrice(p.price_per_head) }}</p>
-                  <p class="text-[11px] text-gray-400 dark:text-gray-500 -mt-0.5">per head</p>
+              </div>
+
+              <template v-if="selectedPackage?.description">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-5">What's included</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 whitespace-pre-line">{{ selectedPackage.description }}</p>
+              </template>
+            </div>
+
+            <!-- RIGHT: buy box -- package price, then all booking details -->
+            <div class="space-y-5">
+              <div>
+                <p class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 leading-snug">{{ selectedPackage?.package_name }}</p>
+                <div class="flex items-baseline gap-1.5 mt-2">
+                  <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(selectedPackage?.price_per_head) }}</span>
+                  <span class="text-xs font-medium text-gray-400 dark:text-gray-500">/ head</span>
                 </div>
+              </div>
+
+              <div>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Booked Under</label>
+                <input type="text" :value="userName" disabled class="w-full mt-1 p-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 dark:text-gray-400" />
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Date</label>
+                    <button type="button" @click="showCalendar = !showCalendar" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                      {{ showCalendar ? 'Hide calendar' : 'Check availability' }}
+                    </button>
+                  </div>
+                  <input
+                    type="date"
+                    v-model="form.event_date"
+                    @change="handleDateCheck"
+                    required
+                    :min="todayStr"
+                    class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+                <div>
+                  <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Time</label>
+                  <input type="time" v-model="form.event_time" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+                </div>
+              </div>
+
+              <div v-if="showCalendar" class="max-w-[320px] mx-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <button type="button" @click="goToPrevMonth" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">‹</button>
+                  <p class="text-sm font-bold text-gray-700 dark:text-gray-200">{{ calendarMonthLabel }}</p>
+                  <button type="button" @click="goToNextMonth" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">›</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1.5">
+                  <span v-for="wd in ['S','M','T','W','T','F','S']" :key="wd">{{ wd }}</span>
+                </div>
+                <div v-if="isLoadingCalendar" class="text-xs text-gray-400 dark:text-gray-500 text-center py-6">Loading…</div>
+                <div v-else class="grid grid-cols-7 gap-1">
+                  <button
+                    v-for="(day, idx) in calendarDays"
+                    :key="idx"
+                    type="button"
+                    :disabled="!day.inMonth || day.isPast || day.isTaken"
+                    @click="pickCalendarDate(day)"
+                    class="h-9 w-9 rounded-lg text-xs font-semibold flex items-center justify-center transition mx-auto"
+                    :class="!day.inMonth ? 'invisible' :
+                      day.isSelected ? 'bg-emerald-600 text-white' :
+                      day.isTaken ? 'bg-red-100 dark:bg-red-900/30 text-red-400 line-through cursor-not-allowed' :
+                      day.isPast ? 'text-gray-300 dark:text-gray-700 cursor-not-allowed' :
+                      'text-gray-700 dark:text-gray-200 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'"
+                  >{{ day.day }}</button>
+                </div>
+                <div class="flex items-center justify-center gap-4 mt-3 text-[10px] text-gray-400 dark:text-gray-500">
+                  <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-200 dark:bg-red-900/50 inline-block"></span> Booked</span>
+                  <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-600 inline-block"></span> Selected</span>
+                </div>
+              </div>
+
+              <div v-if="conflictWarning" class="text-amber-700 dark:text-amber-300 text-sm font-medium flex gap-2">
+                <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
+                </svg>
+                <span>{{ conflictWarning }}</span>
+              </div>
+
+              <div>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Event Location</label>
+                <input type="text" v-model="form.event_location" required placeholder="e.g. Barangay Hall, Roxas City" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+              </div>
+
+              <div>
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
+                <input type="number" v-model.number="form.guest_count" required min="1" class="w-full sm:w-1/2 mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+              </div>
+
+              <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+                <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
+                </p>
+              </div>
+
+              <!-- ============ EXTRA ADD-ONS (ala carte, optional) ============ -->
+              <div v-if="isLoadingAddons" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
+                Loading add-ons...
+              </div>
+              <div v-else-if="businessAddons.length" class="space-y-2">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Extra Add-Ons (optional)</p>
+                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
+                  <div v-for="a in businessAddons" :key="a.addon_id" class="flex items-center justify-between gap-3 p-3">
+                    <div class="min-w-0">
+                      <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ a.addon_name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">₱{{ formatPrice(a.price) }} · {{ a.unit_label }}<span v-if="a.description"> — {{ a.description }}</span></p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                      <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) - 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">−</button>
+                      <span class="w-5 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{{ addonQuantities[a.addon_id] || 0 }}</span>
+                      <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) + 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">+</button>
+                    </div>
+                  </div>
+                </div>
+                <p v-if="addonsSubtotal > 0" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 text-right">+ ₱{{ formatPrice(addonsSubtotal) }} in add-ons</p>
+              </div>
+
+              <!-- ============ CHOOSE YOUR MENU (main module) ============ -->
+              <div v-if="isLoadingPackageMenu" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
+                Loading menu choices...
+              </div>
+              <div v-else-if="packageMenuCategories.length" class="space-y-4">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Choose Your Menu</p>
+                <div v-for="cat in packageMenuCategories" :key="cat.category" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ cat.category }}</p>
+                    <span
+                      class="text-xs font-bold"
+                      :class="(selectedMenuItems[cat.category]?.length || 0) >= cat.max ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'"
+                    >
+                      {{ selectedMenuItems[cat.category]?.length || 0 }} / {{ cat.max }} selected
+                    </span>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                    <label
+                      v-for="item in cat.items"
+                      :key="item.item_id"
+                      class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        :checked="(selectedMenuItems[cat.category] || []).includes(item.item_id)"
+                        :disabled="!(selectedMenuItems[cat.category] || []).includes(item.item_id) && (selectedMenuItems[cat.category]?.length || 0) >= cat.max"
+                        @change="toggleMenuItem(cat.category, item.item_id, cat.max)"
+                        class="rounded-none accent-emerald-600"
+                      />
+                      {{ item.item_name }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" :disabled="isSubmitting" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-50">
+                {{ isSubmitting ? 'Submitting...' : 'Submit Booking Request' }}
               </button>
             </div>
           </div>
-
-          <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl overflow-hidden">
-            <img v-if="selectedPackage.image_url" :src="selectedPackage.image_url" :alt="selectedPackage.package_name" class="w-full h-32 object-cover" />
-            <div class="p-4">
-            <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ selectedPackage.package_name }}</p>
-            <p v-if="selectedPackage.tbl_business?.business_name" class="text-xs text-gray-500 dark:text-gray-400">by {{ selectedPackage.tbl_business.business_name }}</p>
-            <p v-if="selectedPackage.description" class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mt-3">Includes</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ selectedPackage.description }}</p>
-            <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
-              Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
-            </p>
-            </div>
-          </div>
-
-          <!-- ============ EXTRA ADD-ONS (ala carte, optional) ============ -->
-          <div v-if="isLoadingAddons" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
-            Loading add-ons...
-          </div>
-          <div v-else-if="businessAddons.length" class="space-y-2">
-            <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Extra Add-Ons (optional)</p>
-            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl divide-y divide-gray-100 dark:divide-gray-700">
-              <div v-for="a in businessAddons" :key="a.addon_id" class="flex items-center justify-between gap-3 p-3">
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ a.addon_name }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">₱{{ formatPrice(a.price) }} · {{ a.unit_label }}<span v-if="a.description"> — {{ a.description }}</span></p>
-                </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                  <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) - 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">−</button>
-                  <span class="w-5 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{{ addonQuantities[a.addon_id] || 0 }}</span>
-                  <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) + 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">+</button>
-                </div>
-              </div>
-            </div>
-            <p v-if="addonsSubtotal > 0" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 text-right">+ ₱{{ formatPrice(addonsSubtotal) }} in add-ons</p>
-          </div>
-
-          <!-- ============ CHOOSE YOUR MENU (main module) ============ -->
-          <div v-if="isLoadingPackageMenu" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
-            Loading menu choices...
-          </div>
-          <div v-else-if="packageMenuCategories.length" class="space-y-4">
-            <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Choose Your Menu</p>
-            <div v-for="cat in packageMenuCategories" :key="cat.category" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ cat.category }}</p>
-                <span
-                  class="text-xs font-bold"
-                  :class="(selectedMenuItems[cat.category]?.length || 0) >= cat.max ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-gray-500'"
-                >
-                  {{ selectedMenuItems[cat.category]?.length || 0 }} / {{ cat.max }} selected
-                </span>
-              </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
-                <label
-                  v-for="item in cat.items"
-                  :key="item.item_id"
-                  class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="(selectedMenuItems[cat.category] || []).includes(item.item_id)"
-                    :disabled="!(selectedMenuItems[cat.category] || []).includes(item.item_id) && (selectedMenuItems[cat.category]?.length || 0) >= cat.max"
-                    @change="toggleMenuItem(cat.category, item.item_id, cat.max)"
-                    class="rounded-none accent-emerald-600"
-                  />
-                  {{ item.item_name }}
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" :disabled="isSubmitting" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-50">
-            {{ isSubmitting ? 'Submitting...' : 'Submit Booking Request' }}
-          </button>
         </form>
       </div>
 
@@ -943,6 +979,23 @@ function toggleEditMenuItem(category, itemId, max) {
 // editBusinessId does), so this is called directly from the select.
 function handleEditPackageChange() {
   loadEditPackageMenu(editForm.value.package_id)
+}
+
+// Clicking a package card in the browse grid opens its full product-page
+// view (image left, booking details right) by selecting it and loading its
+// menu, the same way choosing a business used to jump straight to the form.
+function viewPackageDetails(p) {
+  form.value.package_id = p.package_id
+  loadPackageMenu(p.package_id)
+}
+
+// "Back to packages" only clears the package (and its menu picks) so the
+// client can browse other packages for the same business without losing
+// their chosen date/time/location/guest count.
+function backToPackages() {
+  form.value.package_id = ''
+  selectedMenuItems.value = {}
+  packageMenu.value = { limits: [], itemsByCategory: {} }
 }
 
 const selectedPackage = computed(() => packages.value.find((p) => p.package_id === form.value.package_id))
