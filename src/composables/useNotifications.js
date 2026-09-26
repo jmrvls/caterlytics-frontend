@@ -81,12 +81,29 @@ export function useNotifications() {
         .subscribe()
     }
 
-    if (!bookingChannel) {
+    // Scope the feed to the logged-in user's own business -- without this,
+    // every Admin/Owner across every tenant would get pinged for every
+    // OTHER business's bookings too (and, worse, if RLS doesn't separately
+    // allow it, the event may just silently never arrive at all).
+    let storedUser = null
+    try {
+      storedUser = JSON.parse(sessionStorage.getItem('user'))
+    } catch {
+      storedUser = null
+    }
+    const businessId = storedUser?.business_id || null
+
+    if (!bookingChannel && businessId) {
       bookingChannel = supabase
         .channel('new-booking-alerts')
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'tbl_bookings' },
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'tbl_bookings',
+            filter: `business_id=eq.${businessId}`,
+          },
           (payload) => pushNewBooking(payload.new)
         )
         .subscribe()

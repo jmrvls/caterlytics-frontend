@@ -90,6 +90,7 @@ export async function loginUser(identifier, password) {
       username: profile.username,
       full_name: profile.full_name,
       role: profile.role,
+      business_id: profile.business_id || null,
       avatar_url: profile.avatar_url || '',
       email: data.user.email,
     },
