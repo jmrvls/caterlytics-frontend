@@ -261,6 +261,30 @@
         </div>
       </div>
     </div>
+
+    <!-- CONFIRM ACTION MODAL (replaces the native browser confirm() popup) -->
+    <div v-if="confirmState" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50"></div>
+      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full max-w-sm p-5">
+        <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-2">Please confirm</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-5">{{ confirmState.message }}</p>
+        <div class="flex justify-end gap-2">
+          <button
+            @click="resolveConfirm(false)"
+            class="px-4 py-2 rounded-none text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+          >
+            Cancel
+          </button>
+          <button
+            @click="resolveConfirm(true)"
+            class="px-4 py-2 rounded-none text-sm font-bold text-white transition"
+            :class="confirmState.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'"
+          >
+            {{ confirmState.danger ? 'Yes, proceed' : 'Approve' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -354,13 +378,29 @@ async function loadData() {
   }
 }
 
+// Themed replacement for window.confirm(): opens the modal declared in the
+// template and resolves once the user picks Cancel or the action button.
+const confirmState = ref(null)
+function askConfirm(message, danger = true) {
+  return new Promise((resolve) => {
+    confirmState.value = { message, danger, resolve }
+  })
+}
+function resolveConfirm(result) {
+  confirmState.value?.resolve(result)
+  confirmState.value = null
+}
+
 async function changeStatus(business, newStatus) {
   const confirmMsgs = {
     Active: `Approve "${business.business_name}"? Its owner and staff will be able to log in.`,
     Suspended: `Suspend "${business.business_name}"? Its owner, staff, and business admin will be locked out immediately.`,
     Rejected: `Reject "${business.business_name}"'s registration?`,
   }
-  if (confirmMsgs[newStatus] && !window.confirm(confirmMsgs[newStatus])) return
+  if (confirmMsgs[newStatus]) {
+    const confirmed = await askConfirm(confirmMsgs[newStatus], newStatus !== 'Active')
+    if (!confirmed) return
+  }
 
   pendingActionId.value = business.business_id
   errorMessage.value = ''
