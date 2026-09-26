@@ -203,85 +203,114 @@
             </div>
           </div>
 
-          <!-- Welcome Banner -->
-          <div class="flex items-start justify-between mb-8">
+          <!-- Header -->
+          <div class="flex items-start justify-between mb-6">
             <div>
-              <span class="block text-sm font-bold text-gray-500 dark:text-gray-400 mb-1">Total Revenue</span>
-              <span class="text-3xl sm:text-4xl font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</span>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}!</h2>
+              <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
             </div>
             <div class="hidden lg:flex items-center gap-3">
               <NotificationBell />
-              <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
             </div>
           </div>
 
-          <!-- Mini stats -->
-          <div class="mb-6 pb-6 border-b border-gray-100 dark:border-gray-700">
-          <div class="flex items-start justify-between gap-4 max-w-md">
-            <!-- Left column -->
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <!-- Metric cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <div class="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-xs font-semibold mb-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 2v8m0 0v2m0-2c-1.11 0-2.08-.402-2.599-1M12 6a9 9 0 100 18 9 9 0 000-18z" />
+                </svg>
+                Total Revenue
+              </div>
+              <p class="text-2xl font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">₱{{ isLoadingDashboard ? '…' : formatCurrency(totalRevenue) }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <div class="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-xs font-semibold mb-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : totalBookings }}</span>
-                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Total Bookings</span>
+                Total Bookings
               </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : activeEventsCount }}</span>
-                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Active Events</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <p class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : totalBookings }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <div class="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-xs font-semibold mb-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4" />
                 </svg>
-                <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : lowStockCount }}</span>
-                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Low Stock Items</span>
+                Low Stock Items
               </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : completedBookingsCount }}</span>
-                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Completed</span>
-              </div>
+              <p class="text-2xl font-black" :class="!isLoadingDashboard && lowStockCount > 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-100'">{{ isLoadingDashboard ? '…' : lowStockCount }}</p>
             </div>
-
-            <!-- Right column -->
-            <div class="flex flex-col gap-1.5">
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <div class="flex items-center gap-2 text-gray-400 dark:text-gray-500 text-xs font-semibold mb-2">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z" />
                 </svg>
-                <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : healthyStockCount }}</span>
-                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Healthy Stock</span>
+                Staff On Duty
               </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : fullyPaidCount }}</span>
-                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Fully Paid</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span class="font-bold text-amber-500 dark:text-amber-400">{{ isLoadingDashboard ? '…' : partialCount }}</span>
-                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Partial</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
-                </svg>
-                <span class="font-bold text-red-500 dark:text-red-400">{{ isLoadingDashboard ? '…' : unpaidCount }}</span>
-                <span class="font-bold text-gray-500 dark:text-gray-400 text-sm">Unpaid</span>
-              </div>
+              <p class="text-2xl font-black text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : staffOnDutyCount }}</p>
             </div>
           </div>
+
+          <!-- Status breakdown -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-3">Booking Status</p>
+              <div class="flex flex-col gap-2.5">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Active Events
+                  </span>
+                  <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : activeEventsCount }}</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <svg class="w-4 h-4 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Completed
+                  </span>
+                  <span class="font-bold text-gray-900 dark:text-gray-100">{{ isLoadingDashboard ? '…' : completedBookingsCount }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-3">Payment Status</p>
+              <div class="flex flex-col gap-2.5">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Fully Paid
+                  </span>
+                  <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ isLoadingDashboard ? '…' : fullyPaidCount }}</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Partial
+                  </span>
+                  <span class="font-bold text-amber-500 dark:text-amber-400">{{ isLoadingDashboard ? '…' : partialCount }}</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                    <svg class="w-4 h-4 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
+                    </svg>
+                    Unpaid
+                  </span>
+                  <span class="font-bold text-red-500 dark:text-red-400">{{ isLoadingDashboard ? '…' : unpaidCount }}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Quick Actions -->
@@ -372,6 +401,7 @@ import { useSidebarState } from '../composables/useSidebarState'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
 import { getAllPayments } from '../services/paymentService'
+import { getUsers } from '../services/staffService'
 import { getMyBusiness, getMyBusinessNotifications, markBusinessNotificationRead } from '../services/businessservice'
 import {
   getMyAssignedBookings,
@@ -435,6 +465,7 @@ const todayStr = new Date().toISOString().split('T')[0]
 const allBookings = ref([])
 const allInventory = ref([])
 const allPayments = ref([])
+const allStaff = ref([])
 const isLoadingDashboard = ref(false)
 const myAssignedEvents = ref([]) // Staff role: their own upcoming assigned events
 
@@ -452,7 +483,7 @@ const lowStockCount = computed(() =>
   allInventory.value.filter((item) => Number(item.quantity) <= Number(item.low_stock_threshold)).length
 )
 
-const healthyStockCount = computed(() => allInventory.value.length - lowStockCount.value)
+const staffOnDutyCount = computed(() => allStaff.value.filter((u) => u.availability === 'Available').length)
 
 const fullyPaidCount = computed(() => allPayments.value.filter((p) => p.payment_status === 'Paid').length)
 const partialCount = computed(() => allPayments.value.filter((p) => p.payment_status === 'Partial').length)
@@ -514,14 +545,16 @@ async function fetchDashboardData(role) {
       allPayments.value = payments
       myAssignedEvents.value = assigned
     } else {
-      const [bookings, inventory, payments] = await Promise.all([
+      const [bookings, inventory, payments, staff] = await Promise.all([
         getAllBookings(),
         getAllInventory(),
-        getAllPayments()
+        getAllPayments(),
+        getUsers()
       ])
       allBookings.value = bookings
       allInventory.value = inventory
       allPayments.value = payments
+      allStaff.value = staff.users
     }
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
