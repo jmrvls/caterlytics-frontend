@@ -261,24 +261,25 @@
             <p v-if="!selectedBusinessId" class="text-sm text-gray-400 dark:text-gray-500">Select a business first.</p>
             <p v-else-if="!businessPackages.length" class="text-sm text-gray-400 dark:text-gray-500">This business has no packages yet.</p>
 
-            <div v-else class="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:mx-0 sm:px-0">
+            <div v-else class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <button
                 v-for="p in businessPackages"
                 :key="p.package_id"
                 type="button"
                 @click="form.package_id = p.package_id; loadPackageMenu(p.package_id)"
-                class="flex-shrink-0 w-40 sm:w-full text-left rounded-xl border-2 overflow-hidden transition"
+                class="text-left rounded-xl border-2 overflow-hidden transition shadow-sm hover:shadow-md"
                 :class="form.package_id === p.package_id
                   ? 'border-emerald-500 ring-2 ring-emerald-500/30 bg-emerald-50 dark:bg-emerald-900/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:border-emerald-300 dark:hover:border-emerald-700'"
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:border-emerald-300 dark:hover:border-emerald-700'"
               >
-                <div class="w-full h-24 bg-gray-200 dark:bg-gray-800 overflow-hidden">
+                <div class="w-full aspect-square bg-gray-100 dark:bg-gray-800 overflow-hidden">
                   <img v-if="p.image_url" :src="p.image_url" :alt="p.package_name" class="w-full h-full object-cover" />
-                  <div v-else class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 text-[11px]">No image</div>
+                  <div v-else class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs">No image</div>
                 </div>
-                <div class="p-2.5">
-                  <p class="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{{ p.package_name }}</p>
-                  <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">₱{{ formatPrice(p.price_per_head) }}/head</p>
+                <div class="p-3">
+                  <p class="text-sm font-semibold text-gray-800 dark:text-gray-100 leading-snug line-clamp-2">{{ p.package_name }}</p>
+                  <p class="text-base sm:text-lg text-emerald-600 dark:text-emerald-400 font-black mt-1">₱{{ formatPrice(p.price_per_head) }}</p>
+                  <p class="text-[11px] text-gray-400 dark:text-gray-500 -mt-0.5">per head</p>
                 </div>
               </button>
             </div>
