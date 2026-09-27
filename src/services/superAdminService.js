@@ -42,3 +42,31 @@ export async function getBusinessStatusAudit(businessId) {
   if (error) throw new Error(error.message || 'Failed to load audit trail.');
   return data || [];
 }
+
+// ---------- Business drill-down (Details modal) ----------
+// Lets Super Admin see the actual staff/packages/bookings rows behind a
+// business's counts, not just the numbers. Requires the
+// get_business_*_list() RPCs -- see supabase_migration_business_drilldown.sql.
+export async function getBusinessStaffList(businessId) {
+  const { data, error } = await supabase.rpc('get_business_staff_list', {
+    p_business_id: businessId,
+  });
+  if (error) throw new Error(error.message || 'Failed to load staff list.');
+  return data || [];
+}
+
+export async function getBusinessPackagesList(businessId) {
+  const { data, error } = await supabase.rpc('get_business_packages_list', {
+    p_business_id: businessId,
+  });
+  if (error) throw new Error(error.message || 'Failed to load packages list.');
+  return data || [];
+}
+
+export async function getBusinessBookingsList(businessId) {
+  const { data, error } = await supabase.rpc('get_business_bookings_list', {
+    p_business_id: businessId,
+  });
+  if (error) throw new Error(error.message || 'Failed to load bookings list.');
+  return data || [];
+}

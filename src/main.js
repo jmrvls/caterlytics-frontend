@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import './style.css'
 import App from './App.vue'
 import { initTheme } from './theme'
+import { supabase } from './supabaseClient'
 
 initTheme()
 
@@ -60,30 +61,86 @@ const router = createRouter({
 
 // Global route guard: blocks direct-URL access to pages a role
 // isn't allowed to see, not just the sidebar links.
-router.beforeEach((to) => {
+//
+// SECURITY FIX: this used to trust the `role` cached in sessionStorage,
+// which is plain JSON sitting in the browser -- anyone can open DevTools
+// and run `JSON.parse(sessionStorage.user)` -> edit `.role` -> save it
+// back, and the guard would wave them through to pages meant for a
+// higher role. sessionStorage is fine as a UI cache (avoids a flash of
+// the wrong layout while the network call below is in flight) but it is
+// never the source of truth for an authorization decision.
+//
+// The fix: every navigation to a guarded route now re-asks Supabase who
+// the caller actually is. `supabase.auth.getSession()` reads the signed
+// JWT (can't be forged from the browser), and the profile role/business
+// status come straight from `tbl_profiles` / `tbl_business`, which are
+// only readable through Postgres RLS scoped to `auth.uid()`. A tampered
+// sessionStorage value can no longer get anyone past this gate -- only a
+// real session + a real row in the database can.
+router.beforeEach(async (to) => {
   if (!to.meta?.requiresAuth) {
     return true
   }
 
-  let user = null
-  try {
-    user = JSON.parse(sessionStorage.getItem('user'))
-  } catch {
-    user = null
-  }
-
-  if (!user || !user.role) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) {
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
     return '/'
   }
 
-  if (to.meta.roles && !to.meta.roles.includes(user.role)) {
+  const { data: profile, error: profileError } = await supabase
+    .from('tbl_profiles')
+    .select('username, full_name, role, avatar_url, business_id')
+    .eq('id', session.user.id)
+    .single()
+
+  if (profileError || !profile || !profile.role) {
+    await supabase.auth.signOut()
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
+    return '/'
+  }
+
+  // Same tenant gate as login: a suspended/pending/rejected business can't
+  // keep using a session it already had open.
+  if (profile.business_id) {
+    const { data: business } = await supabase
+      .from('tbl_business')
+      .select('status')
+      .eq('business_id', profile.business_id)
+      .maybeSingle()
+
+    if (business && business.status !== 'Active') {
+      await supabase.auth.signOut()
+      sessionStorage.removeItem('token')
+      sessionStorage.removeItem('user')
+      return '/'
+    }
+  }
+
+  // Refresh the cache with the verified role so the UI (sidebar, view
+  // guards that still read sessionStorage) matches what the server just
+  // confirmed, instead of whatever was sitting there before.
+  const verifiedUser = {
+    ...JSON.parse(sessionStorage.getItem('user') || '{}'),
+    user_id: session.user.id,
+    username: profile.username,
+    full_name: profile.full_name,
+    role: profile.role,
+    business_id: profile.business_id || null,
+    avatar_url: profile.avatar_url || '',
+  }
+  sessionStorage.setItem('user', JSON.stringify(verifiedUser))
+
+  if (to.meta.roles && !to.meta.roles.includes(profile.role)) {
     // Send the user back to a page they do have access to instead
     // of letting them in.
-    if (user.role === 'Staff') {
+    if (profile.role === 'Staff') {
       return '/admin/payments'
-    } else if (user.role === 'Client') {
+    } else if (profile.role === 'Client') {
       return '/client/bookings'
-    } else if (user.role === 'Super Admin') {
+    } else if (profile.role === 'Super Admin') {
       return '/super-admin/dashboard'
     } else {
       return '/'

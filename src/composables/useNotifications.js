@@ -24,21 +24,48 @@ import { getMyAssignedBookings } from '../services/staffassignmentservice'
 const lowStockItems = ref([])
 const newBookings = ref([]) // most recent first, capped
 const myAssignments = ref([]) // Staff-only: events they've just been assigned to
+const pendingBusinesses = ref([]) // Super-Admin-only: businesses awaiting approval
 const loading = ref(true)
 const stockUnreadCount = ref(0)
 const bookingUnreadCount = ref(0)
 const assignmentUnreadCount = ref(0)
+const pendingBusinessUnreadCount = ref(0)
 const unreadCount = ref(0) // combined, for the bell badge
 const seenIds = new Set() // low-stock item ids already "read"
 const seenBookingIds = new Set() // booking ids already "read"
 const seenAssignmentIds = new Set() // booking_ids already "read"
+const seenPendingBusinessIds = new Set() // business_ids already "read"
 let stockChannel = null
 let bookingChannel = null
 let assignmentChannel = null
+let pendingBusinessChannel = null
+let pendingBusinessPollTimer = null
 let subscriberCount = 0
 
 function recomputeUnread() {
-  unreadCount.value = stockUnreadCount.value + bookingUnreadCount.value + assignmentUnreadCount.value
+  unreadCount.value = stockUnreadCount.value + bookingUnreadCount.value
+    + assignmentUnreadCount.value + pendingBusinessUnreadCount.value
+}
+
+// Super-Admin-only feed: "a new business is waiting for your approval."
+// Polls get_platform_businesses() (a SECURITY DEFINER RPC every Super Admin
+// call can already reach) on an interval AND listens for Realtime inserts on
+// tbl_business directly -- the poll is the reliable path (works regardless
+// of RLS/Realtime config), the channel just makes it feel instant when it's
+// available. Either path alone is enough for the badge to stay correct.
+async function refreshPendingBusinesses() {
+  try {
+    const { getPlatformBusinesses } = await import('../services/superAdminService')
+    const rows = await getPlatformBusinesses()
+    const pending = rows.filter((b) => b.status === 'Pending')
+    pendingBusinesses.value = pending
+    pendingBusinessUnreadCount.value = pending.filter((b) => !seenPendingBusinessIds.has(b.business_id)).length
+    recomputeUnread()
+  } catch (err) {
+    console.error('Failed to load pending-business notifications:', err)
+  } finally {
+    loading.value = false
+  }
 }
 
 // Staff-only feed: "you've been put on this event." Staff has no Bookings
@@ -120,6 +147,8 @@ function markAllRead() {
   bookingUnreadCount.value = 0
   myAssignments.value.forEach((b) => seenAssignmentIds.add(b.booking_id))
   assignmentUnreadCount.value = 0
+  pendingBusinesses.value.forEach((b) => seenPendingBusinessIds.add(b.business_id))
+  pendingBusinessUnreadCount.value = 0
   recomputeUnread()
 }
 
@@ -135,6 +164,33 @@ export function useNotifications() {
     }
     const businessId = storedUser?.business_id || null
     const isStaff = storedUser?.role === 'Staff'
+    const isSuperAdmin = storedUser?.role === 'Super Admin'
+
+    // Super Admin has no business_id of their own -- no inventory, no
+    // bookings -- so the tenant feeds below don't apply to them either.
+    // Their one alert is "a new business just registered and needs review."
+    if (isSuperAdmin) {
+      refreshPendingBusinesses()
+
+      if (!pendingBusinessPollTimer) {
+        pendingBusinessPollTimer = setInterval(refreshPendingBusinesses, 20000)
+      }
+
+      // Best-effort: requires the "super admin view all businesses" SELECT
+      // policy on tbl_business so Realtime can see the row. The poll above
+      // keeps the badge correct even if that policy isn't present yet.
+      if (!pendingBusinessChannel) {
+        pendingBusinessChannel = supabase
+          .channel('super-admin-new-businesses')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'tbl_business' },
+            () => refreshPendingBusinesses()
+          )
+          .subscribe()
+      }
+      return
+    }
 
     // Staff has no Bookings or Inventory page (see NotificationBell), so the
     // low-stock/new-booking feeds below are dead-ends for them. They get
@@ -228,6 +284,14 @@ export function useNotifications() {
         supabase.removeChannel(assignmentChannel)
         assignmentChannel = null
       }
+      if (pendingBusinessChannel) {
+        supabase.removeChannel(pendingBusinessChannel)
+        pendingBusinessChannel = null
+      }
+      if (pendingBusinessPollTimer) {
+        clearInterval(pendingBusinessPollTimer)
+        pendingBusinessPollTimer = null
+      }
     }
   })
 
@@ -235,10 +299,12 @@ export function useNotifications() {
     lowStockItems,
     newBookings,
     myAssignments,
+    pendingBusinesses,
     unreadCount,
     stockUnreadCount,
     bookingUnreadCount,
     assignmentUnreadCount,
+    pendingBusinessUnreadCount,
     loading,
     markAllRead,
     refresh: refreshStock,

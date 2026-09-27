@@ -13,6 +13,7 @@
         </div>
 
         <div class="flex items-center gap-3 flex-shrink-0">
+          <NotificationBell />
           <span class="hidden sm:inline text-sm text-gray-400">{{ userName }}</span>
           <button
             @click="handleLogout"
@@ -31,10 +32,14 @@
 
       <!-- STATS -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-5">
+        <button
+          @click="statusFilter = 'All'"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition hover:border-gray-300 dark:hover:border-gray-600"
+          :class="statusFilter === 'All' ? 'border-gray-400 dark:border-gray-500 ring-1 ring-gray-200 dark:ring-gray-700' : 'border-gray-200 dark:border-gray-700'"
+        >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Businesses</p>
           <p class="text-3xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ isLoading ? '…' : stats.total_businesses }}</p>
-        </div>
+        </button>
         <button
           @click="statusFilter = 'Pending'"
           class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition"
@@ -43,14 +48,22 @@
           <p class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Pending Approval</p>
           <p class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1">{{ isLoading ? '…' : stats.pending_businesses }}</p>
         </button>
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-5">
+        <button
+          @click="statusFilter = 'Active'"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition hover:border-emerald-300 dark:hover:border-emerald-700"
+          :class="statusFilter === 'Active' ? 'border-emerald-300 dark:border-emerald-700 ring-1 ring-emerald-200 dark:ring-emerald-800' : 'border-gray-200 dark:border-gray-700'"
+        >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Active Tenants</p>
           <p class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ isLoading ? '…' : stats.active_businesses }}</p>
-        </div>
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-5">
+        </button>
+        <button
+          @click="statusFilter = 'Suspended'"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition hover:border-red-300 dark:hover:border-red-700"
+          :class="statusFilter === 'Suspended' ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-800' : 'border-gray-200 dark:border-gray-700'"
+        >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Suspended</p>
           <p class="text-3xl font-black text-red-500 mt-1">{{ isLoading ? '…' : stats.suspended_businesses }}</p>
-        </div>
+        </button>
       </div>
 
       <div class="grid grid-cols-3 gap-4 mb-8">
@@ -72,7 +85,7 @@
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
         <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100 dark:border-gray-700">
           <h2 class="font-bold text-gray-900 dark:text-gray-100">Registered Businesses (Tenants)</h2>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <button
               v-for="f in ['All', 'Pending', 'Active', 'Suspended', 'Rejected']" :key="f"
               @click="statusFilter = f"
@@ -80,6 +93,15 @@
               class="text-xs font-semibold px-3 py-1.5 rounded-none transition"
             >
               {{ f }}
+            </button>
+            <button
+              @click="exportPDF"
+              class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-none bg-emerald-600 text-white hover:bg-emerald-700 transition"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export PDF
             </button>
           </div>
         </div>
@@ -220,18 +242,74 @@
               <p class="text-xs text-gray-400 uppercase font-semibold">Address</p>
               <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.address || '—' }}</p>
             </div>
-            <div>
+            <button
+              type="button"
+              @click="toggleDrillDown('staff')"
+              class="text-left rounded-none"
+              :class="drillDownTab === 'staff' ? 'text-emerald-700 dark:text-emerald-400' : ''"
+            >
               <p class="text-xs text-gray-400 uppercase font-semibold">Staff</p>
-              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.staff_count }}</p>
-            </div>
-            <div>
+              <p class="mt-1 underline decoration-dotted underline-offset-2" :class="drillDownTab === 'staff' ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'">{{ detailsBusiness.staff_count }}</p>
+            </button>
+            <button
+              type="button"
+              @click="toggleDrillDown('packages')"
+              class="text-left rounded-none"
+            >
               <p class="text-xs text-gray-400 uppercase font-semibold">Packages</p>
-              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.packages_count }}</p>
-            </div>
-            <div>
+              <p class="mt-1 underline decoration-dotted underline-offset-2" :class="drillDownTab === 'packages' ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'">{{ detailsBusiness.packages_count }}</p>
+            </button>
+            <button
+              type="button"
+              @click="toggleDrillDown('bookings')"
+              class="text-left rounded-none"
+            >
               <p class="text-xs text-gray-400 uppercase font-semibold">Bookings</p>
-              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.bookings_count }}</p>
+              <p class="mt-1 underline decoration-dotted underline-offset-2" :class="drillDownTab === 'bookings' ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'">{{ detailsBusiness.bookings_count }}</p>
+            </button>
+          </div>
+
+          <!-- Drill-down list (Staff / Packages / Bookings) -->
+          <div v-if="drillDownTab" class="pt-3 border-t border-gray-100 dark:border-gray-700">
+            <p class="text-xs text-gray-400 uppercase font-semibold mb-2">
+              {{ { staff: 'Staff', packages: 'Packages', bookings: 'Bookings' }[drillDownTab] }} List
+            </p>
+
+            <div v-if="isLoadingDrillDown" class="text-sm text-gray-400">Loading…</div>
+            <div v-else-if="drillDownError" class="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-none">
+              {{ drillDownError }}
             </div>
+            <div v-else-if="drillDownRows.length === 0" class="text-sm text-gray-400">Nothing here yet.</div>
+
+            <ul v-else class="space-y-2 max-h-48 overflow-y-auto">
+              <template v-if="drillDownTab === 'staff'">
+                <li v-for="row in drillDownRows" :key="row.id" class="text-sm flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <span class="font-semibold text-gray-800 dark:text-gray-100 truncate block">{{ row.full_name || row.username || '—' }}</span>
+                    <span class="block text-xs text-gray-400">{{ row.role }}{{ row.position ? ' · ' + row.position : '' }}</span>
+                  </div>
+                  <span class="text-xs text-gray-400 whitespace-nowrap">{{ row.availability }}</span>
+                </li>
+              </template>
+              <template v-else-if="drillDownTab === 'packages'">
+                <li v-for="row in drillDownRows" :key="row.package_id" class="text-sm flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <span class="font-semibold text-gray-800 dark:text-gray-100 truncate block">{{ row.package_name }}</span>
+                    <span class="block text-xs text-gray-400 truncate">{{ row.description || '—' }}</span>
+                  </div>
+                  <span class="text-xs text-gray-400 whitespace-nowrap">₱{{ Number(row.price_per_head).toLocaleString('en-PH') }}/head</span>
+                </li>
+              </template>
+              <template v-else-if="drillDownTab === 'bookings'">
+                <li v-for="row in drillDownRows" :key="row.booking_id" class="text-sm flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <span class="font-semibold text-gray-800 dark:text-gray-100 truncate block">{{ row.client_name }}</span>
+                    <span class="block text-xs text-gray-400">{{ formatDate(row.event_date) }} · {{ row.guest_count }} guests · {{ row.package_name || '—' }}</span>
+                  </div>
+                  <span class="text-xs text-gray-400 whitespace-nowrap">{{ row.booking_status }}</span>
+                </li>
+              </template>
+            </ul>
           </div>
 
           <!-- Audit trail -->
@@ -280,7 +358,7 @@
             class="px-4 py-2 rounded-none text-sm font-bold text-white transition"
             :class="confirmState.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'"
           >
-            {{ confirmState.danger ? 'Yes, proceed' : 'Approve' }}
+            {{ confirmState.actionLabel || (confirmState.danger ? 'Yes, proceed' : 'Approve') }}
           </button>
         </div>
       </div>
@@ -290,16 +368,23 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import logoUrl from '../Assets/logofinal.png'
-import { getPlatformStats, getPlatformBusinesses, setBusinessStatus, getBusinessStatusAudit } from '../services/superAdminService'
+import NotificationBell from '../Components/NotificationBell.vue'
+import {
+  getPlatformStats, getPlatformBusinesses, setBusinessStatus, getBusinessStatusAudit,
+  getBusinessStaffList, getBusinessPackagesList, getBusinessBookingsList,
+} from '../services/superAdminService'
 
 const router = useRouter()
+const route = useRoute()
 
 const userName = ref('')
 const isLoading = ref(true)
 const errorMessage = ref('')
-const statusFilter = ref('All')
+const statusFilter = ref(['All', 'Pending', 'Active', 'Suspended', 'Rejected'].includes(route.query.filter) ? route.query.filter : 'All')
 const pendingActionId = ref(null)
 const businessSearch = ref('')
 
@@ -329,11 +414,20 @@ const auditTrail = ref([])
 const isLoadingAudit = ref(false)
 const auditError = ref('')
 
+// Drill-down (Staff / Packages / Bookings actual rows, not just counts)
+const drillDownTab = ref(null) // 'staff' | 'packages' | 'bookings' | null
+const drillDownRows = ref([])
+const isLoadingDrillDown = ref(false)
+const drillDownError = ref('')
+
 async function openDetails(business) {
   detailsBusiness.value = business
   auditTrail.value = []
   auditError.value = ''
   isLoadingAudit.value = true
+  drillDownTab.value = null
+  drillDownRows.value = []
+  drillDownError.value = ''
   try {
     auditTrail.value = await getBusinessStatusAudit(business.business_id)
   } catch (error) {
@@ -347,6 +441,30 @@ async function openDetails(business) {
 
 function closeDetails() {
   detailsBusiness.value = null
+  drillDownTab.value = null
+}
+
+async function toggleDrillDown(tab) {
+  if (drillDownTab.value === tab) {
+    drillDownTab.value = null
+    return
+  }
+  drillDownTab.value = tab
+  drillDownRows.value = []
+  drillDownError.value = ''
+  isLoadingDrillDown.value = true
+  try {
+    const businessId = detailsBusiness.value.business_id
+    if (tab === 'staff') drillDownRows.value = await getBusinessStaffList(businessId)
+    else if (tab === 'packages') drillDownRows.value = await getBusinessPackagesList(businessId)
+    else if (tab === 'bookings') drillDownRows.value = await getBusinessBookingsList(businessId)
+  } catch (error) {
+    // Most likely cause: supabase_migration_business_drilldown.sql hasn't
+    // been run yet, so the get_business_*_list() RPC doesn't exist.
+    drillDownError.value = error?.message || 'This list isn\'t available yet — the drill-down migration needs to be run on this project.'
+  } finally {
+    isLoadingDrillDown.value = false
+  }
 }
 
 function formatDate(iso) {
@@ -381,9 +499,9 @@ async function loadData() {
 // Themed replacement for window.confirm(): opens the modal declared in the
 // template and resolves once the user picks Cancel or the action button.
 const confirmState = ref(null)
-function askConfirm(message, danger = true) {
+function askConfirm(message, danger = true, actionLabel = null) {
   return new Promise((resolve) => {
-    confirmState.value = { message, danger, resolve }
+    confirmState.value = { message, danger, actionLabel, resolve }
   })
 }
 function resolveConfirm(result) {
@@ -392,13 +510,21 @@ function resolveConfirm(result) {
 }
 
 async function changeStatus(business, newStatus) {
+  // "Reactivate" (Suspended/Rejected -> Active) and "Approve" (Pending ->
+  // Active) both land on the same newStatus === 'Active' branch, but they
+  // need different wording -- "Approve" is misleading for a business that
+  // was already live before being suspended.
+  const isReactivate = newStatus === 'Active' && business.status !== 'Pending'
   const confirmMsgs = {
-    Active: `Approve "${business.business_name}"? Its owner and staff will be able to log in.`,
+    Active: isReactivate
+      ? `Reactivate "${business.business_name}"? Its owner, staff, and business admin will be able to log in again.`
+      : `Approve "${business.business_name}"? Its owner and staff will be able to log in.`,
     Suspended: `Suspend "${business.business_name}"? Its owner, staff, and business admin will be locked out immediately.`,
     Rejected: `Reject "${business.business_name}"'s registration?`,
   }
   if (confirmMsgs[newStatus]) {
-    const confirmed = await askConfirm(confirmMsgs[newStatus], newStatus !== 'Active')
+    const actionLabel = isReactivate ? 'Yes, reactivate' : (newStatus === 'Active' ? 'Approve' : null)
+    const confirmed = await askConfirm(confirmMsgs[newStatus], newStatus !== 'Active', actionLabel)
     if (!confirmed) return
   }
 
@@ -413,6 +539,97 @@ async function changeStatus(business, newStatus) {
   } finally {
     pendingActionId.value = null
   }
+}
+
+// ---------- Export: platform overview + businesses table as a real PDF ----------
+function loadImageAsDataURL(url) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        canvas.getContext('2d').drawImage(img, 0, 0)
+        resolve(canvas.toDataURL('image/png'))
+      } catch {
+        resolve(null)
+      }
+    }
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
+}
+
+async function exportPDF() {
+  const doc = new jsPDF()
+
+  const logoDataUrl = await loadImageAsDataURL(logoUrl)
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, 'PNG', 14, 9, 16, 16)
+  }
+  const textX = logoDataUrl ? 34 : 14
+
+  doc.setFontSize(18)
+  doc.setFont(undefined, 'bold')
+  doc.setTextColor(5, 150, 105)
+  doc.text('Caterlytics', textX, 19)
+
+  doc.setFontSize(10)
+  doc.setFont(undefined, 'normal')
+  doc.setTextColor(100)
+  doc.text('Platform Console — Super Admin Report', textX, 25)
+  doc.text(`Filter: ${statusFilter.value}${businessSearch.value ? `  •  Search: "${businessSearch.value}"` : ''}`, 14, 34)
+  doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 14, 39)
+
+  doc.setDrawColor(220)
+  doc.line(14, 43, 196, 43)
+
+  autoTable(doc, {
+    startY: 50,
+    head: [['Metric', 'Value']],
+    body: [
+      ['Total Businesses', String(stats.value.total_businesses)],
+      ['Pending Approval', String(stats.value.pending_businesses)],
+      ['Active Tenants', String(stats.value.active_businesses)],
+      ['Suspended', String(stats.value.suspended_businesses)],
+      ['Owners', String(stats.value.total_owners)],
+      ['Staff / Business Admins', String(stats.value.total_staff)],
+      ['Clients', String(stats.value.total_clients)],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [5, 150, 105] },
+  })
+
+  autoTable(doc, {
+    startY: doc.lastAutoTable.finalY + 10,
+    head: [['Business', 'Owner', 'Contact', 'Staff', 'Packages', 'Bookings', 'Registered', 'Status']],
+    body: filteredBusinesses.value.map((b) => [
+      b.business_name,
+      b.owner_full_name || '—',
+      b.contact_email || b.owner_contact_number || '—',
+      String(b.staff_count),
+      String(b.packages_count),
+      String(b.bookings_count),
+      formatDate(b.created_at),
+      b.status,
+    ]),
+    theme: 'grid',
+    headStyles: { fillColor: [5, 150, 105] },
+    styles: { fontSize: 8 },
+  })
+
+  const pageCount = doc.internal.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(150)
+    doc.text(`Page ${i} of ${pageCount}`, 196, 290, { align: 'right' })
+  }
+
+  const dateSlug = new Date().toISOString().split('T')[0]
+  doc.save(`caterlytics-platform-${statusFilter.value.toLowerCase()}-${dateSlug}.pdf`)
 }
 
 const handleLogout = () => {

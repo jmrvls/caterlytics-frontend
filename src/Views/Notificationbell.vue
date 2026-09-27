@@ -2,14 +2,12 @@
   <!--
     Per the manuscript's Use Case Diagram (Figure 3), Staff's only use cases
     are Login/Authentication and Manage Payments -- Manage Inventory /
-    Low-Stock Alert and Manage Bookings belong to Admin and Owner/Manager
-    only, so those two feeds would be dead-end links for Staff (no
-    Inventory or Bookings page -- see main.js route guard +
-    staffAllowedSections in the sidebars). Staff instead gets its own feed
-    below (event assignments), an enhancement beyond that diagram's scope,
-    same as "My Assigned Events" on their dashboard.
+    Low-Stock Alert belong to Admin and Owner/Manager only. Staff has no
+    Inventory page to act on (see main.js route guard + staffAllowedSections
+    in the sidebars), so this bell stays hidden for Staff instead of
+    showing alerts with dead-end links.
   -->
-  <div class="relative">
+  <div v-if="userRole !== 'Staff'" class="relative">
     <button
       @click="open = !open"
       class="relative p-2 rounded-none text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -47,36 +45,35 @@
 
       <div class="max-h-80 overflow-y-auto">
 
-        <!-- STAFF: My Event Assignments -->
-        <template v-if="userRole === 'Staff'">
+        <!-- Super Admin: pending business approvals (their only feed) -->
+        <template v-if="userRole === 'Super Admin'">
           <div class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            My Assignments
+            Pending Business Approvals
           </div>
           <div v-if="loading" class="px-4 pb-3 text-sm text-gray-400">Loading…</div>
-          <div v-else-if="myAssignments.length === 0" class="px-4 pb-3 text-sm text-gray-400">
-            No upcoming events assigned to you yet.
+          <div v-else-if="pendingBusinesses.length === 0" class="px-4 pb-3 text-sm text-gray-400">
+            No businesses waiting for approval.
           </div>
           <button
-            v-for="b in myAssignments"
-            :key="b.booking_id"
-            @click="goToDashboard"
+            v-for="b in pendingBusinesses"
+            :key="b.business_id"
+            @click="goToPendingBusinesses"
             class="w-full flex items-start gap-3 px-4 py-3 text-left border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
-            <svg class="w-4 h-4 mt-0.5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <svg class="w-4 h-4 mt-0.5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2M5 21H3m4-14h.01M7 11h.01M7 15h.01m4-8h.01M11 11h.01M11 15h.01m4-8h.01M15 11h.01M15 15h.01" />
             </svg>
             <div class="min-w-0">
-              <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">You're assigned to {{ b.client_name }}'s event</p>
+              <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ b.business_name }}</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ formatDate(b.event_date) }} · {{ b.event_location }}
+                {{ b.owner_full_name || 'Unknown owner' }} · registered {{ formatDate(b.created_at) }}
               </p>
             </div>
           </button>
         </template>
 
-        <!-- ADMIN / OWNER-MANAGER -->
+        <!-- Admin / Owner: bookings + stock -->
         <template v-else>
-          <!-- New Bookings -->
           <div class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
             New Bookings
           </div>
@@ -128,9 +125,9 @@
         </template>
       </div>
 
-      <div v-if="userRole === 'Staff'" class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700">
-        <button @click="goToDashboard" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
-          View My Events →
+      <div v-if="userRole === 'Super Admin'" class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700">
+        <button @click="goToPendingBusinesses" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+          View Pending Businesses →
         </button>
       </div>
       <div v-else class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
@@ -152,7 +149,7 @@ import { useNotifications } from '../composables/useNotifications'
 
 const router = useRouter()
 const open = ref(false)
-const { lowStockItems, newBookings, myAssignments, unreadCount, loading, markAllRead } = useNotifications()
+const { lowStockItems, newBookings, pendingBusinesses, unreadCount, loading, markAllRead } = useNotifications()
 
 const storedUser = (() => {
   try {
@@ -180,8 +177,8 @@ function goToBookings() {
   router.push('/admin/bookings')
 }
 
-function goToDashboard() {
+function goToPendingBusinesses() {
   open.value = false
-  router.push('/admin/dashboard')
+  router.push({ path: '/super-admin/dashboard', query: { filter: 'Pending' } })
 }
 </script>
