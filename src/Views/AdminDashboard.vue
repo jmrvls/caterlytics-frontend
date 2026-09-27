@@ -138,7 +138,7 @@
           <!-- Welcome Banner -->
           <div class="flex items-start justify-between mb-8">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}!</h2>
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ firstName }}!</h2>
               <p class="text-gray-500 dark:text-gray-400 mt-1">You can view and manage client payments here.</p>
             </div>
             <div class="hidden lg:flex items-center gap-3">
@@ -168,21 +168,71 @@
           <div v-if="isLoadingDashboard" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">Loading...</div>
           <div v-else-if="myAssignedEvents.length === 0" class="text-center py-8 text-gray-400 dark:text-gray-500 text-sm">No events assigned to you yet.</div>
           <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mb-8">
-            <div v-for="e in myAssignedEvents" :key="e.booking_id" class="bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-4">
+            <!--
+              Clickable + shows event_time now: previously only date, client
+              and location were shown even though event_time (and
+              guest_count/package_name, used in the detail modal below) were
+              already being fetched -- staff had no way to see what time to
+              actually show up, or what the event needs, without asking the
+              office. Beyond the manuscript's UCD (Figure 3) scope, same as
+              the card itself.
+            -->
+            <button
+              v-for="e in myAssignedEvents" :key="e.booking_id"
+              @click="openEventDetailModal(e)"
+              class="text-left bg-white dark:bg-gray-800 rounded-none border border-gray-100 dark:border-gray-700 p-4 hover:border-emerald-400 dark:hover:border-emerald-500 transition"
+            >
               <div class="h-1.5 w-10 bg-gray-200 dark:bg-gray-600 rounded-full mb-4"></div>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">{{ formatDate(e.event_date) }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500 mb-1">{{ formatDate(e.event_date) }}{{ e.event_time ? ` · ${formatTime(e.event_time)}` : '' }}</p>
               <p class="font-bold text-gray-900 dark:text-gray-100 truncate">{{ e.client_name }}</p>
               <p class="text-xs text-gray-400 dark:text-gray-500 mb-3 truncate">{{ e.event_location }}</p>
               <span :class="statusBadgeClass(e.booking_status)" class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold">
                 {{ e.booking_status }}
               </span>
-            </div>
+            </button>
           </div>
 
           <!-- My Schedule -->
           <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-4">My Schedule</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Mark dates you're on leave or unavailable — the office will see this when assigning staff to events.</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            Mark dates you're on leave or unavailable — the office will see this when assigning staff to events.
+            <span v-if="!isLoadingUnavailableCount">
+              You currently have <strong>{{ myUnavailableCount }}</strong> unavailable date{{ myUnavailableCount === 1 ? '' : 's' }} on file.
+            </span>
+          </p>
 
+        </div>
+
+        <!-- Event Detail Modal (Staff) -->
+        <div v-if="eventDetailModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div class="bg-white dark:bg-gray-800 rounded-none w-full max-w-md p-6">
+            <div class="flex items-start justify-between mb-1">
+              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ eventDetailModal.client_name }}</h3>
+              <span :class="statusBadgeClass(eventDetailModal.booking_status)" class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold">
+                {{ eventDetailModal.booking_status }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {{ formatDate(eventDetailModal.event_date) }}{{ eventDetailModal.event_time ? ` · ${formatTime(eventDetailModal.event_time)}` : '' }}
+            </p>
+            <div class="space-y-3 text-sm mb-6">
+              <div class="flex justify-between">
+                <span class="text-gray-400 dark:text-gray-500">Location</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-100 text-right">{{ eventDetailModal.event_location || '—' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400 dark:text-gray-500">Guests</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-100">{{ eventDetailModal.guest_count ?? '—' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-400 dark:text-gray-500">Package</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-100 text-right">{{ eventDetailModal.package_name || '—' }}</span>
+              </div>
+            </div>
+            <button @click="eventDetailModal = null" class="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-200 dark:hover:bg-gray-600">
+              Close
+            </button>
+          </div>
         </div>
 
         <!-- ============ DASHBOARD SECTION (ADMIN / OWNER) ============ -->
@@ -206,7 +256,7 @@
           <!-- Header -->
           <div class="flex items-start justify-between mb-6">
             <div>
-              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ userName }}!</h2>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ firstName }}!</h2>
               <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
             </div>
             <div class="hidden lg:flex items-center gap-3">
@@ -407,7 +457,8 @@ import {
   getMyAssignedBookings,
   getUnavailableDates,
   addUnavailableDate,
-  removeUnavailableDate
+  removeUnavailableDate,
+  getMyUpcomingUnavailableCount
 } from '../services/staffassignmentservice'
 
 const router = useRouter()
@@ -428,6 +479,7 @@ function toggleSidebar() {
 }
 
 const userName = ref('User')
+const firstName = computed(() => (userName.value || 'User').trim().split(' ')[0])
 const userRole = ref('Admin')
 const userInitial = ref('U')
 const userAvatarUrl = ref('')
@@ -460,6 +512,24 @@ const newLeaveDate = ref('')
 const newLeaveReason = ref('')
 const isSavingLeave = ref(false)
 const todayStr = new Date().toISOString().split('T')[0]
+const myUnavailableCount = ref(0)
+const isLoadingUnavailableCount = ref(true)
+
+// Event detail modal (Staff): tapping an assigned-event card shows the
+// details staff actually need to prep for it (guests, package) -- beyond
+// the manuscript's UCD (Figure 3) scope, same as the card itself.
+const eventDetailModal = ref(null)
+function openEventDetailModal(event) {
+  eventDetailModal.value = event
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  const [hour, minute] = timeStr.split(':')
+  const date = new Date()
+  date.setHours(Number(hour), Number(minute))
+  return date.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' })
+}
 
 // ---------- Dashboard data ----------
 const allBookings = ref([])
@@ -593,6 +663,11 @@ onMounted(() => {
     getMyBusinessNotifications()
       .then((rows) => { unreadBusinessNotifications.value = rows.filter(n => !n.is_read) })
       .catch((error) => console.error('Failed to load business notifications:', error))
+  } else {
+    getMyUpcomingUnavailableCount()
+      .then((count) => { myUnavailableCount.value = count })
+      .catch((error) => console.error('Failed to load unavailable-dates count:', error))
+      .finally(() => { isLoadingUnavailableCount.value = false })
   }
 })
 
@@ -630,6 +705,9 @@ async function handleAddLeaveDate() {
     newLeaveDate.value = ''
     newLeaveReason.value = ''
     await loadSchedule()
+    if (userRole.value === 'Staff' && scheduleModalUser.value.id === currentUserId.value) {
+      getMyUpcomingUnavailableCount().then((count) => { myUnavailableCount.value = count }).catch(() => {})
+    }
   } catch (error) {
     scheduleError.value = error?.message || 'Failed to add date.'
   } finally {
@@ -642,6 +720,9 @@ async function handleRemoveLeaveDate(id) {
   try {
     await removeUnavailableDate(id)
     scheduleDates.value = scheduleDates.value.filter((d) => d.id !== id)
+    if (userRole.value === 'Staff' && scheduleModalUser.value?.id === currentUserId.value) {
+      getMyUpcomingUnavailableCount().then((count) => { myUnavailableCount.value = count }).catch(() => {})
+    }
   } catch (error) {
     scheduleError.value = error?.message || 'Failed to remove date.'
   }

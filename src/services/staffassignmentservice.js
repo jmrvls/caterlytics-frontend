@@ -125,7 +125,7 @@ export async function getMyAssignedBookings() {
 
   const { data, error } = await supabase
     .from('tbl_booking_staff')
-    .select('tbl_bookings!inner(booking_id, client_name, event_date, event_time, event_location, booking_status)')
+    .select('tbl_bookings!inner(booking_id, client_name, event_date, event_time, event_location, booking_status, guest_count, package_name)')
     .eq('staff_id', user.id)
     .gte('tbl_bookings.event_date', todayStr)
     .in('tbl_bookings.booking_status', ['Pending', 'Confirmed'])
@@ -133,6 +133,25 @@ export async function getMyAssignedBookings() {
 
   if (error) throw new Error('Failed to load your assigned events.');
   return (data || []).map((row) => row.tbl_bookings).filter(Boolean);
+}
+
+// Staff role: count of their own upcoming unavailable/leave dates, for the
+// small summary line on the "My Schedule" card (dashboard shouldn't need to
+// open the modal just to know if anything's on file).
+export async function getMyUpcomingUnavailableCount() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('You must be logged in.');
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const { count, error } = await supabase
+    .from('tbl_staff_unavailability')
+    .select('id', { count: 'exact', head: true })
+    .eq('staff_id', user.id)
+    .gte('unavailable_date', todayStr);
+
+  if (error) throw new Error('Failed to load your schedule.');
+  return count || 0;
 }
 
 // --- Per-date availability (leave/time-off schedule) ---

@@ -1,36 +1,54 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { supabase } from '../supabaseClient'
 import { getLowStockItems } from '../services/inventoryService'
+import { getMyAssignedBookings } from '../services/staffassignmentservice'
 
-// Shared, app-wide notification state: low-stock alerts + new booking alerts.
+// Shared, app-wide notification state: low-stock alerts + new booking alerts
+// (Admin/Owner), and event-assignment alerts (Staff).
 //
 // Per the study's objective (1.2.2): "...performs automatic stock
 // deductions, and generates low-stock notifications." This composable is
 // the single source of truth for that alert so it stays consistent no
-// matter which page (Admin/Staff) mounts it.
+// matter which page (Admin/Owner) mounts it.
 //
-// New-booking alerts are an added enhancement on top of the manuscript's
-// scope (not explicitly required there), so a client booking online shows
-// up live on the Admin/Owner dashboard bell.
+// New-booking alerts and the Staff assignment feed are both added
+// enhancements on top of the manuscript's Use Case Diagram (Figure 3) scope
+// (not explicitly required there): a client booking online shows up live on
+// the Admin/Owner dashboard bell, and a Staff member sees it the moment
+// they're assigned to an event.
 //
 // Usage in any View:
 //   import { useNotifications } from '../composables/useNotifications'
-//   const { lowStockItems, newBookings, unreadCount, loading, markAllRead } = useNotifications()
+//   const { lowStockItems, newBookings, myAssignments, unreadCount, loading, markAllRead } = useNotifications()
 
 const lowStockItems = ref([])
 const newBookings = ref([]) // most recent first, capped
+const myAssignments = ref([]) // Staff-only: events they've just been assigned to
 const loading = ref(true)
 const stockUnreadCount = ref(0)
 const bookingUnreadCount = ref(0)
+const assignmentUnreadCount = ref(0)
 const unreadCount = ref(0) // combined, for the bell badge
 const seenIds = new Set() // low-stock item ids already "read"
 const seenBookingIds = new Set() // booking ids already "read"
+const seenAssignmentIds = new Set() // booking_ids already "read"
 let stockChannel = null
 let bookingChannel = null
+let assignmentChannel = null
 let subscriberCount = 0
 
 function recomputeUnread() {
-  unreadCount.value = stockUnreadCount.value + bookingUnreadCount.value
+  unreadCount.value = stockUnreadCount.value + bookingUnreadCount.value + assignmentUnreadCount.value
+}
+
+// Staff-only feed: "you've been put on this event." Staff has no Bookings
+// or Inventory page (see NotificationBell), so those two feeds above are
+// dead-ends for them -- this is the one alert that's actually theirs.
+function pushNewAssignment(booking) {
+  if (!booking) return
+  myAssignments.value = [booking, ...myAssignments.value].slice(0, 10)
+  assignmentUnreadCount.value = myAssignments.value.filter((b) => !seenAssignmentIds.has(b.booking_id)).length
+  recomputeUnread()
 }
 
 async function refreshStock() {
@@ -79,17 +97,82 @@ async function refreshBookings() {
   }
 }
 
+// Initial load for the Staff feed: their own currently-upcoming assigned
+// events (Pending/Confirmed), so the bell isn't empty on first login and
+// only genuinely-new inserts after that count as "unread".
+async function refreshAssignments() {
+  try {
+    const rows = await getMyAssignedBookings()
+    myAssignments.value = rows
+    assignmentUnreadCount.value = rows.filter((b) => !seenAssignmentIds.has(b.booking_id)).length
+    recomputeUnread()
+  } catch (err) {
+    console.error('Failed to load your assigned events:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
 function markAllRead() {
   lowStockItems.value.forEach((i) => seenIds.add(i.item_id))
   stockUnreadCount.value = 0
   newBookings.value.forEach((b) => seenBookingIds.add(b.booking_id))
   bookingUnreadCount.value = 0
+  myAssignments.value.forEach((b) => seenAssignmentIds.add(b.booking_id))
+  assignmentUnreadCount.value = 0
   recomputeUnread()
 }
 
 export function useNotifications() {
   onMounted(() => {
     subscriberCount++
+
+    let storedUser = null
+    try {
+      storedUser = JSON.parse(sessionStorage.getItem('user'))
+    } catch {
+      storedUser = null
+    }
+    const businessId = storedUser?.business_id || null
+    const isStaff = storedUser?.role === 'Staff'
+
+    // Staff has no Bookings or Inventory page (see NotificationBell), so the
+    // low-stock/new-booking feeds below are dead-ends for them. They get
+    // their own feed instead: "you've been assigned to this event." Beyond
+    // the manuscript's Use Case Diagram (Figure 3) scope for Staff, same as
+    // the "My Assigned Events" dashboard card this mirrors.
+    if (isStaff) {
+      refreshAssignments()
+
+      if (!assignmentChannel) {
+        supabase.auth.getUser().then(({ data }) => {
+          const staffId = data?.user?.id
+          if (!staffId || assignmentChannel) return
+          assignmentChannel = supabase
+            .channel('my-event-assignments')
+            .on(
+              'postgres_changes',
+              {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'tbl_booking_staff',
+                filter: `staff_id=eq.${staffId}`,
+              },
+              async (payload) => {
+                const { data: booking } = await supabase
+                  .from('tbl_bookings')
+                  .select('booking_id, client_name, event_date, event_time, event_location, booking_status')
+                  .eq('booking_id', payload.new.booking_id)
+                  .single()
+                pushNewAssignment(booking)
+              }
+            )
+            .subscribe()
+        })
+      }
+      return
+    }
+
     refreshStock()
 
     // Only one Realtime channel of each kind needs to exist app-wide;
@@ -109,14 +192,6 @@ export function useNotifications() {
     // every Admin/Owner across every tenant would get pinged for every
     // OTHER business's bookings too (and, worse, if RLS doesn't separately
     // allow it, the event may just silently never arrive at all).
-    let storedUser = null
-    try {
-      storedUser = JSON.parse(sessionStorage.getItem('user'))
-    } catch {
-      storedUser = null
-    }
-    const businessId = storedUser?.business_id || null
-
     if (businessId) {
       refreshBookings()
     }
@@ -149,15 +224,21 @@ export function useNotifications() {
         supabase.removeChannel(bookingChannel)
         bookingChannel = null
       }
+      if (assignmentChannel) {
+        supabase.removeChannel(assignmentChannel)
+        assignmentChannel = null
+      }
     }
   })
 
   return {
     lowStockItems,
     newBookings,
+    myAssignments,
     unreadCount,
     stockUnreadCount,
     bookingUnreadCount,
+    assignmentUnreadCount,
     loading,
     markAllRead,
     refresh: refreshStock,
