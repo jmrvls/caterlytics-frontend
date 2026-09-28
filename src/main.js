@@ -51,7 +51,7 @@ const routes = [
   // register_business() actually assigns to a new business owner) or Staff
   // could never reach their own account settings. Everyone who's logged in
   // needs to be able to view/edit their own profile here.
-  { path: '/settings', component: SettingsView, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager', 'Client'] } }
+  { path: '/settings', component: SettingsView, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager', 'Client', 'Super Admin'] } }
 ]
 
 const router = createRouter({

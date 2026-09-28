@@ -256,6 +256,12 @@ async function handleSaveBusiness() {
 }
 
 function goBack() {
+  // Super Admin: always return to the platform console (router.back() goes
+  // nowhere if the page was opened/reloaded directly).
+  if (currentUser.role === 'Super Admin') {
+    router.push('/super-admin/dashboard')
+    return
+  }
   router.back()
 }
 
@@ -365,6 +371,8 @@ async function handleChangePassword() {
 
 onMounted(() => {
   fetchProfile()
-  fetchBusiness()
+  // Super Admin belongs to no single business (and can see every tenant row,
+  // which would make the single-row business lookup error out).
+  if (currentUser.role !== 'Super Admin') fetchBusiness()
 })
 </script>

@@ -79,6 +79,18 @@ export async function loginUser(identifier, password) {
         await supabase.auth.signOut();
         throw new Error('This business registration was not approved. Contact the platform admin.');
       }
+      if (business.status === 'Closed') {
+        await supabase.auth.signOut();
+        throw new Error('This business is closed and can no longer be accessed. Contact the platform admin.');
+      }
+      // Safety net: any status other than Active (including ones added later)
+      // must not get in. The router guard blocks non-Active businesses too, so
+      // without this the user would log in and then be bounced back to the
+      // login page with no explanation.
+      if (business.status !== 'Active') {
+        await supabase.auth.signOut();
+        throw new Error('This business account is not active. Contact the platform admin.');
+      }
     }
   }
 

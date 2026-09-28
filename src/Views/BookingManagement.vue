@@ -829,6 +829,7 @@ async function handleSaveAssignment() {
 
 async function handleStatusChange(booking, newStatus) {
   const previousStatus = booking.booking_status
+  pageError.value = '' // drop any stale error from a previous attempt
   booking.booking_status = newStatus // optimistic update
   try {
     await updateBookingStatus(booking.booking_id, newStatus)

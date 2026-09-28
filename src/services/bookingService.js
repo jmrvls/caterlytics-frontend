@@ -103,6 +103,13 @@ export async function updateBookingStatus(id, status) {
 
   if (fetchError) throw fetchError;
 
+  // A booking can only be marked Completed once it has been Confirmed.
+  // Confirming is what enforces a complete menu and the stock check, so
+  // this stops a booking from skipping straight to Completed without them.
+  if (status === 'Completed' && currentBooking.booking_status !== 'Confirmed' && currentBooking.booking_status !== 'Completed') {
+    throw new Error('Only a Confirmed booking can be marked Completed. Confirm it first (the menu must be complete).');
+  }
+
   // Confirming: stock availability must be checked and deducted atomically
   // with the status change, in a single DB transaction, so a booking can
   // never end up "Confirmed" while ingredients are actually short. If

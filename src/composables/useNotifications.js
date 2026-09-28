@@ -48,6 +48,24 @@ let subscriberCount = 0
 // leftover "X just booked" alerts and unread badge. Wipe everything whenever
 // the logged-in user changes.
 let lastUserKey = null
+let currentUserId = null
+
+// "Read" state for Super Admin's pending-business alerts lives in
+// localStorage (per user) so a page refresh doesn't bring the red badge back
+// for businesses that were already marked read.
+const seenPendingStorageKey = () => `caterlytics:seenPendingBusinesses:${currentUserId || 'anon'}`
+function loadSeenPending() {
+  seenPendingBusinessIds.clear()
+  try {
+    const raw = JSON.parse(localStorage.getItem(seenPendingStorageKey()) || '[]')
+    if (Array.isArray(raw)) raw.forEach((id) => seenPendingBusinessIds.add(id))
+  } catch { /* storage unavailable or corrupted -- start empty */ }
+}
+function saveSeenPending() {
+  try {
+    localStorage.setItem(seenPendingStorageKey(), JSON.stringify([...seenPendingBusinessIds]))
+  } catch { /* ignore quota / private-mode errors */ }
+}
 function resetNotificationState() {
   lowStockItems.value = []
   newBookings.value = []
@@ -177,6 +195,7 @@ function markAllRead() {
   myAssignments.value.forEach((b) => seenAssignmentIds.add(b.booking_id))
   assignmentUnreadCount.value = 0
   pendingBusinesses.value.forEach((b) => seenPendingBusinessIds.add(b.business_id))
+  saveSeenPending()
   pendingBusinessUnreadCount.value = 0
   recomputeUnread()
 }
@@ -200,11 +219,13 @@ export function useNotifications() {
       resetNotificationState()
     }
     lastUserKey = userKey
+    currentUserId = storedUser?.user_id || storedUser?.id || null
 
     // Super Admin has no business_id of their own -- no inventory, no
     // bookings -- so the tenant feeds below don't apply to them either.
     // Their one alert is "a new business just registered and needs review."
     if (isSuperAdmin) {
+      loadSeenPending()
       newBookings.value = []
       lowStockItems.value = []
       bookingUnreadCount.value = 0
