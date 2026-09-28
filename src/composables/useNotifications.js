@@ -42,6 +42,35 @@ let pendingBusinessChannel = null
 let pendingBusinessPollTimer = null
 let subscriberCount = 0
 
+// The refs/Sets above are module-level (shared app-wide), so they survive
+// logout -> login inside the same tab (SPA, no page reload). Without a reset,
+// a Super Admin logging in after an Admin would still see that Admin's
+// leftover "X just booked" alerts and unread badge. Wipe everything whenever
+// the logged-in user changes.
+let lastUserKey = null
+function resetNotificationState() {
+  lowStockItems.value = []
+  newBookings.value = []
+  myAssignments.value = []
+  pendingBusinesses.value = []
+  stockUnreadCount.value = 0
+  bookingUnreadCount.value = 0
+  assignmentUnreadCount.value = 0
+  pendingBusinessUnreadCount.value = 0
+  unreadCount.value = 0
+  loading.value = true
+  seenIds.clear()
+  seenBookingIds.clear()
+  seenAssignmentIds.clear()
+  seenPendingBusinessIds.clear()
+}
+
+// Call on logout so the next person to log in on this tab starts clean.
+export function resetNotifications() {
+  resetNotificationState()
+  lastUserKey = null
+}
+
 function recomputeUnread() {
   unreadCount.value = stockUnreadCount.value + bookingUnreadCount.value
     + assignmentUnreadCount.value + pendingBusinessUnreadCount.value
@@ -166,10 +195,21 @@ export function useNotifications() {
     const isStaff = storedUser?.role === 'Staff'
     const isSuperAdmin = storedUser?.role === 'Super Admin'
 
+    const userKey = `${storedUser?.user_id || storedUser?.id || storedUser?.email || 'anon'}:${storedUser?.role || ''}`
+    if (lastUserKey !== null && lastUserKey !== userKey) {
+      resetNotificationState()
+    }
+    lastUserKey = userKey
+
     // Super Admin has no business_id of their own -- no inventory, no
     // bookings -- so the tenant feeds below don't apply to them either.
     // Their one alert is "a new business just registered and needs review."
     if (isSuperAdmin) {
+      newBookings.value = []
+      lowStockItems.value = []
+      bookingUnreadCount.value = 0
+      stockUnreadCount.value = 0
+      recomputeUnread()
       refreshPendingBusinesses()
 
       if (!pendingBusinessPollTimer) {

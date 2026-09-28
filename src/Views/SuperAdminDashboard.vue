@@ -42,8 +42,8 @@
         </button>
         <button
           @click="statusFilter = 'Pending'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition"
-          :class="stats.pending_businesses > 0 ? 'border-amber-300 dark:border-amber-700 ring-1 ring-amber-200 dark:ring-amber-800' : 'border-gray-200 dark:border-gray-700'"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition hover:border-amber-300 dark:hover:border-amber-700"
+          :class="(statusFilter === 'Pending' || stats.pending_businesses > 0) ? 'border-amber-300 dark:border-amber-700 ring-1 ring-amber-200 dark:ring-amber-800' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Pending Approval</p>
           <p class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1">{{ isLoading ? '…' : stats.pending_businesses }}</p>
@@ -87,7 +87,7 @@
           <h2 class="font-bold text-gray-900 dark:text-gray-100">Registered Businesses (Tenants)</h2>
           <div class="flex items-center gap-2 flex-wrap">
             <button
-              v-for="f in ['All', 'Pending', 'Active', 'Suspended', 'Rejected']" :key="f"
+              v-for="f in ['All', 'Pending', 'Active', 'Suspended', 'Rejected', 'Closed']" :key="f"
               @click="statusFilter = f"
               :class="statusFilter === f ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
               class="text-xs font-semibold px-3 py-1.5 rounded-none transition"
@@ -367,26 +367,36 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import logoUrl from '../Assets/logofinal.png'
-import NotificationBell from '../Components/NotificationBell.vue'
+import NotificationBell from '../Components/SuperAdminBell.vue'
+import { logoutUser } from '../services/authService'
+import { resetNotifications } from '../composables/useNotifications'
 import {
   getPlatformStats, getPlatformBusinesses, setBusinessStatus, getBusinessStatusAudit,
   getBusinessStaffList, getBusinessPackagesList, getBusinessBookingsList,
 } from '../services/superAdminService'
 
+const FILTERS = ['All', 'Pending', 'Active', 'Suspended', 'Rejected', 'Closed']
 const router = useRouter()
 const route = useRoute()
 
 const userName = ref('')
 const isLoading = ref(true)
 const errorMessage = ref('')
-const statusFilter = ref(['All', 'Pending', 'Active', 'Suspended', 'Rejected'].includes(route.query.filter) ? route.query.filter : 'All')
+const statusFilter = ref(FILTERS.includes(route.query.filter) ? route.query.filter : 'All')
 const pendingActionId = ref(null)
 const businessSearch = ref('')
+
+// Clicking "View Pending Businesses" in the bell while already on this page
+// only changes the query string -- the component isn't re-created, so the
+// filter above (read once at setup) never updated. Watch it.
+watch(() => route.query.filter, (f) => {
+  if (FILTERS.includes(f)) statusFilter.value = f
+})
 
 const stats = ref({
   total_businesses: 0, pending_businesses: 0, active_businesses: 0,
@@ -420,7 +430,12 @@ const drillDownRows = ref([])
 const isLoadingDrillDown = ref(false)
 const drillDownError = ref('')
 
+let detailsToken = 0
+let drillToken = 0
+
 async function openDetails(business) {
+  const token = ++detailsToken
+  drillToken++
   detailsBusiness.value = business
   auditTrail.value = []
   auditError.value = ''
@@ -429,17 +444,22 @@ async function openDetails(business) {
   drillDownRows.value = []
   drillDownError.value = ''
   try {
-    auditTrail.value = await getBusinessStatusAudit(business.business_id)
+    const rows = await getBusinessStatusAudit(business.business_id)
+    if (token !== detailsToken) return // another business was opened meanwhile
+    auditTrail.value = rows
   } catch (error) {
-    // Most likely cause: supabase_migration_audit_notifications.sql hasn't
-    // been run yet, so the get_business_status_audit() RPC doesn't exist.
-    auditError.value = 'Status history isn\'t available yet — the audit trail migration needs to be run on this project.'
+    if (token !== detailsToken) return
+    // Show the real reason instead of always blaming the migration -- it
+    // could equally be a permissions or network error.
+    auditError.value = `Couldn't load status history: ${error?.message || 'unknown error'}`
   } finally {
-    isLoadingAudit.value = false
+    if (token === detailsToken) isLoadingAudit.value = false
   }
 }
 
 function closeDetails() {
+  detailsToken++
+  drillToken++
   detailsBusiness.value = null
   drillDownTab.value = null
 }
@@ -449,21 +469,24 @@ async function toggleDrillDown(tab) {
     drillDownTab.value = null
     return
   }
+  const token = ++drillToken
   drillDownTab.value = tab
   drillDownRows.value = []
   drillDownError.value = ''
   isLoadingDrillDown.value = true
   try {
     const businessId = detailsBusiness.value.business_id
-    if (tab === 'staff') drillDownRows.value = await getBusinessStaffList(businessId)
-    else if (tab === 'packages') drillDownRows.value = await getBusinessPackagesList(businessId)
-    else if (tab === 'bookings') drillDownRows.value = await getBusinessBookingsList(businessId)
+    let rows = []
+    if (tab === 'staff') rows = await getBusinessStaffList(businessId)
+    else if (tab === 'packages') rows = await getBusinessPackagesList(businessId)
+    else if (tab === 'bookings') rows = await getBusinessBookingsList(businessId)
+    if (token !== drillToken) return // user switched tab / closed the modal
+    drillDownRows.value = rows
   } catch (error) {
-    // Most likely cause: supabase_migration_business_drilldown.sql hasn't
-    // been run yet, so the get_business_*_list() RPC doesn't exist.
-    drillDownError.value = error?.message || 'This list isn\'t available yet — the drill-down migration needs to be run on this project.'
+    if (token !== drillToken) return
+    drillDownError.value = error?.message || 'Failed to load this list.'
   } finally {
-    isLoadingDrillDown.value = false
+    if (token === drillToken) isLoadingDrillDown.value = false
   }
 }
 
@@ -477,22 +500,32 @@ function statusBadgeClass(status) {
     case 'Active': return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
     case 'Pending': return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
     case 'Suspended': return 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300'
-    case 'Rejected': return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+    case 'Rejected':
+    case 'Closed': return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
     default: return 'bg-gray-100 text-gray-600'
   }
 }
 
-async function loadData() {
-  isLoading.value = true
-  errorMessage.value = ''
+// silent = background refresh: no "Loading…" flash and no wiping the error
+// banner, so the table doesn't blink after every approve/suspend or poll.
+async function loadData({ silent = false } = {}) {
+  if (!silent) {
+    isLoading.value = true
+    errorMessage.value = ''
+  }
   try {
     const [s, b] = await Promise.all([getPlatformStats(), getPlatformBusinesses()])
     stats.value = s
     businesses.value = b
+    // keep the open Details modal in sync with the fresh row
+    if (detailsBusiness.value) {
+      const fresh = b.find((x) => x.business_id === detailsBusiness.value.business_id)
+      if (fresh) detailsBusiness.value = fresh
+    }
   } catch (error) {
-    errorMessage.value = error?.message || 'Failed to load platform data.'
+    if (!silent) errorMessage.value = error?.message || 'Failed to load platform data.'
   } finally {
-    isLoading.value = false
+    if (!silent) isLoading.value = false
   }
 }
 
@@ -532,8 +565,7 @@ async function changeStatus(business, newStatus) {
   errorMessage.value = ''
   try {
     await setBusinessStatus(business.business_id, newStatus)
-    business.status = newStatus
-    await loadData()
+    await loadData({ silent: true })
   } catch (error) {
     errorMessage.value = error?.message || 'Failed to update status.'
   } finally {
@@ -603,7 +635,7 @@ async function exportPDF() {
   })
 
   autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 10,
+    startY: (doc.lastAutoTable?.finalY ?? 100) + 10,
     head: [['Business', 'Owner', 'Contact', 'Staff', 'Packages', 'Bookings', 'Registered', 'Status']],
     body: filteredBusinesses.value.map((b) => [
       b.business_name,
@@ -632,9 +664,20 @@ async function exportPDF() {
   doc.save(`caterlytics-platform-${statusFilter.value.toLowerCase()}-${dateSlug}.pdf`)
 }
 
-const handleLogout = () => {
+// Previously this only cleared sessionStorage and never ended the Supabase
+// session, so the JWT stayed in localStorage and the route guard (which
+// trusts getSession()) let anyone reopen /super-admin/dashboard after "Log Out".
+let refreshTimer = null
+
+const handleLogout = async () => {
+  try {
+    await logoutUser()
+  } catch (error) {
+    console.error('Sign-out failed:', error)
+  }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
+  resetNotifications()
   router.push('/')
 }
 
@@ -651,6 +694,13 @@ onMounted(() => {
   }
   userName.value = user.full_name
   loadData()
+  // Pick up newly registered businesses / changes made elsewhere without a
+  // manual refresh (the bell already polls every 20s; keep the table in step).
+  refreshTimer = setInterval(() => loadData({ silent: true }), 30000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
 })
 </script>
 
