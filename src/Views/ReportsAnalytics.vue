@@ -163,6 +163,26 @@
           </div>
         </div>
 
+        <!-- DATE RANGE FILTER (daily / weekly / monthly / custom) -->
+        <div class="flex flex-col lg:flex-row lg:items-center gap-3 mb-4 print:hidden">
+          <div class="flex flex-wrap gap-1">
+            <button
+              v-for="preset in rangePresets" :key="preset.key"
+              @click="applyPreset(preset.key)"
+              :class="activePreset === preset.key ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'"
+              class="px-4 py-2.5 rounded-none border text-sm font-semibold transition whitespace-nowrap"
+            >
+              {{ preset.label }}
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="date" v-model="dateFrom" @change="activePreset = 'custom'" class="py-2.5 px-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100 dark:[color-scheme:dark]" aria-label="From date" />
+            <span class="text-sm text-gray-500 dark:text-gray-400">to</span>
+            <input type="date" v-model="dateTo" @change="activePreset = 'custom'" class="py-2.5 px-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100 dark:[color-scheme:dark]" aria-label="To date" />
+          </div>
+          <span class="text-xs text-gray-400 dark:text-gray-500">Filtered by event date</span>
+        </div>
+
         <!-- Error Banner -->
         <div v-if="pageError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
           {{ pageError }}
@@ -683,6 +703,49 @@ const activeTab = ref('Overview')
 
 const dateFrom = ref('')
 const dateTo = ref('')
+
+// Quick date-range buttons. 'custom' is set automatically when the user
+// picks their own dates in the two date inputs.
+const rangePresets = [
+  { key: 'today', label: 'Today' },
+  { key: 'week', label: 'This Week' },
+  { key: 'month', label: 'This Month' },
+  { key: 'all', label: 'All' },
+]
+const activePreset = ref('all')
+
+// Uses the LOCAL date (not toISOString, which is UTC and can be off by
+// one day in the Philippines).
+function toISODate(d) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function applyPreset(key) {
+  const now = new Date()
+  activePreset.value = key
+
+  if (key === 'today') {
+    dateFrom.value = toISODate(now)
+    dateTo.value = toISODate(now)
+  } else if (key === 'week') {
+    // Monday to Sunday of the current week
+    const start = new Date(now)
+    start.setDate(now.getDate() - ((now.getDay() + 6) % 7))
+    const end = new Date(start)
+    end.setDate(start.getDate() + 6)
+    dateFrom.value = toISODate(start)
+    dateTo.value = toISODate(end)
+  } else if (key === 'month') {
+    dateFrom.value = toISODate(new Date(now.getFullYear(), now.getMonth(), 1))
+    dateTo.value = toISODate(new Date(now.getFullYear(), now.getMonth() + 1, 0))
+  } else {
+    dateFrom.value = ''
+    dateTo.value = ''
+  }
+}
 
 const generatedOn = new Date().toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' })
 
