@@ -295,7 +295,7 @@
                       <select
                         :value="b.booking_status"
                         @change="handleStatusChange(b, $event.target.value)"
-                        class="text-xs border border-gray-200 dark:border-gray-700 rounded-none px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
+                        class="text-xs border border-gray-200 dark:border-gray-700 rounded-none px-2 py-1.5 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
                       >
                         <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
