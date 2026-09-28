@@ -223,3 +223,30 @@ export async function setPackageMenu(packageId, categories) {
   if (error) throw new Error('Failed to update package menu.');
   return data;
 }
+
+// ---------- Dish (menu item) ingredients ----------
+// Ingredients a single dish uses per guest. When a client picks this dish on
+// a booking, these are added to the package's fixed ingredients for stock
+// deduction and food cost (see private.booking_ingredient_rates in the DB).
+// Returns [{ inventory_item_id, quantity_per_guest }, ...]
+export async function getMenuItemIngredients(menuItemId) {
+  const { data, error } = await supabase
+    .from('tbl_menu_item_ingredients')
+    .select('inventory_item_id, quantity_per_guest')
+    .eq('menu_item_id', menuItemId);
+
+  if (error) throw error;
+  return data || [];
+}
+
+// Replace the full ingredient list of one dish.
+// ingredients = [{ item_id, quantity_per_guest }, ...]
+export async function setMenuItemIngredients(menuItemId, ingredients) {
+  const { data, error } = await supabase.rpc('set_menu_item_ingredients', {
+    p_menu_item_id: menuItemId,
+    p_ingredients: ingredients,
+  });
+
+  if (error) throw new Error('Failed to update dish ingredients.');
+  return data || [];
+}

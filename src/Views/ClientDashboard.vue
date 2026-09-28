@@ -364,6 +364,13 @@
                 </div>
               </div>
 
+              <div v-if="showMenuWarning && !isMenuComplete" id="menu-warning" class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-3 text-sm text-amber-800 dark:text-amber-200">
+                <p class="font-semibold">Your menu is not complete yet.</p>
+                <p class="mt-0.5">
+                  <span v-for="(m, i) in missingMenuPicks" :key="m.category">{{ m.category }}: pick {{ m.need }} more{{ i < missingMenuPicks.length - 1 ? ' · ' : '' }}</span>
+                </p>
+              </div>
+
               <button type="submit" :disabled="isSubmitting" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-50">
                 {{ isSubmitting ? 'Submitting...' : 'Submit Booking Request' }}
               </button>
@@ -666,6 +673,13 @@
               </div>
             </div>
 
+            <div v-if="showEditMenuWarning && !isEditMenuComplete" id="edit-menu-warning" class="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-3 text-sm text-amber-800 dark:text-amber-200">
+              <p class="font-semibold">Your menu is not complete yet.</p>
+              <p class="mt-0.5">
+                <span v-for="(m, i) in editMissingMenuPicks" :key="m.category">{{ m.category }}: pick {{ m.need }} more{{ i < editMissingMenuPicks.length - 1 ? ' · ' : '' }}</span>
+              </p>
+            </div>
+
             <div class="flex gap-3 pt-2">
               <button type="button" @click="bookingToEdit = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
                 Cancel
@@ -685,7 +699,7 @@
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
@@ -869,6 +883,23 @@ const packageMenuCategories = computed(() =>
 // built from whatever the menu endpoint returned inline.
 const allMenuItemsFlat = ref([])
 
+// Categories where the client still has to pick more dishes. The required
+// count is the package limit, or fewer if the category simply doesn't offer
+// that many dishes. The database also refuses to confirm an incomplete menu.
+const missingMenuPicks = computed(() =>
+  packageMenuCategories.value
+    .map((cat) => ({
+      category: cat.category,
+      need: Math.min(cat.max, cat.items.length) - (selectedMenuItems.value[cat.category]?.length || 0)
+    }))
+    .filter((m) => m.need > 0)
+)
+const isMenuComplete = computed(() => missingMenuPicks.value.length === 0)
+
+// The warning only appears once the client presses Submit with an incomplete menu.
+const showMenuWarning = ref(false)
+watch(isMenuComplete, (complete) => { if (complete) showMenuWarning.value = false })
+
 // ---------- Extra Add-Ons (ala carte, sold alongside the package) ----------
 const businessAddons = ref([])       // this business's active add-ons (new booking form)
 const addonQuantities = ref({})      // { [addon_id]: quantity }, 0/absent = not selected
@@ -925,6 +956,7 @@ async function loadEditBusinessAddons(businessId, { preserveSelections = false }
 
 async function loadPackageMenu(packageId) {
   selectedMenuItems.value = {}
+  showMenuWarning.value = false
   packageMenu.value = { limits: [], itemsByCategory: {} }
   allMenuItemsFlat.value = []
   if (!packageId) return
@@ -974,6 +1006,20 @@ const editPackageMenuCategories = computed(() =>
     }))
     .filter((c) => c.max > 0 && c.items.length > 0)
 )
+
+const editMissingMenuPicks = computed(() =>
+  editPackageMenuCategories.value
+    .map((cat) => ({
+      category: cat.category,
+      need: Math.min(cat.max, cat.items.length) - (editSelectedMenuItems.value[cat.category]?.length || 0)
+    }))
+    .filter((m) => m.need > 0)
+)
+const isEditMenuComplete = computed(() => editMissingMenuPicks.value.length === 0)
+
+const showEditMenuWarning = ref(false)
+watch(isEditMenuComplete, (complete) => { if (complete) showEditMenuWarning.value = false })
+watch(bookingToEdit, () => { showEditMenuWarning.value = false })
 
 async function loadEditPackageMenu(packageId, { preserveSelections = false } = {}) {
   if (!preserveSelections) editSelectedMenuItems.value = {}
@@ -1326,6 +1372,12 @@ async function handleEditDateCheck() {
 
 async function handleSaveEdit() {
   if (!bookingToEdit.value) return
+  if (!isEditMenuComplete.value) {
+    showEditMenuWarning.value = true
+    await nextTick()
+    document.getElementById('edit-menu-warning')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    return
+  }
   isSaving.value = true
   pageError.value = ''
   try {
@@ -1397,6 +1449,12 @@ async function submitBooking() {
   // empty pick -- enforce it here instead.
   if (!form.value.package_id) {
     pageError.value = 'Please select a catering package.'
+    return
+  }
+  if (!isMenuComplete.value) {
+    showMenuWarning.value = true
+    await nextTick()
+    document.getElementById('menu-warning')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     return
   }
 
