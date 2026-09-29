@@ -23,6 +23,7 @@ import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
 import RegisterBusinessView from './Views/Registerbusinessview.vue'
 import SuperAdminDashboard from './Views/SuperAdminDashboard.vue'
+import NotFoundView from './Views/NotFoundView.vue'
 
 // Routes
 const routes = [
@@ -51,7 +52,9 @@ const routes = [
   // register_business() actually assigns to a new business owner) or Staff
   // could never reach their own account settings. Everyone who's logged in
   // needs to be able to view/edit their own profile here.
-  { path: '/settings', component: SettingsView, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager', 'Client', 'Super Admin'] } }
+  { path: '/settings', component: SettingsView, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager', 'Client', 'Super Admin'] } },
+  // 404: must stay LAST -- catches every URL that matched nothing above.
+  { path: '/:pathMatch(.*)*', component: NotFoundView }
 ]
 
 const router = createRouter({

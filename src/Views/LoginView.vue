@@ -48,6 +48,12 @@
         <!-- Log In Form -->
         <form @submit.prevent="handleLogin" class="space-y-5">
 
+          <!-- Honeypot: hidden from humans, bots tend to fill it -->
+          <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+            <label>Website</label>
+            <input type="text" name="website" v-model="honeypot" tabindex="-1" autocomplete="off" />
+          </div>
+
           <!-- Account Identity Field -->
           <div class="space-y-1.5">
             <input type="text" v-model="form.username" placeholder="Username or Number" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
@@ -90,7 +96,7 @@
           </div>
 
           <!-- Form Submission Controller -->
-          <button type="submit" :disabled="isLoading" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md shadow-emerald-100 mt-2 disabled:opacity-50">
+          <button type="submit" :disabled="isLoading || lockedFor > 0" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-base hover:bg-emerald-700 transition shadow-md shadow-emerald-100 mt-2 disabled:opacity-50">
             {{ isLoading ? 'Logging in...' : 'Log In' }}
           </button>
         </form>
@@ -116,9 +122,10 @@
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { loginUser } from '../services/authService'
+import { lockoutSecondsLeft, recordFailure, resetFailures, looksLikeBot } from '../utils/antiBot'
 
 const router = useRouter()
 const route = useRoute()
@@ -126,6 +133,26 @@ const showPassword = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
 const showConfirmedBanner = ref(false)
+
+// Anti-bot / brute-force
+const honeypot = ref('')
+const mountedAt = Date.now()
+const LOGIN_KEY = 'login'
+const lockedFor = ref(lockoutSecondsLeft(LOGIN_KEY))
+let lockTimer = null
+
+const startLockTimer = () => {
+  clearInterval(lockTimer)
+  lockTimer = setInterval(() => {
+    lockedFor.value = lockoutSecondsLeft(LOGIN_KEY)
+    if (lockedFor.value <= 0) {
+      clearInterval(lockTimer)
+      errorMessage.value = ''
+    }
+  }, 1000)
+}
+if (lockedFor.value > 0) startLockTimer()
+onUnmounted(() => clearInterval(lockTimer))
 
 const form = ref({
   username: '',
@@ -146,11 +173,26 @@ onMounted(() => {
 
 const handleLogin = async () => {
   errorMessage.value = ''
+
+  // Bot check: silently pretend it failed, don't hint at the honeypot.
+  if (looksLikeBot(honeypot.value, mountedAt)) {
+    errorMessage.value = 'Invalid username or password'
+    return
+  }
+
+  lockedFor.value = lockoutSecondsLeft(LOGIN_KEY)
+  if (lockedFor.value > 0) {
+    errorMessage.value = `Too many failed attempts. Try again in ${lockedFor.value}s.`
+    startLockTimer()
+    return
+  }
+
   isLoading.value = true
 
   try {
     const result = await loginUser(form.value.username, form.value.password)
 
+    resetFailures(LOGIN_KEY)
     sessionStorage.setItem('token', result.token)
     sessionStorage.setItem('user', JSON.stringify(result.user))
 
@@ -163,7 +205,14 @@ const handleLogin = async () => {
     }
 
   } catch (error) {
-    errorMessage.value = error?.message || 'Invalid username or password'
+    const wait = recordFailure(LOGIN_KEY)
+    if (wait > 0) {
+      lockedFor.value = wait
+      startLockTimer()
+      errorMessage.value = `Too many failed attempts. Try again in ${wait}s.`
+    } else {
+      errorMessage.value = error?.message || 'Invalid username or password'
+    }
   } finally {
     isLoading.value = false
   }

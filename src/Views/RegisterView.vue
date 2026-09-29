@@ -43,6 +43,12 @@
 
           <form @submit.prevent="handleRegister" class="space-y-5">
 
+          <!-- Honeypot: hidden from humans, bots tend to fill it -->
+          <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+            <label>Website</label>
+            <input type="text" name="website" v-model="honeypot" tabindex="-1" autocomplete="off" />
+          </div>
+
             <div v-if="errorMessage" class="text-red-600 text-sm font-medium">
               {{ errorMessage }}
             </div>
@@ -175,11 +181,14 @@
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
+import { looksLikeBot } from '../utils/antiBot'
 import { requestRegistrationOtp, verifyRegistrationOtp, resendRegistrationOtp } from '../services/authService'
 
 const showPassword = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
+const honeypot = ref('')
+const mountedAt = Date.now()
 
 // Once true, we show the OTP-entry screen instead of the form.
 const accountCreated = ref(false)
@@ -203,6 +212,12 @@ const form = ref({
 
 const handleRegister = async () => {
   errorMessage.value = ''
+
+  // Bot check: silently reject (no hint about the honeypot).
+  if (looksLikeBot(honeypot.value, mountedAt, 3000)) {
+    errorMessage.value = 'Something went wrong. Please try again.'
+    return
+  }
 
   if (!form.value.contact_number || !form.value.contact_number.trim()) {
     errorMessage.value = 'Contact number is required.'

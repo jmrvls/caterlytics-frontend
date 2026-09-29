@@ -15,7 +15,10 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { normalizePhone, sendSms } from '../_shared/philsms.ts';
 
 const cors = {
-  'Access-Control-Allow-Origin': '*',
+  // Set ALLOWED_ORIGIN in Supabase secrets (e.g. https://your-site.workers.dev).
+  // Falls back to '*' only if the secret isn't set yet.
+  'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
+  'Vary': 'Origin',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 const reply = (body: unknown, status = 200) =>
