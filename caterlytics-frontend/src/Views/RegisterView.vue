@@ -175,7 +175,7 @@
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
-import { registerUser, verifyRegistrationOtp, resendRegistrationOtp } from '../services/authService'
+import { requestRegistrationOtp, verifyRegistrationOtp, resendRegistrationOtp } from '../services/authService'
 
 const showPassword = ref(false)
 const isLoading = ref(false)
@@ -232,9 +232,9 @@ const handleRegister = async () => {
   isLoading.value = true
 
   try {
-    await registerUser(form.value.username, form.value.password, form.value.full_name, form.value.contact_number)
-    phoneVerified.value = true
-    accountCreated.value = true
+    // Texts the OTP. The account is only created after the code is verified.
+    await requestRegistrationOtp(form.value.username, form.value.contact_number)
+    accountCreated.value = true  // switch to the OTP screen
   } catch (error) {
     if (error.response && error.response.data && error.response.data.error) {
       errorMessage.value = error.response.data.error
@@ -251,7 +251,7 @@ const handleVerifyOtp = async () => {
   isVerifying.value = true
 
   try {
-    await verifyRegistrationOtp(form.value.contact_number, otpCode.value)
+    await verifyRegistrationOtp(form.value, otpCode.value)
     phoneVerified.value = true
   } catch (error) {
     otpErrorMessage.value = error.message || 'Invalid or expired code. Please try again.'
@@ -265,7 +265,7 @@ const handleResendOtp = async () => {
   isResending.value = true
 
   try {
-    await resendRegistrationOtp(form.value.contact_number)
+    await resendRegistrationOtp(form.value.contact_number, form.value.username)
   } catch (error) {
     otpErrorMessage.value = error.message || 'Could not resend code. Please try again.'
   } finally {

@@ -252,6 +252,52 @@ export async function getMyBookings() {
   return data || [];
 }
 
+// For the admin Booking Management page: which Pending bookings still have an
+// incomplete menu (so the "Confirmed" option can be disabled up front instead
+// of failing after the click). Uses the same rule the client form and the
+// confirm_booking_with_stock_check RPC use: per category, the client must pick
+// min(package limit, dishes offered) items.
+// Returns { [booking_id]: [{ category, need }, ...] } -- only bookings with gaps.
+// The database stays the source of truth; this is just for the UI.
+export async function getMenuGapsForBookings(bookings) {
+  const pending = (bookings || []).filter((b) => b.booking_status === 'Pending' && b.package_id);
+  if (pending.length === 0) return {};
+
+  const bookingIds = pending.map((b) => b.booking_id);
+  const packageIds = [...new Set(pending.map((b) => b.package_id))];
+
+  const [picksRes, limitsRes, offeredRes] = await Promise.all([
+    supabase.from('tbl_booking_selected_items').select('booking_id, category').in('booking_id', bookingIds),
+    supabase.from('tbl_package_category_limits').select('package_id, category, max_selections').in('package_id', packageIds),
+    supabase.from('tbl_package_menu_items').select('package_id, category').in('package_id', packageIds),
+  ]);
+  if (picksRes.error) throw picksRes.error;
+  if (limitsRes.error) throw limitsRes.error;
+  if (offeredRes.error) throw offeredRes.error;
+
+  const count = (rows, keyFn) => {
+    const m = {};
+    for (const r of rows || []) m[keyFn(r)] = (m[keyFn(r)] || 0) + 1;
+    return m;
+  };
+  const picked = count(picksRes.data, (r) => `${r.booking_id}|${r.category}`);
+  const offered = count(offeredRes.data, (r) => `${r.package_id}|${r.category}`);
+
+  const gaps = {};
+  for (const b of pending) {
+    const missing = [];
+    for (const l of limitsRes.data || []) {
+      if (l.package_id !== b.package_id) continue;
+      const available = offered[`${l.package_id}|${l.category}`] || 0;
+      if (l.max_selections <= 0 || available === 0) continue;
+      const need = Math.min(l.max_selections, available) - (picked[`${b.booking_id}|${l.category}`] || 0);
+      if (need > 0) missing.push({ category: l.category, need });
+    }
+    if (missing.length) gaps[b.booking_id] = missing;
+  }
+  return gaps;
+}
+
 // ---------- Menu Selections (client's picks within a package) ----------
 
 // The client's currently-saved menu picks for one booking, grouped by category.

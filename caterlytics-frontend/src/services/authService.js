@@ -109,93 +109,55 @@ export async function loginUser(identifier, password) {
   };
 }
 
-export async function registerUser(username, password, full_name, contact_number) {
-  // "Confirm email" must be OFF in the Supabase dashboard (Auth > Providers > Email)
-  // so this returns an active session right away.
-  //
-  // TEMPORARY: there's no Email field in the form anymore (number + password
-  // is the real plan), but Supabase still needs *some* identity to create
-  // the account with, so we generate one internally from the username.
-  // Nobody sees this value or logs in with it.
-  //
-  // Domain choice matters here: Supabase Auth rejects the whole signUp()
-  // call with "Email address ... is invalid" if the domain has no real
-  // DNS/MX records (this is why made-up domains like @caterlytics.local
-  // or @caterlytics.com fail -- they were never registered). @gmail.com
-  // always has valid MX records, so it always passes that check. Since
-  // "Confirm email" is OFF, no actual email is ever sent, so it doesn't
-  // matter that we don't own the mailbox.
-  //
-  // Phone OTP verification is also skipped for now — Twilio/Phone provider
-  // isn't fully configured yet in Supabase, so calling updateUser({ phone })
-  // here would just fail and block every signup. Once Twilio is ready,
-  // un-comment the phone step below to require OTP verification again.
-  const internalEmail = `${username.toLowerCase()}@gmail.com`;
-
-  const { data, error } = await supabase.auth.signUp({
-    email: internalEmail,
-    password,
-    options: {
-      data: {
-        username,
-        full_name,
-        contact_number,
-        role: 'Client',
-      },
-    },
-  });
-
-  if (error) throw new Error(error.message);
-
-  if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
-    throw new Error('That username is already taken. Please choose another.');
+// ---------------------------------------------------------------------------
+// SMS OTP: registration + forgot password
+//
+// Everything goes through the `phone-otp` edge function (sent via PhilSMS).
+// Registration: the account is only created AFTER the correct OTP is entered.
+// Forgot password: the OTP and the new password are checked together on the
+// server, so no login session is ever opened on the browser.
+// ---------------------------------------------------------------------------
+async function callPhoneOtp(body) {
+  const { data, error } = await supabase.functions.invoke('phone-otp', { body });
+  if (error) {
+    let message = 'Something went wrong. Please try again.';
+    try {
+      // The function replies with { error: '...' } on failures.
+      const payload = await error.context.json();
+      if (payload?.error) message = payload.error;
+    } catch {
+      // No readable body (e.g. network down) -- keep the default message.
+    }
+    throw new Error(message);
   }
-
-  if (!data.session) {
-    throw new Error('Registration is not fully set up yet. Please contact the administrator.');
-  }
-
-  // --- Phone OTP step (disabled until Twilio/Phone provider is ready) ---
-  // const { error: phoneError } = await supabase.auth.updateUser({ phone: contact_number });
-  // if (phoneError) throw new Error(phoneError.message);
-
-  // This app keeps its own login state, so sign out now and send the user
-  // to the login screen rather than leaving a half-logged-in session behind.
-  await supabase.auth.signOut();
-
-  return {
-    message: 'Account created.',
-    user: {
-      user_id: data.user.id,
-      username,
-      full_name,
-      role: 'Client',
-    },
-  };
+  return data;
 }
 
-// Called after the user types in the 6-digit code they received by SMS.
-export async function verifyRegistrationOtp(contact_number, token) {
-  const { data, error } = await supabase.auth.verifyOtp({
+// Step 1 of registration: check the username/number are free and text the OTP.
+// No account exists yet at this point.
+export async function requestRegistrationOtp(username, contact_number) {
+  await callPhoneOtp({ action: 'send', purpose: 'register', phone: contact_number, username });
+  return { message: 'OTP sent.' };
+}
+
+// Step 2 of registration: the user typed the 6-digit code. If it is correct
+// the server creates the account (as a Client). Nobody is logged in afterwards;
+// the user signs in on the login screen.
+export async function verifyRegistrationOtp({ username, password, full_name, contact_number }, code) {
+  await callPhoneOtp({
+    action: 'register',
     phone: contact_number,
-    token,
-    type: 'phone_change',
+    code,
+    username,
+    password,
+    full_name,
   });
-
-  if (error) throw new Error(error.message);
-
-  // The account is now fully verified. This app keeps its own login state,
-  // so sign out here and send the user to the login screen rather than
-  // leaving a half-logged-in session behind.
-  await supabase.auth.signOut();
-
-  return { message: 'Phone verified. Account activated.', user: data.user };
+  return { message: 'Phone verified. Account created.' };
 }
 
-// Called if the user taps "Resend code" on the OTP screen.
-export async function resendRegistrationOtp(contact_number) {
-  const { error } = await supabase.auth.updateUser({ phone: contact_number });
-  if (error) throw new Error(error.message);
+// "Resend code" on the registration OTP screen.
+export async function resendRegistrationOtp(contact_number, username) {
+  await callPhoneOtp({ action: 'send', purpose: 'register', phone: contact_number, username });
   return { message: 'OTP resent.' };
 }
 
@@ -203,45 +165,44 @@ export async function logoutUser() {
   await supabase.auth.signOut();
 }
 
-
+// Forgot password, step 1: text a 6-digit code to the number on the account.
 export async function requestPasswordReset(contact_number) {
-  // Sends a 6-digit SMS OTP to sign the user in — works only if this phone
-  // number is already attached and verified on an account (which happens
-  // during registration's phone verification step).
-  const { error } = await supabase.auth.signInWithOtp({ phone: contact_number });
-  if (error) throw new Error(error.message);
+  await callPhoneOtp({ action: 'send', purpose: 'reset', phone: contact_number });
   return { message: 'OTP sent to phone.' };
 }
 
-// Called after the user types in the 6-digit code from the reset SMS.
-// On success this returns an authenticated session, which is what lets
-// the next step (setNewPassword) actually change the password.
+// The number + code that passed step 2. Kept in memory only (never stored),
+// and sent again with the new password in step 3.
+let pendingReset = null;
+
+// Forgot password, step 2: check the code (it is NOT used up yet).
 export async function verifyPasswordResetOtp(contact_number, token) {
-  const { data, error } = await supabase.auth.verifyOtp({
-    phone: contact_number,
-    token,
-    type: 'sms',
-  });
-  if (error) throw new Error(error.message);
-  return { message: 'OTP verified.', user: data.user };
+  await callPhoneOtp({ action: 'reset-verify', phone: contact_number, code: token });
+  pendingReset = { phone: contact_number, code: token };
+  return { message: 'OTP verified.' };
 }
 
-// Called if the user taps "Resend code" on the reset OTP screen.
+// "Resend code" on the reset OTP screen.
 export async function resendPasswordResetOtp(contact_number) {
-  const { error } = await supabase.auth.signInWithOtp({ phone: contact_number });
-  if (error) throw new Error(error.message);
+  await callPhoneOtp({ action: 'send', purpose: 'reset', phone: contact_number });
   return { message: 'OTP resent.' };
 }
 
-// Final step: set the new password on the session opened by the OTP
-// verification above, then sign out so the user logs back in fresh.
+// Forgot password, step 3: set the new password. The server re-checks the code
+// and uses it up, so it cannot be reused.
 export async function setNewPasswordAfterReset(newPassword) {
-  const { error } = await supabase.auth.updateUser({ password: newPassword });
-  if (error) throw new Error(error.message);
-  await supabase.auth.signOut();
+  if (!pendingReset) {
+    throw new Error('Your reset session expired. Please request a new code.');
+  }
+  await callPhoneOtp({
+    action: 'reset',
+    phone: pendingReset.phone,
+    code: pendingReset.code,
+    new_password: newPassword,
+  });
+  pendingReset = null;
   return { message: 'Password updated successfully.' };
 }
-
 
 export async function updatePassword(newPassword) {
   const { error } = await supabase.auth.updateUser({ password: newPassword });

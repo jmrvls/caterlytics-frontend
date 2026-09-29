@@ -504,6 +504,7 @@ import {
   deleteBooking,
   checkDateConflict
 } from '../services/bookingService'
+import { sendBookingConfirmationSms } from '../services/smsService'
 import {
   getAssignableStaff,
   getAssignedStaff,
@@ -833,6 +834,9 @@ async function handleStatusChange(booking, newStatus) {
   booking.booking_status = newStatus // optimistic update
   try {
     await updateBookingStatus(booking.booking_id, newStatus)
+    if (newStatus === 'Confirmed') {
+      sendBookingConfirmationSms(booking.booking_id) // no await: SMS must never block the UI
+    }
     statusCounts.value = {
       ...statusCounts.value,
       [previousStatus]: Math.max(0, (statusCounts.value[previousStatus] || 0) - 1),
