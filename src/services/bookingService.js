@@ -199,17 +199,16 @@ export async function updateMyBooking(id, updates) {
   }
 
   // If the date is changing, re-check for conflicts (excluding this booking).
-  if (updates.event_date && updates.event_date !== currentBooking.event_date) {
-    const allBookings = await getAllBookings();
-    const conflict = allBookings.find(
-      (b) =>
-        b.booking_id !== id &&
-        b.event_date === updates.event_date &&
-        ['Pending', 'Confirmed'].includes(b.booking_status)
-    );
-    if (conflict) {
+  // Must be scoped to the booking's business: a client can only read their own
+  // bookings (RLS), so scanning getAllBookings() both missed other clients'
+  // bookings and falsely blocked dates used by their own bookings elsewhere.
+  // Without a business_id we skip the pre-check; the database unique index
+  // (23505, handled below) remains the final backstop.
+  if (updates.event_date && updates.event_date !== currentBooking.event_date && updates.business_id) {
+    const conflict = await checkDateConflict(updates.event_date, updates.business_id, id);
+    if (conflict.conflict) {
       throw new Error(
-        `There's already a booking on ${updates.event_date} (${conflict.client_name}). Please choose another date.`
+        `${updates.event_date} is already booked with this caterer. Please choose another date.`
       );
     }
   }

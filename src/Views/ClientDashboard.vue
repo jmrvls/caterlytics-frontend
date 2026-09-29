@@ -397,7 +397,7 @@
                 </div>
               </div>
 
-              <button type="submit" :disabled="isSubmitting" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-50">
+              <button type="submit" :disabled="isSubmitting || !!conflictWarning" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-50">
                 {{ isSubmitting ? 'Submitting...' : 'Submit Booking Request' }}
               </button>
             </div>
@@ -725,6 +725,8 @@
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
+import { supabase } from '../supabaseClient'
+import { logoutUser } from '../services/authService'
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
@@ -782,7 +784,9 @@ const conflictWarning = ref('')
 const statusChangeAlerts = ref([])
 let currentUserId = ''
 
-const todayStr = new Date().toISOString().split('T')[0]
+// Local date (NOT toISOString, which is UTC and gives "yesterday" in the
+// Philippines between 12:00 AM and 8:00 AM).
+const todayStr = toDateStr(new Date())
 
 // ---------- Availability calendar (Book Catering step) ----------
 // Shows a whole month of a business's Pending/Confirmed dates up front, so
@@ -839,19 +843,23 @@ const calendarDays = computed(() => {
   return days
 })
 
+let calendarLoadToken = 0
 async function loadCalendarMonth() {
   if (!selectedBusinessId.value) return
+  const token = ++calendarLoadToken // only the latest request may write results
   const first = calendarViewDate.value
   const last = new Date(first.getFullYear(), first.getMonth() + 1, 0)
   isLoadingCalendar.value = true
   try {
     const dates = await getTakenDates(selectedBusinessId.value, toDateStr(first), toDateStr(last))
+    if (token !== calendarLoadToken) return
     takenDates.value = new Set(dates)
   } catch (error) {
+    if (token !== calendarLoadToken) return
     console.error('Failed to load calendar availability:', error)
     takenDates.value = new Set()
   } finally {
-    isLoadingCalendar.value = false
+    if (token === calendarLoadToken) isLoadingCalendar.value = false
   }
 }
 
@@ -980,29 +988,36 @@ async function loadEditBusinessAddons(businessId, { preserveSelections = false }
   }
 }
 
+let packageMenuToken = 0
 async function loadPackageMenu(packageId) {
+  const token = ++packageMenuToken // invalidates any earlier in-flight load
   selectedMenuItems.value = {}
   showMenuWarning.value = false
   packageMenu.value = { limits: [], itemsByCategory: {} }
   allMenuItemsFlat.value = []
-  if (!packageId) return
+  if (!packageId) {
+    isLoadingPackageMenu.value = false
+    return
+  }
 
   isLoadingPackageMenu.value = true
   try {
-    packageMenu.value = await getPackageMenu(packageId)
-    // getPackageMenu only returns item_ids; fetch names via tbl_menu_items
-    // through the packages the client can already see is overkill here, so
-    // pull names from the same RLS-safe table directly.
-    const { supabase } = await import('../supabaseClient')
-    const ids = Object.values(packageMenu.value.itemsByCategory).flat()
+    const menu = await getPackageMenu(packageId)
+    // getPackageMenu only returns item_ids; fetch names from tbl_menu_items.
+    const ids = Object.values(menu.itemsByCategory).flat()
+    let names = []
     if (ids.length) {
       const { data } = await supabase.from('tbl_menu_items').select('item_id, item_name').in('item_id', ids)
-      allMenuItemsFlat.value = data || []
+      names = data || []
     }
+    // A newer load (or "Back to packages") started meanwhile -- drop this result.
+    if (token !== packageMenuToken) return
+    packageMenu.value = menu
+    allMenuItemsFlat.value = names
   } catch (error) {
     console.error('Failed to load package menu:', error)
   } finally {
-    isLoadingPackageMenu.value = false
+    if (token === packageMenuToken) isLoadingPackageMenu.value = false
   }
 }
 
@@ -1047,25 +1062,33 @@ const showEditMenuWarning = ref(false)
 watch(isEditMenuComplete, (complete) => { if (complete) showEditMenuWarning.value = false })
 watch(bookingToEdit, () => { showEditMenuWarning.value = false })
 
+let editPackageMenuToken = 0
 async function loadEditPackageMenu(packageId, { preserveSelections = false } = {}) {
+  const token = ++editPackageMenuToken
   if (!preserveSelections) editSelectedMenuItems.value = {}
   editPackageMenu.value = { limits: [], itemsByCategory: {} }
   editAllMenuItemsFlat.value = []
-  if (!packageId) return
+  if (!packageId) {
+    isLoadingEditPackageMenu.value = false
+    return
+  }
 
   isLoadingEditPackageMenu.value = true
   try {
-    editPackageMenu.value = await getPackageMenu(packageId)
-    const { supabase } = await import('../supabaseClient')
-    const ids = Object.values(editPackageMenu.value.itemsByCategory).flat()
+    const menu = await getPackageMenu(packageId)
+    const ids = Object.values(menu.itemsByCategory).flat()
+    let names = []
     if (ids.length) {
       const { data } = await supabase.from('tbl_menu_items').select('item_id, item_name').in('item_id', ids)
-      editAllMenuItemsFlat.value = data || []
+      names = data || []
     }
+    if (token !== editPackageMenuToken) return
+    editPackageMenu.value = menu
+    editAllMenuItemsFlat.value = names
   } catch (error) {
     console.error('Failed to load package menu:', error)
   } finally {
-    isLoadingEditPackageMenu.value = false
+    if (token === editPackageMenuToken) isLoadingEditPackageMenu.value = false
   }
 }
 
@@ -1099,7 +1122,10 @@ function viewPackageDetails(p) {
 // client can browse other packages for the same business without losing
 // their chosen date/time/location/guest count.
 function backToPackages() {
+  packageMenuToken++ // drop any menu load still in flight
+  isLoadingPackageMenu.value = false
   form.value.package_id = ''
+  showMenuWarning.value = false
   selectedMenuItems.value = {}
   packageMenu.value = { limits: [], itemsByCategory: {} }
 }
@@ -1196,6 +1222,8 @@ const businessPackages = computed(() => packages.value.filter((p) => p.business_
 const editBusinessPackages = computed(() => packages.value.filter((p) => p.business_id === editBusinessId.value))
 
 function selectBusiness(id) {
+  packageMenuToken++
+  isLoadingPackageMenu.value = false
   selectedBusinessId.value = id
   form.value.package_id = ''
   conflictWarning.value = ''
@@ -1210,6 +1238,10 @@ function selectBusiness(id) {
 }
 
 function clearBusiness() {
+  packageMenuToken++
+  calendarLoadToken++
+  isLoadingPackageMenu.value = false
+  isLoadingCalendar.value = false
   selectedBusinessId.value = ''
   form.value.package_id = ''
   conflictWarning.value = ''
@@ -1232,8 +1264,9 @@ onMounted(() => {
     router.push('/admin/dashboard')
     return
   }
-  userName.value = user.full_name
-  userInitial.value = user.full_name.charAt(0).toUpperCase()
+  const displayName = user.full_name || user.username || user.email || 'User'
+  userName.value = displayName
+  userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
   form.value.client_email = user.email || ''
   currentUserId = user.user_id || user.id || user.email || ''
@@ -1273,7 +1306,13 @@ function checkStatusChanges(freshBookings) {
     // localStorage unavailable -- alerts just won't persist across visits.
   }
 
-  statusChangeAlerts.value = changes
+  // Merge with alerts the client hasn't dismissed yet, so a later reload (e.g.
+  // after submitting a booking) doesn't silently wipe them.
+  const newIds = new Set(changes.map((c) => c.booking.booking_id))
+  statusChangeAlerts.value = [
+    ...statusChangeAlerts.value.filter((c) => !newIds.has(c.booking.booking_id)),
+    ...changes,
+  ]
 }
 
 function dismissStatusAlert(bookingId) {
@@ -1413,7 +1452,8 @@ async function handleSaveEdit() {
       event_location: editForm.value.event_location,
       guest_count: editForm.value.guest_count,
       package_name: selectedEditPackage.value?.package_name || null,
-      package_id: selectedEditPackage.value?.package_id || null
+      package_id: selectedEditPackage.value?.package_id || null,
+      business_id: editBusinessId.value || null
     })
 
     // Always sync menu picks against whatever package is now saved on the
@@ -1430,15 +1470,35 @@ async function handleSaveEdit() {
       pageError.value = 'Booking was updated, but we couldn\'t save your menu picks. Please edit again to try.'
     }
 
-    // Same "always sync, even to empty" treatment for add-ons.
+    // Add-ons: sync against the chosen quantities. Two safeguards so an edit
+    // can never silently delete add-ons the client didn't touch:
+    //  1. add-ons the business has since DEACTIVATED aren't in the (active-only)
+    //     catalog shown here, so carry them over when the business is unchanged;
+    //  2. if the final list equals what the booking already has, skip the save.
+    const originalAddons = bookingToEdit.value.addons || []
+    const originalBusinessId = packages.value.find((p) => p.package_id === bookingToEdit.value.package_id)?.business_id || ''
     const flatEditAddons = editBusinessAddons.value
       .map((a) => ({ addon_id: a.addon_id, quantity: editAddonQuantities.value[a.addon_id] || 0 }))
       .filter((a) => a.quantity > 0)
-    try {
-      updated.addons = await setBookingAddons(updated.booking_id, flatEditAddons)
-    } catch (addonError) {
-      console.error('Failed to save add-ons:', addonError)
-      pageError.value = 'Booking was updated, but we couldn\'t save your add-ons. Please edit again to try.'
+    if (editBusinessId.value && editBusinessId.value === originalBusinessId) {
+      const inCatalog = new Set(editBusinessAddons.value.map((a) => a.addon_id))
+      for (const row of originalAddons) {
+        if (!inCatalog.has(row.addon_id) && row.quantity > 0) {
+          flatEditAddons.push({ addon_id: row.addon_id, quantity: row.quantity })
+        }
+      }
+    }
+    const toKey = (list) => list.map((a) => `${a.addon_id}:${a.quantity}`).sort().join('|')
+    const addonsUnchanged = toKey(flatEditAddons) === toKey(originalAddons.map((a) => ({ addon_id: a.addon_id, quantity: a.quantity })))
+    if (!addonsUnchanged) {
+      try {
+        updated.addons = await setBookingAddons(updated.booking_id, flatEditAddons)
+      } catch (addonError) {
+        console.error('Failed to save add-ons:', addonError)
+        pageError.value = 'Booking was updated, but we couldn\'t save your add-ons. Please edit again to try.'
+      }
+    } else {
+      updated.addons = originalAddons
     }
 
     const target = myBookings.value.find((b) => b.booking_id === updated.booking_id)
@@ -1651,10 +1711,20 @@ function formatPrice(value) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+  // Plain 'YYYY-MM-DD' strings parse as UTC and can shift a day; build a local date instead.
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr)
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(dateStr)
+  return d.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-function handleLogout() {
+async function handleLogout() {
+  // Actually end the Supabase session -- clearing sessionStorage alone left the
+  // real session alive, so Back / re-typing the URL let the user straight back in.
+  try {
+    await logoutUser()
+  } catch (error) {
+    console.error('Sign out failed:', error)
+  }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
   router.push('/')
