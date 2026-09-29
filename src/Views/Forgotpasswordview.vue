@@ -17,6 +17,12 @@
         <div v-if="errorMessage" class="text-red-600 text-sm font-medium mb-4">{{ errorMessage }}</div>
 
         <form @submit.prevent="handleSendOtp" class="space-y-5">
+          <!-- Honeypot: hidden from humans, bots tend to fill it -->
+          <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;">
+            <label>Website</label>
+            <input type="text" name="website" v-model="honeypot" tabindex="-1" autocomplete="off" />
+          </div>
+
           <div class="space-y-1.5">
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Contact Number</label>
             <input
@@ -126,6 +132,7 @@
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
 import { ref } from 'vue'
+import { looksLikeBot } from '../utils/antibot'
 import { requestPasswordReset, verifyPasswordResetOtp, resendPasswordResetOtp, setNewPasswordAfterReset } from '../services/authService'
 
 // 'phone' -> 'otp' -> 'newPassword' -> 'done'
@@ -138,9 +145,19 @@ const confirmPassword = ref('')
 
 const isLoading = ref(false)
 const errorMessage = ref('')
+const honeypot = ref('')
+const mountedAt = Date.now()
 
 async function handleSendOtp() {
   errorMessage.value = ''
+
+  // Bot check: silently reject (no hint about the honeypot). This is the
+  // step that sends a paid SMS, so it must not be reachable by simple bots.
+  if (looksLikeBot(honeypot.value, mountedAt)) {
+    errorMessage.value = 'Something went wrong. Please try again.'
+    return
+  }
+
   isLoading.value = true
   try {
     await requestPasswordReset(contact_number.value)

@@ -296,17 +296,6 @@
                 <input type="text" v-model="form.event_location" required placeholder="e.g. Barangay Hall, Roxas City" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
               </div>
 
-              <div>
-                <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
-                <input type="number" v-model.number="form.guest_count" required min="1" class="w-full sm:w-1/2 mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
-              </div>
-
-              <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
-                <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                  Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
-                </p>
-              </div>
-
               <!-- ============ EXTRA ADD-ONS (ala carte, optional) ============ -->
               <div v-if="isLoadingAddons" class="text-sm text-gray-400 dark:text-gray-500 text-center py-3">
                 Loading add-ons...
@@ -369,6 +358,18 @@
                 <p class="mt-0.5">
                   <span v-for="(m, i) in missingMenuPicks" :key="m.category">{{ m.category }}: pick {{ m.need }} more{{ i < missingMenuPicks.length - 1 ? ' · ' : '' }}</span>
                 </p>
+              </div>
+
+              <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+                <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4 text-left flex-1">
+                  <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                    Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
+                  </p>
+                </div>
+                <div class="flex-1">
+                  <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
+                  <input type="number" v-model.number="form.guest_count" required min="1" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+                </div>
               </div>
 
               <button type="submit" :disabled="isSubmitting" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold text-sm hover:bg-emerald-700 transition disabled:opacity-50">

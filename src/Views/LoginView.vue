@@ -125,7 +125,7 @@ import loginBgUrl from '../Assets/login-bg.png'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { loginUser } from '../services/authService'
-import { lockoutSecondsLeft, recordFailure, resetFailures, looksLikeBot } from '../utils/antiBot'
+import { lockoutSecondsLeft, recordFailure, resetFailures, looksLikeBot } from '../utils/antibot'
 
 const router = useRouter()
 const route = useRoute()

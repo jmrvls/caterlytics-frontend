@@ -23,7 +23,7 @@ import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
 import RegisterBusinessView from './Views/Registerbusinessview.vue'
 import SuperAdminDashboard from './Views/SuperAdminDashboard.vue'
-import NotFoundView from './Views/NotFoundView.vue'
+import NotFoundView from './Views/Notfoundview.vue'
 
 // Routes
 const routes = [
@@ -108,13 +108,15 @@ router.beforeEach(async (to) => {
   // Same tenant gate as login: a suspended/pending/rejected business can't
   // keep using a session it already had open.
   if (profile.business_id) {
-    const { data: business } = await supabase
+    const { data: business, error: businessError } = await supabase
       .from('tbl_business')
       .select('status')
       .eq('business_id', profile.business_id)
       .maybeSingle()
 
-    if (business && business.status !== 'Active') {
+    // Fail CLOSED: if the business can't be verified (error, or no row visible),
+    // treat it as not active instead of letting the user through.
+    if (businessError || !business || business.status !== 'Active') {
       await supabase.auth.signOut()
       sessionStorage.removeItem('token')
       sessionStorage.removeItem('user')

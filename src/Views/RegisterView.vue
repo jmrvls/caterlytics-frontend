@@ -181,7 +181,7 @@
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
-import { looksLikeBot } from '../utils/antiBot'
+import { looksLikeBot } from '../utils/antibot'
 import { requestRegistrationOtp, verifyRegistrationOtp, resendRegistrationOtp } from '../services/authService'
 
 const showPassword = ref(false)
