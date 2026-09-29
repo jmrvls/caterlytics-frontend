@@ -156,7 +156,7 @@
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86l-8.18 14.14A2 2 0 003.82 21h16.36a2 2 0 001.71-3l-8.18-14.14a2 2 0 00-3.42 0z" />
           </svg>
-          <span>{{ lowStockItems.length }} item(s) below threshold: {{ lowStockItems.map(i => i.item_name).join(', ') }}</span>
+          <span>{{ lowStockItems.length }} item(s) at or below threshold: {{ lowStockItems.map(i => i.item_name).join(', ') }}</span>
         </div>
 
         <!-- Error Banner -->
@@ -182,13 +182,16 @@
             </div>
 
             <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-3">
-                <button @click="adjustStock(i, -1)" class="w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 active:bg-gray-50 dark:active:bg-gray-700 text-lg" title="Deduct 1">−</button>
-                <span class="text-lg font-bold text-gray-800 dark:text-gray-100 min-w-[2ch] text-center">{{ i.quantity }} <span class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ i.unit || 'kg' }}</span></span>
-                <button @click="adjustStock(i, 1)" class="w-9 h-9 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 active:bg-gray-50 dark:active:bg-gray-700 text-lg" title="Add 1">+</button>
-              </div>
-              <p class="text-xs text-gray-400 dark:text-gray-500">Threshold: {{ i.low_stock_threshold }}</p>
+              <span class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ formatQty(i.quantity, i.unit || 'kg') }}</span>
+              <p class="text-xs text-gray-400 dark:text-gray-500">Threshold: {{ formatQty(i.low_stock_threshold, i.unit || 'kg') }}</p>
             </div>
+
+            <button
+              @click="openAdjustModal(i)"
+              class="w-full mb-3 py-2.5 rounded-none text-sm font-semibold text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700"
+            >
+              Stock In / Out
+            </button>
 
             <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">Unit Cost: ₱{{ formatCost(i.unit_cost) }}</p>
 
@@ -237,8 +240,8 @@
                 </tr>
                 <tr v-for="i in filteredItems" :key="i.item_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
                   <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ i.item_name }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }} {{ i.unit || 'kg' }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatQty(i.quantity, i.unit || 'kg') }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatQty(i.low_stock_threshold, i.unit || 'kg') }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatCost(i.unit_cost) }}</td>
                   <td class="px-6 py-3.5 align-middle">
                     <span :class="isLow(i) ? 'text-red-700 dark:text-red-300' : 'text-emerald-700 dark:text-emerald-300'" class="inline-block align-middle text-xs font-semibold leading-5">
@@ -247,8 +250,7 @@
                   </td>
                   <td class="px-6 py-3.5">
                     <div class="flex items-center justify-end gap-2">
-                      <button @click="adjustStock(i, -1)" class="w-7 h-7 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" title="Deduct 1">−</button>
-                      <button @click="adjustStock(i, 1)" class="w-7 h-7 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" title="Add 1">+</button>
+                      <button @click="openAdjustModal(i)" class="px-2.5 h-7 flex items-center justify-center rounded-none border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" title="Stock In / Out">Adjust</button>
                       <button @click="openEditModal(i)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Edit">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -296,15 +298,17 @@
                 <option value="pack">Pack</option>
               </select>
               <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">How this item is counted in the storeroom.</p>
+              <p v-if="unitChanged" class="text-[11px] text-amber-600 dark:text-amber-400 mt-1">Changing the unit does not convert existing numbers. Only allowed if no package or dish uses this item.</p>
             </div>
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Quantity ({{ form.unit }})</label>
-              <input type="number" min="0" v-model.number="form.quantity" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+              <input type="number" min="0" step="1" v-model.number="form.quantity" :disabled="!!editingItem" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
+              <p v-if="editingItem" class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">To change stock, close this and use Adjust / Stock In-Out.</p>
             </div>
           </div>
           <div>
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Low Stock Threshold ({{ form.unit }})</label>
-            <input type="number" min="0" v-model.number="form.low_stock_threshold" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+            <input type="number" min="0" step="1" v-model.number="form.low_stock_threshold" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
             <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">The system will alert you when stock reaches this level or lower.</p>
           </div>
           <div>
@@ -332,13 +336,86 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
           This will permanently remove <span class="font-semibold text-gray-700 dark:text-gray-200">{{ itemToDelete.item_name }}</span> from inventory.
         </p>
+        <p v-if="usageMessage" class="text-sm text-amber-600 dark:text-amber-400 mb-4">{{ usageMessage }}</p>
+        <p v-if="deleteError" class="text-sm text-red-600 dark:text-red-400 mb-4">{{ deleteError }}</p>
         <div class="flex gap-3">
-          <button @click="itemToDelete = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button @click="closeDelete" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             Cancel
           </button>
-          <button @click="handleDelete" :disabled="isDeleting" class="flex-1 bg-red-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+          <button @click="handleDelete" :disabled="isDeleting || blockedByUsage" class="flex-1 bg-red-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
             {{ isDeleting ? 'Deleting...' : 'Delete' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STOCK IN / OUT MODAL ============ -->
+    <div v-if="showAdjustModal && adjustItem" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Adjust Stock</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <span class="font-semibold text-gray-700 dark:text-gray-200">{{ adjustItem.item_name }}</span>
+          — current: {{ formatQty(adjustItem.quantity, adjustItem.unit || 'kg') }}
+        </p>
+
+        <div v-if="adjustError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">{{ adjustError }}</div>
+        <div v-if="inventoryStatus.historyMissing || movementsUnavailable" class="text-amber-700 dark:text-amber-300 text-xs font-medium mb-4">
+          Stock history isn't enabled on the database yet, so reasons and notes are not saved. Ask your developer to run inventory_fixes.sql.
+        </div>
+        <div v-if="inventoryStatus.setCountLegacy" class="text-amber-700 dark:text-amber-300 text-xs font-medium mb-4">
+          "Set Count" is running in compatibility mode and can be off if a booking is confirmed at the same moment. Ask your developer to run inventory_set_stock.sql.
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 mb-4">
+          <button v-for="m in adjustModes" :key="m.value" type="button" @click="adjustMode = m.value"
+            :class="adjustMode === m.value ? 'bg-emerald-600 text-white border-emerald-600' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600'"
+            class="py-2 text-xs font-semibold border rounded-none">{{ m.label }}</button>
+        </div>
+
+        <form @submit.prevent="submitAdjust" class="space-y-4">
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              {{ adjustMode === 'in' ? 'Amount to add' : adjustMode === 'out' ? 'Amount to remove' : 'Counted quantity' }} ({{ adjustItem.unit || 'kg' }})
+            </label>
+            <input type="number" min="0" step="1" v-model.number="adjustAmount" required
+              class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+            <p v-if="adjustPreviewInvalid" class="text-[11px] text-red-600 dark:text-red-400 font-medium mt-1">
+              Not enough stock. Only {{ formatQty(adjustItem.quantity, adjustItem.unit || 'kg') }} available.
+            </p>
+            <p v-else-if="adjustPreview !== null" class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+              New quantity: {{ formatQty(adjustPreview, adjustItem.unit || 'kg') }}
+            </p>
+          </div>
+          <div v-if="adjustMode !== 'set'">
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Reason</label>
+            <select v-model="adjustReason"
+              class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+              <option v-for="r in reasonOptions" :key="r" :value="r">{{ r }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Note (optional)</label>
+            <input type="text" maxlength="200" v-model="adjustNote"
+              class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          </div>
+          <div class="flex gap-3 pt-2">
+            <button type="button" @click="closeAdjustModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
+            <button type="submit" :disabled="isAdjusting || adjustPreviewInvalid" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700 disabled:opacity-50">
+              {{ isAdjusting ? 'Saving...' : 'Apply' }}
+            </button>
+          </div>
+        </form>
+
+        <div v-if="movements && movements.length" class="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
+          <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">Recent movements</p>
+          <ul class="space-y-1.5">
+            <li v-for="m in movements" :key="m.movement_id" class="flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-300">
+              <span class="truncate">{{ formatMoveDate(m.created_at) }} · {{ m.reason || 'Adjustment' }}<span v-if="m.note"> — {{ m.note }}</span></span>
+              <span :class="Number(m.delta) < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'" class="font-semibold shrink-0">
+                {{ Number(m.delta) > 0 ? '+' : '' }}{{ formatQty(m.delta, adjustItem.unit || 'kg') }}
+              </span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -348,7 +425,8 @@
 
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { supabase } from '../supabaseClient'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useRouter } from 'vue-router'
@@ -357,8 +435,14 @@ import {
   createInventoryItem,
   updateInventoryItem,
   adjustInventoryStock,
-  deleteInventoryItem
+  setInventoryStock,
+  deleteInventoryItem,
+  getItemUsage,
+  getInventoryMovements,
+  getInventoryItem,
+  inventoryStatus
 } from '../services/inventoryService'
+import { isLowStock as isLow, formatQty, formatCost } from '../utils/inventory'
 
 const router = useRouter()
 
@@ -390,11 +474,6 @@ const isDeleting = ref(false)
 
 const emptyForm = () => ({ item_name: '', quantity: 0, low_stock_threshold: 5, unit_cost: 0, unit: 'kg' })
 
-// Displays a unit cost as e.g. "12.50" regardless of whether it comes back
-// as a number or a numeric-string from Postgres.
-function formatCost(value) {
-  return Number(value || 0).toFixed(2)
-}
 const form = ref(emptyForm())
 
 onMounted(() => {
@@ -404,20 +483,76 @@ onMounted(() => {
     return
   }
   const user = JSON.parse(storedUser)
-  if (!['Admin', 'Staff', 'Owner/Manager'].includes(user.role)) {
+  // Staff has no Inventory access (same as the route guard in main.js).
+  if (!['Admin', 'Owner/Manager'].includes(user.role)) {
     router.push('/')
     return
   }
-  userName.value = user.full_name
+  const displayName = user.full_name || user.username || 'User'
+  userName.value = displayName
   userRole.value = user.role
-  userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
 
   fetchItems()
+  startLiveUpdates()
 })
 
-async function fetchItems() {
-  isLoading.value = true
+onUnmounted(stopLiveUpdates)
+
+// ---------- Live updates ----------
+// Stock changes from somewhere else (a booking Confirmed in another tab or on
+// another device, or a teammate's Stock In/Out) show up here without a manual
+// refresh. Realtime is the fast path; refetching when the tab regains focus
+// covers the case where the websocket dropped or Realtime isn't enabled.
+let inventoryChannel = null
+let liveRefreshTimer = null
+
+// Confirming a booking updates many items at once -> a burst of events.
+// Debounce so we refetch once, not once per row.
+function scheduleLiveRefresh() {
+  clearTimeout(liveRefreshTimer)
+  liveRefreshTimer = setTimeout(async () => {
+    await fetchItems({ silent: true })
+    // Keep the item being edited in sync with the database so nothing below
+    // (unit-change detection, quantity shown) is computed from a stale copy.
+    if (showFormModal.value && editingItem.value) {
+      const freshEdit = items.value.find((i) => i.item_id === editingItem.value.item_id)
+      if (freshEdit) editingItem.value = freshEdit
+      else modalError.value = 'This item was deleted by someone else. Close this window and refresh.'
+    }
+    if (showAdjustModal.value && adjustItem.value) {
+      const fresh = items.value.find((i) => i.item_id === adjustItem.value.item_id)
+      if (fresh) adjustItem.value = fresh
+      movements.value = await getInventoryMovements(adjustItem.value.item_id, 10)
+      movementsUnavailable.value = movements.value === null
+    }
+  }, 400)
+}
+
+function onVisibilityChange() {
+  if (document.visibilityState === 'visible') scheduleLiveRefresh()
+}
+
+function startLiveUpdates() {
+  inventoryChannel = supabase
+    .channel('inventory-page-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tbl_inventory' }, scheduleLiveRefresh)
+    .subscribe()
+  document.addEventListener('visibilitychange', onVisibilityChange)
+}
+
+function stopLiveUpdates() {
+  clearTimeout(liveRefreshTimer)
+  document.removeEventListener('visibilitychange', onVisibilityChange)
+  if (inventoryChannel) {
+    supabase.removeChannel(inventoryChannel)
+    inventoryChannel = null
+  }
+}
+
+async function fetchItems({ silent = false } = {}) {
+  if (!silent) isLoading.value = true
   pageError.value = ''
   try {
     items.value = await getAllInventory()
@@ -429,15 +564,12 @@ async function fetchItems() {
   }
 }
 
-const filteredItems = computed(() =>
-  items.value.filter((i) => i.item_name?.toLowerCase().includes(searchQuery.value.toLowerCase()))
-)
+const filteredItems = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  return items.value.filter((i) => i.item_name?.toLowerCase().includes(q))
+})
 
 const lowStockItems = computed(() => items.value.filter((i) => isLow(i)))
-
-function isLow(item) {
-  return Number(item.quantity) <= Number(item.low_stock_threshold)
-}
 
 function openCreateModal() {
   editingItem.value = null
@@ -457,49 +589,198 @@ function closeFormModal() {
   showFormModal.value = false
 }
 
+const unitChanged = computed(() => !!editingItem.value && form.value.unit !== (editingItem.value.unit || 'kg'))
+
 async function handleSaveItem() {
+  if (isSaving.value) return
   modalError.value = ''
+
+  const name = String(form.value.item_name || '').trim().toLowerCase()
+  const duplicate = items.value.some(
+    (i) => i.item_id !== editingItem.value?.item_id && i.item_name?.trim().toLowerCase() === name
+  )
+  if (duplicate) {
+    modalError.value = 'An item with that name already exists.'
+    return
+  }
+
   isSaving.value = true
   try {
     if (editingItem.value) {
+      // Compare against what the database has RIGHT NOW. The copy in
+      // editingItem can be stale (someone else edited the item while this
+      // window was open), and updateInventoryItem always sends the unit, so a
+      // stale copy could change the unit without the usage check running.
+      const current = await getInventoryItem(editingItem.value.item_id)
+      const unitReallyChanged = form.value.unit !== (current.unit || 'kg')
+      if (unitReallyChanged) {
+        const usage = await getItemUsage(editingItem.value.item_id)
+        if (usage.total > 0) {
+          throw new Error('Cannot change the unit: this item is used in package/dish ingredients and their quantities would become wrong.')
+        }
+      }
       await updateInventoryItem(editingItem.value.item_id, form.value)
     } else {
       await createInventoryItem(form.value)
     }
     showFormModal.value = false
-    fetchItems()
+    await fetchItems({ silent: true })
   } catch (error) {
-    modalError.value = error?.response?.data?.error || 'Something went wrong. Please try again.'
+    modalError.value = error?.message || 'Something went wrong. Please try again.'
   } finally {
     isSaving.value = false
   }
 }
 
-async function adjustStock(item, delta) {
-  const previousQuantity = item.quantity
-  item.quantity = Number(item.quantity) + delta // optimistic update
+// ---------- Stock In / Out ----------
+const adjustModes = [
+  { value: 'in', label: 'Stock In' },
+  { value: 'out', label: 'Stock Out' },
+  { value: 'set', label: 'Set Count' }
+]
+const REASONS = {
+  in: ['Purchase / delivery', 'Returned', 'Other'],
+  out: ['Spoilage / waste', 'Used outside events', 'Damaged / lost', 'Other']
+}
+const showAdjustModal = ref(false)
+const adjustItem = ref(null)
+const adjustMode = ref('in')
+const adjustAmount = ref(null)
+const adjustReason = ref(REASONS.in[0])
+const adjustNote = ref('')
+const adjustError = ref('')
+const isAdjusting = ref(false)
+const movements = ref(null)
+
+const reasonOptions = computed(() => REASONS[adjustMode.value] || [])
+watch(adjustMode, (m) => {
+  if (REASONS[m]) adjustReason.value = REASONS[m][0]
+  adjustError.value = ''
+})
+
+const adjustPreview = computed(() => {
+  if (!adjustItem.value || adjustAmount.value === null || adjustAmount.value === '') return null
+  const amt = Number(adjustAmount.value)
+  if (!Number.isFinite(amt)) return null
+  const cur = Number(adjustItem.value.quantity)
+  if (adjustMode.value === 'in') return cur + amt
+  if (adjustMode.value === 'out') return cur - amt
+  return amt
+})
+
+// Stock Out more than we have would go negative -- show it in red while typing
+// and stop the Apply button (the database also refuses it).
+const adjustPreviewInvalid = computed(
+  () => adjustPreview.value !== null && adjustPreview.value < 0
+)
+const movementsUnavailable = ref(false)
+
+async function openAdjustModal(item) {
+  adjustItem.value = item
+  adjustMode.value = 'in'
+  adjustAmount.value = null
+  adjustReason.value = REASONS.in[0]
+  adjustNote.value = ''
+  adjustError.value = ''
+  movements.value = null
+  movementsUnavailable.value = false
+  showAdjustModal.value = true
+  movements.value = await getInventoryMovements(item.item_id, 10)
+  movementsUnavailable.value = movements.value === null
+}
+
+function closeAdjustModal() {
+  showAdjustModal.value = false
+  adjustItem.value = null
+}
+
+async function submitAdjust() {
+  if (isAdjusting.value || !adjustItem.value) return
+  adjustError.value = ''
+  const amt = Number(adjustAmount.value)
+  if (!Number.isInteger(amt) || amt < 0) {
+    adjustError.value = 'Enter a whole number (no decimals).'
+    return
+  }
+  if (adjustMode.value !== 'set' && amt <= 0) {
+    adjustError.value = 'Amount must be greater than 0.'
+    return
+  }
+  if (adjustMode.value === 'out' && amt > Number(adjustItem.value.quantity)) {
+    adjustError.value = 'Not enough stock to remove that amount.'
+    return
+  }
+
+  isAdjusting.value = true
   try {
-    await adjustInventoryStock(item.item_id, delta)
+    const note = adjustNote.value.trim() || null
+    if (adjustMode.value === 'set') {
+      await setInventoryStock(adjustItem.value.item_id, amt, note)
+    } else {
+      await adjustInventoryStock(
+        adjustItem.value.item_id,
+        adjustMode.value === 'in' ? amt : -amt,
+        adjustReason.value,
+        note
+      )
+    }
+    closeAdjustModal()
+    await fetchItems({ silent: true })
   } catch (error) {
-    item.quantity = previousQuantity
-    pageError.value = 'Failed to adjust stock.'
+    adjustError.value = error?.message || 'Failed to adjust stock.'
+    console.error(error)
+  } finally {
+    isAdjusting.value = false
+  }
+}
+
+function formatMoveDate(iso) {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
+// ---------- Delete ----------
+const deleteError = ref('')
+const deleteUsage = ref(null)
+
+const blockedByUsage = computed(() => (deleteUsage.value?.total || 0) > 0)
+const usageMessage = computed(() =>
+  blockedByUsage.value
+    ? `Can't delete: used in ${deleteUsage.value.packages} package ingredient(s) and ${deleteUsage.value.dishes} dish ingredient(s). Remove it from those first.`
+    : ''
+)
+
+async function confirmDelete(item) {
+  deleteError.value = ''
+  deleteUsage.value = null
+  itemToDelete.value = item
+  try {
+    deleteUsage.value = await getItemUsage(item.item_id)
+  } catch (error) {
+    // the service re-checks on delete, so this is only a UX hint
     console.error(error)
   }
 }
 
-function confirmDelete(item) {
-  itemToDelete.value = item
+function closeDelete() {
+  itemToDelete.value = null
+  deleteError.value = ''
+  deleteUsage.value = null
 }
 
 async function handleDelete() {
-  if (!itemToDelete.value) return
+  if (!itemToDelete.value || isDeleting.value) return
   isDeleting.value = true
+  deleteError.value = ''
   try {
-    await deleteInventoryItem(itemToDelete.value.item_id)
-    items.value = items.value.filter((i) => i.item_id !== itemToDelete.value.item_id)
-    itemToDelete.value = null
+    const id = itemToDelete.value.item_id
+    await deleteInventoryItem(id)
+    items.value = items.value.filter((i) => i.item_id !== id)
+    closeDelete()
   } catch (error) {
-    pageError.value = error?.message || 'Failed to delete item.'
+    deleteError.value = error?.message || 'Failed to delete item.'
     console.error(error)
   } finally {
     isDeleting.value = false

@@ -85,7 +85,10 @@ export async function createPayment(paymentData) {
     .select()
     .single();
 
-  if (error) throw new Error('Failed to create payment record.');
+  if (error) {
+    console.error('createPayment error:', error);
+    throw new Error(error.message || 'Failed to create payment record.');
+  }
   return { message: 'Payment record created', payment: data };
 }
 

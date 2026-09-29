@@ -450,6 +450,7 @@ import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
+import { isLowStock } from '../utils/inventory'
 import { getAllPayments } from '../services/paymentService'
 import { getUsers } from '../services/staffService'
 import { getMyBusiness, getMyBusinessNotifications, markBusinessNotificationRead } from '../services/businessservice'
@@ -550,7 +551,7 @@ const completedBookingsCount = computed(() =>
 )
 
 const lowStockCount = computed(() =>
-  allInventory.value.filter((item) => Number(item.quantity) <= Number(item.low_stock_threshold)).length
+  allInventory.value.filter(isLowStock).length
 )
 
 const staffOnDutyCount = computed(() => allStaff.value.filter((u) => u.availability === 'Available').length)

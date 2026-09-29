@@ -45,92 +45,58 @@
 
       <div class="max-h-80 overflow-y-auto">
 
-        <!-- Super Admin: pending business approvals (their only feed) -->
-        <template v-if="userRole === 'Super Admin'">
-          <div class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            Pending Business Approvals
+        <!-- New Bookings -->
+        <div class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          New Bookings
+        </div>
+        <div v-if="newBookings.length === 0" class="px-4 pb-3 text-sm text-gray-400">
+          No new bookings yet.
+        </div>
+        <button
+          v-for="b in newBookings"
+          :key="b.booking_id"
+          @click="goToBookings"
+          class="w-full flex items-start gap-3 px-4 py-3 text-left border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+        >
+          <svg class="w-4 h-4 mt-0.5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ b.client_name }} just booked</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              {{ formatDate(b.event_date) }} · {{ b.guest_count }} guests
+            </p>
           </div>
-          <div v-if="loading" class="px-4 pb-3 text-sm text-gray-400">Loading…</div>
-          <div v-else-if="pendingBusinesses.length === 0" class="px-4 pb-3 text-sm text-gray-400">
-            No businesses waiting for approval.
-          </div>
-          <button
-            v-for="b in pendingBusinesses"
-            :key="b.business_id"
-            @click="goToPendingBusinesses"
-            class="w-full flex items-start gap-3 px-4 py-3 text-left border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <svg class="w-4 h-4 mt-0.5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2M5 21H3m4-14h.01M7 11h.01M7 15h.01m4-8h.01M11 11h.01M11 15h.01m4-8h.01M15 11h.01M15 15h.01" />
-            </svg>
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ b.business_name }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ b.owner_full_name || 'Unknown owner' }} · registered {{ formatDate(b.created_at) }}
-              </p>
-            </div>
-          </button>
-        </template>
+        </button>
 
-        <!-- Admin / Owner: bookings + stock -->
-        <template v-else>
-          <div class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            New Bookings
+        <!-- Low Stock Alerts -->
+        <div class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          Low Stock Alerts
+        </div>
+        <div v-if="loading" class="px-4 pb-3 text-sm text-gray-400">Loading…</div>
+        <div v-else-if="lowStockItems.length === 0" class="px-4 pb-3 text-sm text-gray-400">
+          All stock levels are healthy.
+        </div>
+        <button
+          v-for="item in lowStockItems"
+          :key="item.item_id"
+          @click="goToInventory"
+          class="w-full flex items-start gap-3 px-4 py-3 text-left border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
+        >
+          <svg class="w-4 h-4 mt-0.5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ item.item_name }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              {{ formatQty(item.quantity, item.unit) }} left · threshold {{ formatQty(item.low_stock_threshold, item.unit) }}
+            </p>
           </div>
-          <div v-if="newBookings.length === 0" class="px-4 pb-3 text-sm text-gray-400">
-            No new bookings yet.
-          </div>
-          <button
-            v-for="b in newBookings"
-            :key="b.booking_id"
-            @click="goToBookings"
-            class="w-full flex items-start gap-3 px-4 py-3 text-left border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <svg class="w-4 h-4 mt-0.5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ b.client_name }} just booked</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ formatDate(b.event_date) }} · {{ b.guest_count }} guests
-              </p>
-            </div>
-          </button>
-
-          <!-- Low Stock Alerts -->
-          <div class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            Low Stock Alerts
-          </div>
-          <div v-if="loading" class="px-4 pb-3 text-sm text-gray-400">Loading…</div>
-          <div v-else-if="lowStockItems.length === 0" class="px-4 pb-3 text-sm text-gray-400">
-            All stock levels are healthy.
-          </div>
-          <button
-            v-for="item in lowStockItems"
-            :key="item.item_id"
-            @click="goToInventory"
-            class="w-full flex items-start gap-3 px-4 py-3 text-left border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-          >
-            <svg class="w-4 h-4 mt-0.5 text-amber-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div class="min-w-0">
-              <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ item.item_name }}</p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ item.quantity }} left · threshold {{ item.low_stock_threshold }}
-              </p>
-            </div>
-          </button>
-        </template>
-      </div>
-
-      <div v-if="userRole === 'Super Admin'" class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700">
-        <button @click="goToPendingBusinesses" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
-          View Pending Businesses →
         </button>
       </div>
-      <div v-else class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+
+      <div class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
         <button @click="goToBookings" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
           View Bookings →
         </button>
@@ -146,10 +112,11 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotifications } from '../composables/useNotifications'
+import { formatQty } from '../utils/inventory'
 
 const router = useRouter()
 const open = ref(false)
-const { lowStockItems, newBookings, pendingBusinesses, unreadCount, loading, markAllRead } = useNotifications()
+const { lowStockItems, newBookings, unreadCount, loading, markAllRead } = useNotifications()
 
 const storedUser = (() => {
   try {
@@ -175,10 +142,5 @@ function goToInventory() {
 function goToBookings() {
   open.value = false
   router.push('/admin/bookings')
-}
-
-function goToPendingBusinesses() {
-  open.value = false
-  router.push({ path: '/super-admin/dashboard', query: { filter: 'Pending' } })
 }
 </script>

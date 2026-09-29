@@ -181,7 +181,15 @@
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
-import { looksLikeBot } from '../utils/antibot'
+import {
+  looksLikeBot,
+  lockoutSecondsLeft,
+  recordFailure,
+  resetFailures,
+  rateLimitSecondsLeft,
+  recordHit,
+  formatWait
+} from '../utils/antibot'
 import { requestRegistrationOtp, verifyRegistrationOtp, resendRegistrationOtp } from '../services/authService'
 
 const showPassword = ref(false)
@@ -189,6 +197,14 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const honeypot = ref('')
 const mountedAt = Date.now()
+
+// Rate limits (client-side deterrent; the real limits are server-side).
+// Every OTP text costs SMS credits, so cap sends and OTP guesses.
+const SEND_KEY = 'register-otp-send'      // first send + resends share one budget
+const SEND_MAX = 5                        // max texts...
+const SEND_WINDOW = 10 * 60               // ...per 10 minutes
+const RESEND_COOLDOWN = 60                // min gap between texts
+const VERIFY_KEY = 'register-otp-verify'  // wrong-code lockout
 
 // Once true, we show the OTP-entry screen instead of the form.
 const accountCreated = ref(false)
@@ -244,6 +260,13 @@ const handleRegister = async () => {
     return
   }
 
+  const sendWait = rateLimitSecondsLeft(SEND_KEY, SEND_MAX, SEND_WINDOW, RESEND_COOLDOWN)
+  if (sendWait > 0) {
+    errorMessage.value = `Too many code requests. Please try again in ${formatWait(sendWait)}.`
+    return
+  }
+  recordHit(SEND_KEY, SEND_WINDOW)
+
   isLoading.value = true
 
   try {
@@ -263,13 +286,24 @@ const handleRegister = async () => {
 
 const handleVerifyOtp = async () => {
   otpErrorMessage.value = ''
+
+  const locked = lockoutSecondsLeft(VERIFY_KEY)
+  if (locked > 0) {
+    otpErrorMessage.value = `Too many wrong codes. Try again in ${formatWait(locked)}.`
+    return
+  }
+
   isVerifying.value = true
 
   try {
     await verifyRegistrationOtp(form.value, otpCode.value)
+    resetFailures(VERIFY_KEY)
     phoneVerified.value = true
   } catch (error) {
-    otpErrorMessage.value = error.message || 'Invalid or expired code. Please try again.'
+    const wait = recordFailure(VERIFY_KEY, 5, 60)
+    otpErrorMessage.value = wait > 0
+      ? `Too many wrong codes. Try again in ${formatWait(wait)}.`
+      : (error.message || 'Invalid or expired code. Please try again.')
   } finally {
     isVerifying.value = false
   }
@@ -277,6 +311,14 @@ const handleVerifyOtp = async () => {
 
 const handleResendOtp = async () => {
   otpErrorMessage.value = ''
+
+  const wait = rateLimitSecondsLeft(SEND_KEY, SEND_MAX, SEND_WINDOW, RESEND_COOLDOWN)
+  if (wait > 0) {
+    otpErrorMessage.value = `Please wait ${formatWait(wait)} before requesting another code.`
+    return
+  }
+  recordHit(SEND_KEY, SEND_WINDOW)
+
   isResending.value = true
 
   try {

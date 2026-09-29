@@ -167,6 +167,12 @@
           {{ pageError }}
         </div>
 
+        <!-- Stock Notice (shown after a status change moves inventory) -->
+        <div v-if="stockNotice" role="status" class="flex items-start justify-between gap-3 text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-4">
+          <span>{{ stockNotice }}</span>
+          <button type="button" @click="stockNotice = ''" class="text-emerald-700/70 dark:text-emerald-300/70 hover:text-emerald-700 dark:hover:text-emerald-300 text-xs font-semibold">Dismiss</button>
+        </div>
+
         <!-- Bookings — mobile card list (phone-friendly, replaces the table below md) -->
         <div class="md:hidden space-y-3">
           <div v-if="isLoading" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
@@ -180,6 +186,7 @@
             <div class="flex items-start justify-between gap-3 mb-2">
               <div class="min-w-0">
                 <p class="font-semibold text-gray-900 dark:text-gray-100 truncate capitalize">{{ b.client_name }}</p>
+                <a v-if="b.client_contact_number" :href="'tel:' + b.client_contact_number" class="block text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">{{ b.client_contact_number }}</a>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatDate(b.event_date) }} · {{ formatTime(b.event_time) }}</p>
               </div>
               <span :class="statusBadgeClass(b.booking_status)" class="shrink-0 text-xs font-semibold leading-5">
@@ -208,7 +215,7 @@
             <div class="flex items-center gap-2">
               <select
                 :value="b.booking_status"
-                @change="handleStatusChange(b, $event.target.value)"
+                @change="requestStatusChange(b, $event)"
                 class="flex-1 text-sm border border-gray-200 dark:border-gray-700 rounded-none px-3 py-2.5 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
               >
                 <option value="Pending">Pending</option>
@@ -251,6 +258,7 @@
               <thead class="bg-gray-50 dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 uppercase text-xs tracking-wide">
                 <tr>
                   <th class="text-left px-6 py-3 font-semibold">Client</th>
+                  <th class="text-left px-6 py-3 font-semibold">Contact</th>
                   <th class="text-left px-6 py-3 font-semibold">Event Date</th>
                   <th class="text-left px-6 py-3 font-semibold">Time</th>
                   <th class="text-left px-6 py-3 font-semibold">Location</th>
@@ -263,15 +271,19 @@
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                 <tr v-if="isLoading">
-                  <td colspan="9" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading bookings...</td>
+                  <td colspan="10" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading bookings...</td>
                 </tr>
                 <tr v-else-if="filteredBookings.length === 0">
-                  <td colspan="9" class="text-center py-10 text-gray-400 dark:text-gray-500">
+                  <td colspan="10" class="text-center py-10 text-gray-400 dark:text-gray-500">
                     {{ bookings.length === 0 ? 'No bookings yet. Click "New Booking" to create one.' : 'No bookings match your filters.' }}
                   </td>
                 </tr>
                 <tr v-for="b in filteredBookings" :key="b.booking_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
                   <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100 capitalize">{{ b.client_name }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                    <a v-if="b.client_contact_number" :href="'tel:' + b.client_contact_number" class="hover:text-emerald-600 dark:hover:text-emerald-400">{{ b.client_contact_number }}</a>
+                    <span v-else class="text-gray-400 dark:text-gray-500">—</span>
+                  </td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatTime(b.event_time) }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 max-w-[12rem] truncate capitalize" :title="b.event_location">{{ b.event_location }}</td>
@@ -294,7 +306,7 @@
                     <div class="flex items-center justify-end gap-2">
                       <select
                         :value="b.booking_status"
-                        @change="handleStatusChange(b, $event.target.value)"
+                        @change="requestStatusChange(b, $event)"
                         class="text-xs border border-gray-200 dark:border-gray-700 rounded-none px-2 py-1.5 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
                       >
                         <option value="Pending">Pending</option>
@@ -351,8 +363,8 @@
           </div>
 
           <div class="relative">
-            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Client Email (for confirmation)</label>
-            <input type="email" v-model="form.client_email" placeholder="client@example.com" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
+            <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Client Contact Number</label>
+            <input type="tel" inputmode="tel" v-model="form.client_contact_number" placeholder="09171234567" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -419,6 +431,29 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ============ RETURN-STOCK CONFIRM MODAL ============ -->
+    <div v-if="revertRequest" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-none shadow-xl w-full max-w-sm p-6">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Return stock to inventory?</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-5">
+          Changing <span class="font-semibold text-gray-700 dark:text-gray-200">{{ revertRequest.booking.client_name }}</span>'s booking from
+          {{ revertRequest.booking.booking_status }} to <span class="font-semibold text-gray-700 dark:text-gray-200">{{ revertRequest.newStatus }}</span>
+          will put
+          <template v-if="revertRequest.count">the {{ revertRequest.count }} deducted item(s)</template>
+          <template v-else>the deducted ingredients</template>
+          back into inventory.
+        </p>
+        <div class="flex gap-3">
+          <button @click="revertRequest = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+            Keep as is
+          </button>
+          <button @click="confirmRevert" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-none font-semibold text-sm hover:bg-emerald-700">
+            Return stock
+          </button>
+        </div>
       </div>
     </div>
 
@@ -501,6 +536,7 @@ import {
   getBookingStatusCounts,
   createBooking,
   updateBookingStatus,
+  getBookingStockCount,
   deleteBooking,
   checkDateConflict
 } from '../services/bookingService'
@@ -532,6 +568,15 @@ const userAvatarUrl = ref('')
 const bookings = ref([])
 const isLoading = ref(false)
 const pageError = ref('')
+const stockNotice = ref('')
+const revertRequest = ref(null) // { booking, newStatus, count } while the "return stock?" modal is open
+let stockNoticeTimer = null
+
+function showStockNotice(message) {
+  stockNotice.value = message
+  clearTimeout(stockNoticeTimer)
+  stockNoticeTimer = setTimeout(() => { stockNotice.value = '' }, 8000)
+}
 
 const PAGE_SIZE = 50
 const totalBookings = ref(0)
@@ -552,7 +597,7 @@ const isDeleting = ref(false)
 
 const emptyForm = () => ({
   client_name: '',
-  client_email: '',
+  client_contact_number: '',
   event_date: '',
   event_time: '',
   event_location: '',
@@ -649,7 +694,8 @@ async function loadAssignedStaffFor(rows) {
 
 const filteredBookings = computed(() => {
   return bookings.value.filter((b) => {
-    const matchesSearch = b.client_name?.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const q = searchQuery.value.toLowerCase()
+    const matchesSearch = b.client_name?.toLowerCase().includes(q) || (b.client_contact_number || '').includes(q)
     const matchesStatus = !statusFilter.value || b.booking_status === statusFilter.value
     return matchesSearch && matchesStatus
   })
@@ -828,14 +874,52 @@ async function handleSaveAssignment() {
   }
 }
 
+// Entry point for both status dropdowns. Stock is deducted when a booking is
+// Confirmed and returned when it goes back to Pending or to Cancelled, so
+// those two moves ask first instead of surprising the admin.
+async function requestStatusChange(booking, event) {
+  const newStatus = event.target.value
+  const previousStatus = booking.booking_status
+  if (newStatus === previousStatus) return
+
+  const returnsStock =
+    ['Confirmed', 'Completed'].includes(previousStatus) && ['Pending', 'Cancelled'].includes(newStatus)
+  if (!returnsStock) {
+    handleStatusChange(booking, newStatus)
+    return
+  }
+
+  event.target.value = previousStatus // snap the dropdown back until the admin agrees
+  const count = await getBookingStockCount(booking.booking_id)
+  revertRequest.value = { booking, newStatus, count }
+}
+
+function confirmRevert() {
+  const { booking, newStatus } = revertRequest.value
+  revertRequest.value = null
+  handleStatusChange(booking, newStatus)
+}
+
 async function handleStatusChange(booking, newStatus) {
   const previousStatus = booking.booking_status
   pageError.value = '' // drop any stale error from a previous attempt
+  stockNotice.value = ''
+  const countBefore = ['Pending', 'Cancelled'].includes(newStatus)
+    ? await getBookingStockCount(booking.booking_id)
+    : null
   booking.booking_status = newStatus // optimistic update
   try {
     await updateBookingStatus(booking.booking_id, newStatus)
     if (newStatus === 'Confirmed') {
       sendBookingConfirmationSms(booking.booking_id) // no await: SMS must never block the UI
+      const deducted = await getBookingStockCount(booking.booking_id)
+      showStockNotice(
+        deducted
+          ? `${deducted} item(s) deducted from inventory.`
+          : 'Booking confirmed. Ingredients were deducted from inventory.'
+      )
+    } else if (countBefore) {
+      showStockNotice(`${countBefore} item(s) returned to inventory.`)
     }
     statusCounts.value = {
       ...statusCounts.value,

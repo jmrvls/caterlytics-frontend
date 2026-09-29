@@ -132,7 +132,15 @@
 <script setup>
 import logoUrl from '../Assets/logofinal.png'
 import { ref } from 'vue'
-import { looksLikeBot } from '../utils/antibot'
+import {
+  looksLikeBot,
+  lockoutSecondsLeft,
+  recordFailure,
+  resetFailures,
+  rateLimitSecondsLeft,
+  recordHit,
+  formatWait
+} from '../utils/antibot'
 import { requestPasswordReset, verifyPasswordResetOtp, resendPasswordResetOtp, setNewPasswordAfterReset } from '../services/authService'
 
 // 'phone' -> 'otp' -> 'newPassword' -> 'done'
@@ -148,6 +156,13 @@ const errorMessage = ref('')
 const honeypot = ref('')
 const mountedAt = Date.now()
 
+// Rate limits (client-side deterrent; the real limits are server-side).
+const SEND_KEY = 'reset-otp-send'
+const SEND_MAX = 5
+const SEND_WINDOW = 10 * 60
+const RESEND_COOLDOWN = 60
+const VERIFY_KEY = 'reset-otp-verify'
+
 async function handleSendOtp() {
   errorMessage.value = ''
 
@@ -157,6 +172,13 @@ async function handleSendOtp() {
     errorMessage.value = 'Something went wrong. Please try again.'
     return
   }
+
+  const sendWait = rateLimitSecondsLeft(SEND_KEY, SEND_MAX, SEND_WINDOW, RESEND_COOLDOWN)
+  if (sendWait > 0) {
+    errorMessage.value = `Too many code requests. Please try again in ${formatWait(sendWait)}.`
+    return
+  }
+  recordHit(SEND_KEY, SEND_WINDOW)
 
   isLoading.value = true
   try {
@@ -171,12 +193,23 @@ async function handleSendOtp() {
 
 async function handleVerifyOtp() {
   errorMessage.value = ''
+
+  const locked = lockoutSecondsLeft(VERIFY_KEY)
+  if (locked > 0) {
+    errorMessage.value = `Too many wrong codes. Try again in ${formatWait(locked)}.`
+    return
+  }
+
   isLoading.value = true
   try {
     await verifyPasswordResetOtp(contact_number.value, otpCode.value)
+    resetFailures(VERIFY_KEY)
     step.value = 'newPassword'
   } catch (error) {
-    errorMessage.value = error.message || 'Invalid or expired code. Please try again.'
+    const wait = recordFailure(VERIFY_KEY, 5, 60)
+    errorMessage.value = wait > 0
+      ? `Too many wrong codes. Try again in ${formatWait(wait)}.`
+      : (error.message || 'Invalid or expired code. Please try again.')
   } finally {
     isLoading.value = false
   }
@@ -184,6 +217,14 @@ async function handleVerifyOtp() {
 
 async function handleResendOtp() {
   errorMessage.value = ''
+
+  const wait = rateLimitSecondsLeft(SEND_KEY, SEND_MAX, SEND_WINDOW, RESEND_COOLDOWN)
+  if (wait > 0) {
+    errorMessage.value = `Please wait ${formatWait(wait)} before requesting another code.`
+    return
+  }
+  recordHit(SEND_KEY, SEND_WINDOW)
+
   isLoading.value = true
   try {
     await resendPasswordResetOtp(contact_number.value)

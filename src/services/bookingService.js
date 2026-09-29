@@ -50,6 +50,15 @@ export async function createBooking(bookingData) {
   // a double booking). This is the actual enforcement, not just a warning.
   // business_id is only passed by clients (who can't see other clients'
   // bookings); staff/admin/owner rely on the business-scoped read below.
+  // The client's own mobile number. Staff/admin-created bookings must pass it,
+  // otherwise the database falls back to the *creator's* number (the admin's).
+  // Clients booking for themselves leave it empty and the database fills it
+  // from their profile.
+  const contactNumber = String(bookingData.client_contact_number || '').replace(/[\s-]/g, '');
+  if (contactNumber && !/^(09\d{9}|\+639\d{9})$/.test(contactNumber)) {
+    throw new Error('Enter a valid mobile number, e.g. 09171234567.');
+  }
+
   const conflict = await checkDateConflict(bookingData.event_date, bookingData.business_id || null);
   if (conflict.conflict) {
     const existing = conflict.existingBookings[0];
@@ -65,6 +74,7 @@ export async function createBooking(bookingData) {
     .insert({
       client_name: toTitleCase(bookingData.client_name),
       client_email: bookingData.client_email || null,
+      client_contact_number: contactNumber || null,
       event_date: bookingData.event_date,
       event_time: bookingData.event_time,
       event_location: toTitleCase(bookingData.event_location),
@@ -147,6 +157,20 @@ export async function updateBookingStatus(id, status) {
   // Stock restore (Cancelled / back to Pending / deleted / guest change) is
   // handled by the database trigger on tbl_bookings, so nothing to do here.
   return { ...data, stockWarning: null };
+}
+
+// How many inventory items are currently deducted for a booking (rows in
+// tbl_booking_stock). Used only for the "N items deducted / returned" messages.
+// Returns null when it can't be determined (e.g. no read access), so the UI
+// falls back to a generic message instead of showing a wrong number.
+export async function getBookingStockCount(bookingId) {
+  const { count, error } = await supabase
+    .from('tbl_booking_stock')
+    .select('item_id', { count: 'exact', head: true })
+    .eq('booking_id', bookingId);
+
+  if (error || !count) return null;
+  return count;
 }
 
 export async function deleteBooking(id) {

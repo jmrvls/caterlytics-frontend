@@ -52,3 +52,60 @@ export function looksLikeBot(honeypotValue, mountedAt, minMs = 1500) {
   if (Date.now() - mountedAt < minMs) return true
   return false
 }
+
+// ---------- Sliding-window limiter (for "send OTP" style actions) ----------
+// Allows at most `max` actions per `windowSeconds`. Unlike recordFailure()
+// (which counts *failures*), this counts every attempt -- which is what we want
+// for anything that costs money (SMS) whether or not it "succeeds".
+// Same caveat as above: it lives in localStorage so it is a deterrent only;
+// the real limits are server-side (Supabase Auth + the edge functions).
+
+const WIN_PREFIX = 'rlw:'
+
+function readHits(key) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(WIN_PREFIX + key) || '[]')
+    return Array.isArray(arr) ? arr.filter((t) => typeof t === 'number') : []
+  } catch {
+    return []
+  }
+}
+
+// Seconds until another action is allowed (0 = allowed now).
+// `cooldownSeconds` (optional) additionally enforces a minimum gap between two
+// actions, e.g. 60s between "Resend code" clicks.
+export function rateLimitSecondsLeft(key, max, windowSeconds, cooldownSeconds = 0) {
+  const now = Date.now()
+  const hits = readHits(key).filter((t) => now - t < windowSeconds * 1000)
+  let wait = 0
+  if (hits.length >= max) {
+    wait = Math.ceil((hits[0] + windowSeconds * 1000 - now) / 1000)
+  }
+  if (cooldownSeconds > 0 && hits.length > 0) {
+    const last = hits[hits.length - 1]
+    wait = Math.max(wait, Math.ceil((last + cooldownSeconds * 1000 - now) / 1000))
+  }
+  return Math.max(0, wait)
+}
+
+// Call right BEFORE the request, so it counts even if the request fails
+// (the SMS may already have been sent).
+export function recordHit(key, windowSeconds) {
+  const now = Date.now()
+  const hits = readHits(key).filter((t) => now - t < windowSeconds * 1000)
+  hits.push(now)
+  try {
+    localStorage.setItem(WIN_PREFIX + key, JSON.stringify(hits))
+  } catch {
+    // storage unavailable -- skip silently
+  }
+}
+
+// 75 -> "1m 15s", 30 -> "30s"
+export function formatWait(seconds) {
+  const s = Math.max(0, Math.ceil(seconds))
+  if (s < 60) return `${s}s`
+  const m = Math.floor(s / 60)
+  const r = s % 60
+  return r ? `${m}m ${r}s` : `${m}m`
+}

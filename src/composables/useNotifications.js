@@ -125,6 +125,14 @@ function pushNewAssignment(booking) {
   recomputeUnread()
 }
 
+// A confirmed booking deducts many ingredients at once -> many realtime
+// events in a burst. Debounce so we refetch once instead of once per row.
+let stockRefreshTimer = null
+function scheduleStockRefresh() {
+  clearTimeout(stockRefreshTimer)
+  stockRefreshTimer = setTimeout(refreshStock, 400)
+}
+
 async function refreshStock() {
   try {
     const items = await getLowStockItems()
@@ -300,7 +308,7 @@ export function useNotifications() {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'tbl_inventory' },
-          () => refreshStock()
+          () => scheduleStockRefresh()
         )
         .subscribe()
     }
@@ -333,6 +341,7 @@ export function useNotifications() {
   onUnmounted(() => {
     subscriberCount--
     if (subscriberCount <= 0) {
+      clearTimeout(stockRefreshTimer)
       if (stockChannel) {
         supabase.removeChannel(stockChannel)
         stockChannel = null

@@ -433,7 +433,7 @@
                   <div v-for="i in sortedInventory" :key="i.item_id" class="px-4 py-3.5 flex items-center justify-between gap-2">
                     <div class="min-w-0">
                       <p class="font-semibold text-gray-800 dark:text-gray-100 truncate">{{ i.item_name }}</p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">Qty: {{ i.quantity }} · Threshold: {{ i.low_stock_threshold }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">Qty: {{ formatQty(i.quantity, i.unit) }} · Threshold: {{ formatQty(i.low_stock_threshold, i.unit) }} · Value: ₱{{ formatPrice(stockValue(i)) }}</p>
                     </div>
                     <span
                       :class="isLowStock(i) ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'"
@@ -452,14 +452,18 @@
                       <th class="text-left px-6 py-3 font-semibold">Item</th>
                       <th class="text-left px-6 py-3 font-semibold">Quantity</th>
                       <th class="text-left px-6 py-3 font-semibold">Low Stock Threshold</th>
+                      <th class="text-left px-6 py-3 font-semibold">Unit Cost</th>
+                      <th class="text-left px-6 py-3 font-semibold">Stock Value</th>
                       <th class="text-left px-6 py-3 font-semibold">Status</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     <tr v-for="i in sortedInventory" :key="i.item_id">
                       <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ i.item_name }}</td>
-                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.quantity }}</td>
-                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ i.low_stock_threshold }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatQty(i.quantity, i.unit) }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatQty(i.low_stock_threshold, i.unit) }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatPrice(i.unit_cost) }}</td>
+                      <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">₱{{ formatPrice(stockValue(i)) }}</td>
                       <td class="px-6 py-3.5">
                         <span
                           :class="isLowStock(i) ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'"
@@ -470,8 +474,15 @@
                       </td>
                     </tr>
                   </tbody>
+                  <tfoot class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                      <td colspan="4" class="px-6 py-3 text-right text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Stock Value</td>
+                      <td colspan="2" class="px-6 py-3 font-bold text-gray-800 dark:text-gray-100">₱{{ formatPrice(inventoryTotalValue) }}</td>
+                    </tr>
+                  </tfoot>
                 </table>
                 </div>
+                <p class="sm:hidden px-4 py-3 text-sm font-bold text-gray-800 dark:text-gray-100 border-t border-gray-100 dark:border-gray-700">Total Stock Value: ₱{{ formatPrice(inventoryTotalValue) }}</p>
               </div>
             </div>
           </div>
@@ -668,6 +679,7 @@ import { useSidebarState } from '../composables/useSidebarState'
 import { useRouter } from 'vue-router'
 import { getAllBookings } from '../services/bookingService'
 import { getAllInventory } from '../services/inventoryService'
+import { isLowStock, formatQty } from '../utils/inventory'
 import { getAllPackages } from '../services/packageService'
 import { getAllPayments } from '../services/paymentService'
 import { getAllExpenses, createExpense, updateExpense, deleteExpense } from '../services/expenseService'
@@ -937,9 +949,12 @@ const statusBreakdown = computed(() => {
 })
 
 // ---------- Inventory ----------
-function isLowStock(item) {
-  return Number(item.quantity) <= Number(item.low_stock_threshold)
+// Stock value = quantity on hand x unit cost (for the Inventory Report).
+function stockValue(item) {
+  return Number(item.quantity || 0) * Number(item.unit_cost || 0)
 }
+
+const inventoryTotalValue = computed(() => inventory.value.reduce((sum, i) => sum + stockValue(i), 0))
 
 const lowStockItems = computed(() => inventory.value.filter(isLowStock))
 
@@ -1140,13 +1155,17 @@ async function exportPDF() {
   } else if (activeTab.value === 'Inventory Report') {
     autoTable(doc, {
       startY,
-      head: [['Item', 'Quantity', 'Low Stock Threshold', 'Status']],
+      head: [['Item', 'Quantity', 'Low Stock Threshold', 'Unit Cost', 'Stock Value', 'Status']],
       body: inventory.value.map((i) => [
         i.item_name,
-        String(i.quantity),
-        String(i.low_stock_threshold),
+        formatQty(i.quantity, i.unit),
+        formatQty(i.low_stock_threshold, i.unit),
+        `PHP ${formatPrice(i.unit_cost)}`,
+        `PHP ${formatPrice(stockValue(i))}`,
         isLowStock(i) ? 'Low Stock' : 'Sufficient',
       ]),
+      foot: [['Total Stock Value', '', '', '', `PHP ${formatPrice(inventoryTotalValue.value)}`, '']],
+      footStyles: { fillColor: [243, 244, 246], textColor: [31, 41, 55], fontStyle: 'bold' },
       theme: 'grid',
       headStyles: { fillColor: [5, 150, 105] },
     })
