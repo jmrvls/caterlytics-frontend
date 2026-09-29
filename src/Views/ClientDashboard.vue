@@ -218,6 +218,31 @@
                   <div v-else class="w-full h-full bg-gray-100 dark:bg-gray-900"></div>
                 </div>
               </div>
+
+              <!-- Catering store card (fills the space under the thumbnail) -->
+              <div v-if="selectedBusiness" class="mt-5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Catering Store</p>
+                <div class="flex items-center gap-3">
+                  <img
+                    v-if="selectedBusiness.logo_url"
+                    :src="selectedBusiness.logo_url"
+                    :alt="selectedBusiness.business_name"
+                    class="w-14 h-14 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700"
+                  />
+                  <div v-else class="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-xl font-bold flex-shrink-0">
+                    {{ (selectedBusiness.business_name || '?').charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="min-w-0">
+                    <p class="font-bold text-gray-800 dark:text-gray-100 truncate">{{ selectedBusiness.business_name }}</p>
+                    <p v-if="selectedBusiness.address" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ selectedBusiness.address }}</p>
+                    <p v-if="selectedBusiness.contact_number" class="text-xs text-gray-500 dark:text-gray-400">{{ selectedBusiness.contact_number }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ selectedBusiness.package_count }} package{{ selectedBusiness.package_count === 1 ? '' : 's' }} available</span>
+                  <button type="button" @click="clearBusiness" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Change store</button>
+                </div>
+              </div>
             </div>
 
             <!-- RIGHT: buy box -- package price, then all booking details -->
