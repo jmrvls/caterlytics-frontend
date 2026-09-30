@@ -163,14 +163,37 @@
         </div>
 
         <!-- Error Banner -->
-        <div v-if="pageError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">
-          {{ pageError }}
+        <div v-if="pageError" role="alert" class="mb-4 flex items-start gap-3 rounded-lg border border-red-200 dark:border-red-900/60 border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/20 p-4 shadow-sm">
+          <svg class="w-5 h-5 mt-0.5 flex-shrink-0 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-red-800 dark:text-red-200">{{ pageErrorParsed.title }}</p>
+            <p v-if="pageErrorParsed.subtitle" class="text-sm text-red-700/80 dark:text-red-300/80 mt-0.5">{{ pageErrorParsed.subtitle }}</p>
+            <div v-if="pageErrorParsed.gaps.length" class="flex flex-wrap gap-2 mt-3">
+              <span
+                v-for="g in pageErrorParsed.gaps" :key="g.label"
+                class="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 px-3 py-1 text-xs font-medium text-red-700 dark:text-red-300"
+              >
+                {{ g.label }}
+                <span class="rounded-full bg-red-100 dark:bg-red-900/50 px-1.5 py-0.5 text-[11px] font-semibold">{{ g.picked }} / {{ g.need }}</span>
+              </span>
+            </div>
+          </div>
+          <button type="button" @click="pageError = ''" aria-label="Dismiss" class="text-red-400 hover:text-red-600 dark:hover:text-red-300">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
 
         <!-- Stock Notice (shown after a status change moves inventory) -->
-        <div v-if="stockNotice" role="status" class="flex items-start justify-between gap-3 text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-4">
-          <span>{{ stockNotice }}</span>
-          <button type="button" @click="stockNotice = ''" class="text-emerald-700/70 dark:text-emerald-300/70 hover:text-emerald-700 dark:hover:text-emerald-300 text-xs font-semibold">Dismiss</button>
+        <div v-if="stockNotice" role="status" class="mb-4 flex items-start gap-3 rounded-lg border border-emerald-200 dark:border-emerald-900/60 border-l-4 border-l-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 p-4 shadow-sm">
+          <svg class="w-5 h-5 mt-0.5 flex-shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p class="flex-1 text-sm font-medium text-emerald-800 dark:text-emerald-200">{{ stockNotice }}</p>
+          <button type="button" @click="stockNotice = ''" aria-label="Dismiss" class="text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-300">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </div>
 
         <!-- Bookings — mobile card list (phone-friendly, replaces the table below md) -->
@@ -568,6 +591,22 @@ const userAvatarUrl = ref('')
 const bookings = ref([])
 const isLoading = ref(false)
 const pageError = ref('')
+
+// Turns the raw DB message ("Cannot confirm booking: menu selection is incomplete -
+// Main Course (picked 0 of 2); ...") into a title + category chips. Any other
+// error text just falls back to a plain title.
+const pageErrorParsed = computed(() => {
+  const raw = (pageError.value || '').trim()
+  const m = raw.match(/^Cannot confirm booking:\s*menu selection is incomplete\s*-\s*(.+)$/i)
+  if (!m) return { title: raw, subtitle: '', gaps: [] }
+  const gaps = [...m[1].matchAll(/([^;()]+?)\s*\(picked\s*(\d+)\s*of\s*(\d+)\)/gi)]
+    .map((x) => ({ label: x[1].trim(), picked: x[2], need: x[3] }))
+  return {
+    title: 'Cannot confirm this booking',
+    subtitle: 'The client has not finished picking their menu. Still needed per category:',
+    gaps
+  }
+})
 const stockNotice = ref('')
 const revertRequest = ref(null) // { booking, newStatus, count } while the "return stock?" modal is open
 let stockNoticeTimer = null

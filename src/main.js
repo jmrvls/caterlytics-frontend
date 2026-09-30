@@ -5,6 +5,15 @@ import App from './App.vue'
 import { initTheme } from './theme'
 import { supabase } from './supabaseClient'
 
+// INVITE / RESET LINK FIX: if Supabase can't honor the `redirectTo` we sent
+// (e.g. the URL isn't in Auth > URL Configuration > Redirect URLs), it falls
+// back to the Site URL and lands the user on `/#access_token=...&type=invite`.
+// Forward those links to the set-password page, keeping the hash so
+// supabase-js can still pick up the session from it.
+if (window.location.pathname === '/' && /access_token=/.test(window.location.hash) && /type=(invite|recovery)/.test(window.location.hash)) {
+  window.history.replaceState(null, '', '/reset-password' + window.location.hash)
+}
+
 initTheme()
 
 // Views
