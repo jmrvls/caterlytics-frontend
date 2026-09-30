@@ -3,7 +3,7 @@
   <div class="min-h-screen flex w-full font-sans bg-gradient-to-br from-emerald-50 via-white to-gray-50">
 
     <!-- LEFT SIDE: Manuscript & Institution Details -->
-    <div class="hidden lg:flex lg:flex-col w-1/2 h-screen overflow-hidden bg-gray-50 border-r border-gray-200 p-8">
+    <div class="hidden lg:flex lg:flex-col w-[56%] h-screen overflow-hidden bg-gray-50 border-r border-gray-200 p-8">
 
       <!-- System Branding Logo -->
       <img
@@ -12,13 +12,23 @@
         class="w-14 h-14 object-contain flex-shrink-0"
       />
 
-      <!-- Center Visual Mockup Area: shrinks to fit remaining space, never overlaps text below -->
-      <div class="flex-1 min-h-0 flex items-center justify-center py-2 lg:py-1 xl:py-2 2xl:py-4 overflow-hidden">
-        <img
-          :src="loginBgUrl"
-          alt="Catering Display"
-          class="w-full h-full object-contain max-w-none translate-x-24 scale-110 xl:scale-125 2xl:scale-100"
-        />
+      <!-- Center Visual Mockup Area: the image is cropped with CSS (no extra file), so it is
+           centered and scales with the panel on any screen size. -->
+      <div
+        class="flex-1 min-h-0 flex items-center justify-center py-2 lg:py-1 xl:py-2 2xl:py-4 overflow-visible"
+        style="container-type: size"
+      >
+        <div
+          class="relative overflow-hidden"
+          style="aspect-ratio: 978 / 629; width: min(94cqw, calc(94cqh * 978 / 629)); transform: translateX(3cqw)"
+        >
+          <img
+            :src="loginBgUrl"
+            alt="Catering Display"
+            class="absolute max-w-none"
+            style="width: 114.31%; left: -5.01%; top: -35.45%"
+          />
+        </div>
       </div>
 
       <!-- Bottom Section -->
@@ -32,7 +42,7 @@
     </div>
 
     <!-- RIGHT SIDE: System Authentic Log In Form Section -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white lg:bg-transparent">
+    <div class="w-full lg:w-[44%] flex items-center justify-center p-8 bg-white lg:bg-transparent">
       <div class="w-full space-y-8 lg:bg-white lg:p-10 lg:rounded-3xl lg:shadow-xl lg:shadow-gray-100" style="max-width: clamp(360px, 32vw, 480px)">
 
         <!-- Email Confirmed Banner -->
