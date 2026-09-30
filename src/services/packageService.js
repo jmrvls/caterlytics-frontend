@@ -10,11 +10,18 @@ export async function getAllPackages() {
   return data || [];
 }
 
+function validatePackage(packageData) {
+  if (!String(packageData.package_name || '').trim()) throw new Error('Package name is required.');
+  const price = Number(packageData.price_per_head);
+  if (!Number.isFinite(price) || price <= 0) throw new Error('Price per head must be greater than 0.');
+}
+
 export async function createPackage(packageData) {
+  validatePackage(packageData);
   const { data, error } = await supabase
     .from('tbl_menu_packages')
     .insert({
-      package_name: packageData.package_name,
+      package_name: String(packageData.package_name).trim(),
       description: packageData.description,
       price_per_head: packageData.price_per_head,
     })
@@ -26,6 +33,7 @@ export async function createPackage(packageData) {
 }
 
 export async function updatePackage(id, packageData) {
+  validatePackage(packageData);
   const { data, error } = await supabase
     .from('tbl_menu_packages')
     .update({
@@ -47,7 +55,14 @@ export async function deletePackage(id) {
     .delete()
     .eq('package_id', id);
 
-  if (error) throw error;
+  if (error) {
+    // The views used to read `error.response.data.error` (an axios shape that
+    // Supabase never produces), so the real reason was always lost.
+    if (error.code === '23503') {
+      throw new Error("This package is used by existing bookings, so it can't be deleted.");
+    }
+    throw new Error(error.message || 'Failed to delete package.');
+  }
   return { message: 'Package deleted successfully' };
 }
 
@@ -155,10 +170,11 @@ export async function getAllMenuItems() {
 }
 
 export async function createMenuItem(item) {
+  if (!String(item.item_name || '').trim()) throw new Error('Dish name is required.');
   const { data, error } = await supabase
     .from('tbl_menu_items')
     .insert({
-      item_name: item.item_name,
+      item_name: String(item.item_name).trim(),
       category: item.category,
       is_active: item.is_active ?? true,
     })

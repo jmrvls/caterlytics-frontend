@@ -54,6 +54,17 @@ export async function createBooking(bookingData) {
   // otherwise the database falls back to the *creator's* number (the admin's).
   // Clients booking for themselves leave it empty and the database fills it
   // from their profile.
+  const guestCount = Number(bookingData.guest_count);
+  if (!String(bookingData.client_name || '').trim()) {
+    throw new Error('Client name is required.');
+  }
+  if (!Number.isInteger(guestCount) || guestCount < 1) {
+    throw new Error('Guest count must be a whole number of at least 1.');
+  }
+  if (!bookingData.event_date) {
+    throw new Error('Event date is required.');
+  }
+
   const contactNumber = String(bookingData.client_contact_number || '').replace(/[\s-]/g, '');
   if (contactNumber && !/^(09\d{9}|\+639\d{9})$/.test(contactNumber)) {
     throw new Error('Enter a valid mobile number, e.g. 09171234567.');
@@ -78,7 +89,7 @@ export async function createBooking(bookingData) {
       event_date: bookingData.event_date,
       event_time: bookingData.event_time,
       event_location: toTitleCase(bookingData.event_location),
-      guest_count: bookingData.guest_count,
+      guest_count: guestCount,
       package_name: bookingData.package_name || null,
       package_id: bookingData.package_id || null,
       booking_status: bookingData.booking_status || 'Pending',
@@ -124,7 +135,10 @@ export async function updateBookingStatus(id, status) {
   // with the status change, in a single DB transaction, so a booking can
   // never end up "Confirmed" while ingredients are actually short. If
   // stock is insufficient, the RPC raises and NOTHING is changed.
-  if (status === 'Confirmed' && currentBooking.booking_status !== 'Confirmed') {
+  // A Completed booking already has its stock deducted (it was Confirmed
+  // first), so moving Completed -> Confirmed is a plain status change. Running
+  // the RPC again would deduct the same ingredients a second time.
+  if (status === 'Confirmed' && currentBooking.booking_status !== 'Confirmed' && currentBooking.booking_status !== 'Completed') {
     const { data, error } = await supabase.rpc('confirm_booking_with_stock_check', {
       p_booking_id: id,
     });
@@ -381,6 +395,7 @@ export async function checkDateConflict(eventDate, businessId = null, excludeBoo
   const existing = allBookings.filter(
     (b) =>
       b.event_date === eventDate &&
+      b.booking_id !== excludeBookingId &&
       ['Pending', 'Confirmed'].includes(b.booking_status)
   );
   return {

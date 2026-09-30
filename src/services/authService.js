@@ -66,7 +66,16 @@ export async function loginUser(identifier, password) {
       .eq('business_id', profile.business_id)
       .maybeSingle();
 
-    if (!businessError && business) {
+    // Fail CLOSED (same as the router guard): if the business can't be
+    // verified, don't let the user in. Before, a lookup error skipped this
+    // whole block, logged them in, and the router then bounced them back to
+    // the login page with no explanation.
+    if (businessError || !business) {
+      await supabase.auth.signOut();
+      throw new Error('Could not verify your business account. Please try again or contact the platform admin.');
+    }
+
+    {
       if (business.status === 'Pending') {
         await supabase.auth.signOut();
         throw new Error('Your business registration is still pending approval by the platform admin.');

@@ -17,7 +17,7 @@
         <img
           :src="loginBgUrl"
           alt="Catering Display"
-          class="w-full h-full object-contain max-w-none scale-110 xl:scale-125 2xl:scale-100"
+          class="w-full h-full object-contain max-w-none translate-x-24 scale-110 xl:scale-125 2xl:scale-100"
         />
       </div>
 

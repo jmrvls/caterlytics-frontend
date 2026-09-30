@@ -671,8 +671,11 @@
 </template>
 
 <script setup>
+import { logoutUser } from '../services/authService'
+import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
+import { localToday, formatDateOnly } from '../utils/date'
 import { ref, computed, onMounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
@@ -778,9 +781,12 @@ onMounted(() => {
     router.push('/admin/dashboard')
     return
   }
-  userName.value = user.full_name
+  // full_name can be empty for accounts created without one -- fall back so
+  // `.charAt` never runs on null and blanks the whole page.
+  const displayName = user.full_name || user.username || 'User'
+  userName.value = displayName
   userRole.value = user.role
-  userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
 
   fetchReportData()
@@ -857,9 +863,19 @@ const filteredPayments = computed(() => {
   })
 })
 
+// A cancelled booking isn't owed anymore, so its unpaid balance must not
+// inflate Total Billed / Outstanding Balance. (Money already collected still
+// counts as revenue below.)
+const cancelledBookingIds = computed(
+  () => new Set(bookings.value.filter((b) => b.booking_status === 'Cancelled').map((b) => b.booking_id))
+)
+const billablePayments = computed(() =>
+  filteredPayments.value.filter((p) => !cancelledBookingIds.value.has(p.booking_id))
+)
+
 // Total Billed: what clients are supposed to pay in total for this range.
 const totalBilled = computed(() =>
-  filteredPayments.value.reduce((sum, p) => sum + Number(p.total_amount || 0), 0)
+  billablePayments.value.reduce((sum, p) => sum + Number(p.total_amount || 0), 0)
 )
 
 // Revenue Collected: actual money received (real amount_paid, not an estimate).
@@ -869,7 +885,7 @@ const revenueCollected = computed(() =>
 
 // Outstanding Balance: money still owed by clients in this range.
 const outstandingBalance = computed(() =>
-  filteredPayments.value.reduce((sum, p) => sum + Number(p.balance || 0), 0)
+  billablePayments.value.reduce((sum, p) => sum + Number(p.balance || 0), 0)
 )
 
 // ---------- Expenses & Gross Profit ----------
@@ -907,13 +923,17 @@ const grossProfit = computed(() => revenueCollected.value - costOfGoodsSold.valu
 // ---------- Fallback estimate (only used for bookings with no payment
 // record yet, so the Bookings Report table still shows a useful number
 // instead of a blank) ----------
-function findPackagePrice(packageName) {
-  const match = packages.value.find((p) => p.package_name === packageName)
+// Match by package_id first: matching only by name broke (estimate = 0) as
+// soon as a package was renamed.
+function findPackagePrice(booking) {
+  const match =
+    packages.value.find((p) => booking.package_id && p.package_id === booking.package_id) ||
+    packages.value.find((p) => p.package_name === booking.package_name)
   return match ? Number(match.price_per_head) || 0 : 0
 }
 
 function estimateBookingAmount(booking) {
-  return findPackagePrice(booking.package_name) * (Number(booking.guest_count) || 0)
+  return findPackagePrice(booking) * (Number(booking.guest_count) || 0)
 }
 
 function formatPrice(value) {
@@ -922,8 +942,7 @@ function formatPrice(value) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+  return formatDateOnly(dateStr)
 }
 
 // ---------- Charts (plain CSS, no chart library needed) ----------
@@ -971,7 +990,7 @@ const emptyExpenseForm = () => ({
   description: '',
   category: 'Ingredients',
   amount: null,
-  expense_date: new Date().toISOString().split('T')[0]
+  expense_date: localToday()
 })
 const newExpense = ref(emptyExpenseForm())
 const showExpenseForm = ref(false)
@@ -1196,7 +1215,7 @@ async function exportPDF() {
   }
 
   const tabSlug = activeTab.value.toLowerCase().replace(/\s+/g, '-')
-  const dateSlug = new Date().toISOString().split('T')[0]
+  const dateSlug = localToday()
   doc.save(`caterlytics-${tabSlug}-${dateSlug}.pdf`)
 }
 
@@ -1206,9 +1225,17 @@ function goTo(item) {
   router.push(item.path)
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  // End the real Supabase session too -- clearing sessionStorage alone left it
+  // alive, so Back / typing the URL let the user straight back in.
+  try {
+    await logoutUser()
+  } catch (error) {
+    console.error('Sign out failed:', error)
+  }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
+  resetNotifications()
   router.push('/')
 }
 

@@ -410,8 +410,11 @@
 </template>
 
 <script setup>
+import { logoutUser } from '../services/authService'
+import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
+import { formatDateOnly } from '../utils/date'
 import { ref, computed, onMounted, watch } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
@@ -474,9 +477,12 @@ onMounted(() => {
     router.push('/')
     return
   }
-  userName.value = user.full_name
+  // full_name can be empty for accounts created without one -- fall back so
+  // `.charAt` never runs on null and blanks the whole page.
+  const displayName = user.full_name || user.username || 'User'
+  userName.value = displayName
   userRole.value = user.role
-  userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
 
   fetchData()
@@ -528,8 +534,11 @@ const filteredPayments = computed(() =>
   )
 )
 
+// A cancelled booking isn't owed anything, so it shouldn't be offered here.
 const bookingsWithoutPayment = computed(() => {
-  return bookings.value.filter((b) => !paidBookingIds.value.has(b.booking_id))
+  return bookings.value.filter(
+    (b) => !paidBookingIds.value.has(b.booking_id) && b.booking_status !== 'Cancelled'
+  )
 })
 
 function countByStatus(status) {
@@ -543,8 +552,7 @@ function statusStyle(status) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+  return formatDateOnly(dateStr)
 }
 
 function openCreateModal() {
@@ -559,6 +567,9 @@ function openCreateModal() {
 // discount or custom quote) -- this is just a smart default.
 watch(() => createForm.value.booking_id, async (bookingId) => {
   if (!bookingId) return
+
+  // Switching bookings must not keep the PREVIOUS booking's amount.
+  createForm.value.total_amount = 0
 
   const booking = bookings.value.find((b) => b.booking_id === bookingId)
   if (!booking) return
@@ -604,6 +615,15 @@ function openRecordModal(payment) {
 
 async function handleRecordPayment() {
   modalError.value = ''
+  const amount = Number(recordAmount.value)
+  if (!Number.isFinite(amount) || amount <= 0) {
+    modalError.value = 'Enter an amount greater than 0.'
+    return
+  }
+  if (amount > Number(recordingPayment.value.balance)) {
+    modalError.value = `Amount is more than the remaining balance (PHP ${Number(recordingPayment.value.balance).toLocaleString()}).`
+    return
+  }
   isSaving.value = true
   try {
     await recordPayment(recordingPayment.value.payment_id, recordAmount.value)
@@ -724,9 +744,17 @@ function goTo(item) {
   router.push(item.path)
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  // End the real Supabase session too -- clearing sessionStorage alone left it
+  // alive, so Back / typing the URL let the user straight back in.
+  try {
+    await logoutUser()
+  } catch (error) {
+    console.error('Sign out failed:', error)
+  }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
+  resetNotifications()
   router.push('/')
 }
 

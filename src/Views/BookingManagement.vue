@@ -420,10 +420,36 @@
             </div>
             <div class="relative">
               <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Package</label>
-              <input type="text" v-model="form.package_name" placeholder="e.g. Silver Package" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" />
+              <select v-model="form.package_id" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
+                <option value="" disabled>Select a package</option>
+                <option v-for="p in packages" :key="p.package_id" :value="p.package_id">{{ p.package_name }}</option>
+              </select>
             </div>
           </div>
-          <p class="text-xs text-gray-400 dark:text-gray-500 -mt-2">Manual entry for now — links to Package & Menu Management once that module is ready.</p>
+          <p v-if="packages.length === 0" class="text-xs text-amber-600 dark:text-amber-400 -mt-2">No packages yet. Create one under Catering Packages first.</p>
+
+          <!-- Menu picks (per-category limits), same rule the client form uses.
+               Without these a booking can never be Confirmed (the menu must be complete). -->
+          <div v-if="form.package_id && menuCategories.length" class="space-y-3">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">Menu selection</p>
+            <div v-for="cat in menuCategories" :key="cat.category" class="border border-gray-200 dark:border-gray-700 p-3">
+              <p class="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                {{ cat.category }}
+                <span class="font-normal text-gray-400 dark:text-gray-500">— pick {{ cat.need }} ({{ (selectedMenu[cat.category] || []).length }}/{{ cat.need }})</span>
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <label v-for="item in cat.items" :key="item.item_id" class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                  <input
+                    type="checkbox"
+                    :checked="(selectedMenu[cat.category] || []).includes(item.item_id)"
+                    :disabled="!(selectedMenu[cat.category] || []).includes(item.item_id) && (selectedMenu[cat.category] || []).length >= cat.need"
+                    @change="toggleMenuItem(cat, item.item_id)"
+                  />
+                  {{ item.item_name }}
+                </label>
+              </div>
+            </div>
+          </div>
 
           <div>
             <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2">Assign Staff (optional)</p>
@@ -549,8 +575,11 @@
 </template>
 
 <script setup>
+import { localToday } from '../utils/date'
+import { logoutUser } from '../services/authService'
+import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useRouter } from 'vue-router'
@@ -561,8 +590,10 @@ import {
   updateBookingStatus,
   getBookingStockCount,
   deleteBooking,
-  checkDateConflict
+  checkDateConflict,
+  setBookingSelections
 } from '../services/bookingService'
+import { getAllPackages, getPackageMenu, getAllMenuItems } from '../services/packageService'
 import { sendBookingConfirmationSms } from '../services/smsService'
 import {
   getAssignableStaff,
@@ -641,9 +672,57 @@ const emptyForm = () => ({
   event_time: '',
   event_location: '',
   guest_count: null,
+  package_id: '',
   package_name: ''
 })
 const form = ref(emptyForm())
+
+// --- Package + menu picks for admin-created bookings ---
+// This used to be a free-text "package name" box, so the booking had NO
+// package_id: no menu, no ingredient stock deduction, no food costing.
+const packages = ref([])
+const allMenuItems = ref([])
+const packageMenu = ref({ limits: [], itemsByCategory: {} })
+const selectedMenu = ref({}) // category -> [item_id, ...]
+
+// Same rule as the client form and the confirm RPC: per category the booking
+// needs min(pick limit, dishes offered) dishes.
+const menuCategories = computed(() => {
+  const out = []
+  for (const l of packageMenu.value.limits) {
+    const ids = packageMenu.value.itemsByCategory[l.category] || []
+    const items = allMenuItems.value.filter((i) => ids.includes(i.item_id) && i.is_active !== false)
+    const need = Math.min(Number(l.max_selections) || 0, items.length)
+    if (need > 0) out.push({ category: l.category, need, items })
+  }
+  return out
+})
+
+const isMenuComplete = computed(() =>
+  menuCategories.value.every((c) => (selectedMenu.value[c.category] || []).length === c.need)
+)
+
+function toggleMenuItem(cat, itemId) {
+  const current = selectedMenu.value[cat.category] || []
+  if (current.includes(itemId)) {
+    selectedMenu.value = { ...selectedMenu.value, [cat.category]: current.filter((id) => id !== itemId) }
+  } else if (current.length < cat.need) {
+    selectedMenu.value = { ...selectedMenu.value, [cat.category]: [...current, itemId] }
+  }
+}
+
+watch(() => form.value.package_id, async (packageId) => {
+  selectedMenu.value = {}
+  packageMenu.value = { limits: [], itemsByCategory: {} }
+  const pkg = packages.value.find((p) => p.package_id === packageId)
+  form.value.package_name = pkg?.package_name || ''
+  if (!packageId) return
+  try {
+    packageMenu.value = await getPackageMenu(packageId)
+  } catch (error) {
+    console.error('Failed to load package menu:', error)
+  }
+})
 
 // --- Staff assignment ---
 const assignableStaff = ref([]) // all Staff-role profiles, for checklists
@@ -657,7 +736,7 @@ const isSavingAssignment = ref(false)
 const assignModalError = ref('')
 const assignModalConflict = ref('')
 
-const todayStr = new Date().toISOString().split('T')[0]
+const todayStr = localToday()
 
 onMounted(() => {
   const storedUser = sessionStorage.getItem('user')
@@ -676,13 +755,18 @@ onMounted(() => {
     router.push('/admin/dashboard')
     return
   }
-  userName.value = user.full_name
+  // full_name can be empty for accounts created without one -- fall back so
+  // `.charAt` never runs on null and blanks the whole page.
+  const displayName = user.full_name || user.username || 'User'
+  userName.value = displayName
   userRole.value = user.role
-  userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
 
   fetchBookings()
   getAssignableStaff().then((staff) => { assignableStaff.value = staff }).catch(console.error)
+  getAllPackages().then((rows) => { packages.value = rows }).catch(console.error)
+  getAllMenuItems().then((rows) => { allMenuItems.value = rows }).catch(console.error)
 })
 
 async function fetchBookings() {
@@ -830,9 +914,26 @@ async function checkStaffAvailability() {
 
 async function handleCreateBooking() {
   modalError.value = ''
+  if (!form.value.package_id) {
+    modalError.value = 'Please select a package.'
+    return
+  }
+  if (!isMenuComplete.value) {
+    modalError.value = 'Please finish the menu selection for every category.'
+    return
+  }
   isCreating.value = true
   try {
     const booking = await createBooking(form.value)
+    const flatSelections = Object.values(selectedMenu.value).flat().map((item_id) => ({ item_id }))
+    if (flatSelections.length) {
+      try {
+        await setBookingSelections(booking.booking_id, flatSelections)
+      } catch (selError) {
+        // The booking exists; don't lose it, but tell the admin clearly.
+        pageError.value = selError?.message || 'Booking created, but the menu picks could not be saved.'
+      }
+    }
     if (selectedStaffIds.value.length > 0) {
       try {
         await setBookingStaff(booking.booking_id, selectedStaffIds.value)
@@ -1005,9 +1106,17 @@ function goTo(item) {
   router.push(item.path)
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  // End the real Supabase session too -- clearing sessionStorage alone left it
+  // alive, so Back / typing the URL let the user straight back in.
+  try {
+    await logoutUser()
+  } catch (error) {
+    console.error('Sign out failed:', error)
+  }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
+  resetNotifications()
   router.push('/')
 }
 

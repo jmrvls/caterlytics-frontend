@@ -16,7 +16,14 @@ export async function getMyAddons() {
   return data || [];
 }
 
+function validateAddon(addon) {
+  if (!String(addon.addon_name || '').trim()) throw new Error('Add-on name is required.');
+  const price = Number(addon.price);
+  if (!Number.isFinite(price) || price < 0) throw new Error('Price must be 0 or more.');
+}
+
 export async function createAddon(addon) {
+  validateAddon(addon);
   const { data, error } = await supabase
     .from('tbl_addons')
     .insert({
@@ -34,6 +41,7 @@ export async function createAddon(addon) {
 }
 
 export async function updateAddon(addonId, addon) {
+  validateAddon(addon);
   const { data, error } = await supabase
     .from('tbl_addons')
     .update({

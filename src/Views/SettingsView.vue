@@ -158,11 +158,11 @@
           <form @submit.prevent="handleChangePassword" class="space-y-4">
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">New Password</label>
-              <input v-model="newPassword" type="password" required minlength="6" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100" />
+              <input v-model="newPassword" type="password" required minlength="8" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100" />
             </div>
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Confirm New Password</label>
-              <input v-model="confirmPassword" type="password" required minlength="6" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100" />
+              <input v-model="confirmPassword" type="password" required minlength="8" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-800 dark:text-gray-100" />
             </div>
             <button type="submit" :disabled="isChangingPassword" class="bg-gray-800 dark:bg-gray-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-900 dark:hover:bg-gray-600 disabled:opacity-50">
               {{ isChangingPassword ? 'Updating...' : 'Update Password' }}
@@ -181,6 +181,7 @@ import { useRouter } from 'vue-router'
 import { getMyProfile, updateMyProfile, uploadMyAvatar, changeMyPassword } from '../services/profileService'
 import { getMyBusiness, updateMyBusiness, uploadBusinessLogo } from '../services/businessservice'
 import { getStoredTheme, setTheme } from '../theme'
+import { validatePassword, validateImageFile, isValidPhMobile } from '../utils/validators'
 
 const router = useRouter()
 
@@ -262,7 +263,13 @@ function goBack() {
     router.push('/super-admin/dashboard')
     return
   }
-  router.back()
+  if (window.history.state?.back) {
+    router.back()
+    return
+  }
+  // Opened/refreshed directly: there is no previous page to go back to.
+  const role = currentUser.role
+  router.push(role === 'Client' ? '/client/bookings' : '/admin/dashboard')
 }
 
 function flash(setter, message, ms = 3000) {
@@ -284,8 +291,16 @@ async function fetchProfile() {
 }
 
 async function handleSaveProfile() {
-  isSavingProfile.value = true
   pageError.value = ''
+  if (!String(profileForm.value.full_name || '').trim()) {
+    pageError.value = 'Full name is required.'
+    return
+  }
+  if (profileForm.value.contact_number && !isValidPhMobile(profileForm.value.contact_number)) {
+    pageError.value = 'Enter a valid mobile number, e.g. 09171234567.'
+    return
+  }
+  isSavingProfile.value = true
   try {
     const updated = await updateMyProfile(currentUser.user_id, profileForm.value)
     profile.value = { ...profile.value, ...updated }
@@ -303,8 +318,10 @@ async function handleSaveProfile() {
 async function handleAvatarChange(event) {
   const file = event.target.files[0]
   if (!file) return
-  if (file.size > 2 * 1024 * 1024) {
-    pageError.value = 'Picture is too large. Max size is 2MB.'
+  const avatarProblem = validateImageFile(file)
+  if (avatarProblem) {
+    pageError.value = avatarProblem
+    event.target.value = ''
     return
   }
   isUploadingAvatar.value = true
@@ -326,8 +343,10 @@ async function handleAvatarChange(event) {
 async function handleLogoChange(event) {
   const file = event.target.files[0]
   if (!file) return
-  if (file.size > 2 * 1024 * 1024) {
-    businessError.value = 'Logo is too large. Max size is 2MB.'
+  const logoProblem = validateImageFile(file)
+  if (logoProblem) {
+    businessError.value = logoProblem
+    event.target.value = ''
     return
   }
   isUploadingLogo.value = true
@@ -354,6 +373,11 @@ async function handleChangePassword() {
   pageError.value = ''
   if (newPassword.value !== confirmPassword.value) {
     pageError.value = 'Passwords do not match.'
+    return
+  }
+  const passwordProblem = validatePassword(newPassword.value)
+  if (passwordProblem) {
+    pageError.value = passwordProblem
     return
   }
   isChangingPassword.value = true

@@ -548,6 +548,9 @@
 </template>
 
 <script setup>
+import { logoutUser } from '../services/authService'
+import { validateImageFile } from '../utils/validators'
+import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
 import { ref, computed, onMounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
@@ -753,12 +756,15 @@ const isUploadingImage = ref(false)
 function handleImageChange(event) {
   const file = event.target.files[0]
   if (!file) return
-  if (file.size > 2 * 1024 * 1024) {
-    modalError.value = 'Image must be 2MB or smaller.'
+  const fileProblem = validateImageFile(file)
+  if (fileProblem) {
+    modalError.value = fileProblem
+    event.target.value = ''
     return
   }
   modalError.value = ''
   selectedImageFile.value = file
+  if (imagePreviewUrl.value.startsWith('blob:')) URL.revokeObjectURL(imagePreviewUrl.value)
   imagePreviewUrl.value = URL.createObjectURL(file)
 }
 
@@ -773,9 +779,12 @@ onMounted(() => {
     router.push('/')
     return
   }
-  userName.value = user.full_name
+  // full_name can be empty for accounts created without one -- fall back so
+  // `.charAt` never runs on null and blanks the whole page.
+  const displayName = user.full_name || user.username || 'User'
+  userName.value = displayName
   userRole.value = user.role
-  userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
   currentUserId.value = user.user_id
 
@@ -856,6 +865,12 @@ async function handleSavePackage() {
       savedPackage = await updatePackage(editingId.value, form.value)
     } else {
       savedPackage = await createPackage(form.value)
+      // The package now exists. Switch the form to "edit" so that if the image
+      // upload below fails and the admin presses Save again, it UPDATES this
+      // package instead of creating a duplicate.
+      isEditing.value = true
+      editingId.value = savedPackage.package_id
+      fetchPackages()
     }
 
     if (selectedImageFile.value && savedPackage?.package_id) {
@@ -869,7 +884,7 @@ async function handleSavePackage() {
     imagePreviewUrl.value = ''
     fetchPackages()
   } catch (error) {
-    modalError.value = error?.response?.data?.error || error?.message || 'Something went wrong. Please try again.'
+    modalError.value = error?.message || 'Something went wrong. Please try again.'
   } finally {
     isSaving.value = false
     isUploadingImage.value = false
@@ -890,7 +905,7 @@ async function handleDelete() {
     packages.value = packages.value.filter((p) => p.package_id !== packageToDelete.value.package_id)
     packageToDelete.value = null
   } catch (error) {
-    deleteError.value = error?.response?.data?.error || 'Failed to delete package.'
+    deleteError.value = error?.message || 'Failed to delete package.'
     console.error(error)
   } finally {
     isDeleting.value = false
@@ -970,11 +985,17 @@ function removeIngredientRow(index) {
 async function handleSaveIngredients() {
   ingredientsError.value = ''
 
-  const incomplete = ingredientRows.value.some(
-    (row) => row.item_id && (!row.quantity_per_guest || row.quantity_per_guest <= 0)
-  )
+  // Ignore rows the admin added but never picked an item for (they used to be
+  // sent to the database with item_id = null and made the whole save fail).
+  const filledRows = ingredientRows.value.filter((row) => row.item_id)
+
+  const incomplete = filledRows.some((row) => !row.quantity_per_guest || row.quantity_per_guest <= 0)
   if (incomplete) {
     ingredientsError.value = 'Each selected item needs a quantity per guest greater than 0.'
+    return
+  }
+  if (new Set(filledRows.map((row) => row.item_id)).size !== filledRows.length) {
+    ingredientsError.value = 'The same inventory item is listed more than once. Combine them into one row.'
     return
   }
 
@@ -982,7 +1003,7 @@ async function handleSaveIngredients() {
   try {
     await setPackageIngredients(
       ingredientsPackage.value.package_id,
-      ingredientRows.value.map((row) => ({ item_id: row.item_id, quantity_per_guest: row.quantity_per_guest }))
+      filledRows.map((row) => ({ item_id: row.item_id, quantity_per_guest: row.quantity_per_guest }))
     )
     showIngredientsModal.value = false
   } catch (error) {
@@ -1029,6 +1050,13 @@ async function handleAddMenuItem(category) {
   const name = (newItemName.value[category] || '').trim()
   if (!name) return
   menuError.value = ''
+  const duplicate = allMenuItems.value.some(
+    (i) => i.category === category && String(i.item_name).trim().toLowerCase() === name.toLowerCase()
+  )
+  if (duplicate) {
+    menuError.value = `"${name}" already exists under ${category}.`
+    return
+  }
   try {
     const created = await createMenuItem({ item_name: name, category })
     allMenuItems.value.push(created)
@@ -1042,6 +1070,25 @@ async function handleAddMenuItem(category) {
 
 async function handleSaveMenu() {
   menuError.value = ''
+
+  // Dishes ticked in a category with no pick limit used to be dropped silently
+  // on save, so the admin thought they were part of the package.
+  const missingLimit = MENU_CATEGORIES.filter(
+    (cat) => !(menuForm.value[cat]?.max_selections > 0) && (menuForm.value[cat]?.item_ids?.length || 0) > 0
+  )
+  if (missingLimit.length) {
+    menuError.value = `Set how many the client may pick for: ${missingLimit.join(', ')} (or untick its dishes).`
+    return
+  }
+  const badLimit = MENU_CATEGORIES.filter((cat) => {
+    const n = menuForm.value[cat]?.max_selections
+    return n != null && n !== '' && (!Number.isInteger(Number(n)) || Number(n) < 0)
+  })
+  if (badLimit.length) {
+    menuError.value = `Pick limit must be a whole number: ${badLimit.join(', ')}.`
+    return
+  }
+
   isSavingMenu.value = true
   try {
     const categories = MENU_CATEGORIES
@@ -1066,9 +1113,17 @@ function goTo(item) {
   router.push(item.path)
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  // End the real Supabase session too -- clearing sessionStorage alone left it
+  // alive, so Back / typing the URL let the user straight back in.
+  try {
+    await logoutUser()
+  } catch (error) {
+    console.error('Sign out failed:', error)
+  }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
+  resetNotifications()
   router.push('/')
 }
 

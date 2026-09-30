@@ -178,7 +178,7 @@
               <div class="flex items-center gap-2.5 mb-2.5">
                 <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs overflow-hidden shrink-0">
                   <img v-if="u.avatar_url" :src="u.avatar_url" alt="" class="w-full h-full object-cover" />
-                  <span v-else>{{ u.full_name.charAt(0).toUpperCase() }}</span>
+                  <span v-else>{{ (u.full_name || u.username || '?').charAt(0).toUpperCase() }}</span>
                 </div>
                 <div class="min-w-0 flex-1">
                   <p class="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate">{{ u.full_name }}</p>
@@ -252,7 +252,7 @@
                   <td class="px-6 py-3.5">
                     <div class="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold text-xs overflow-hidden">
                       <img v-if="u.avatar_url" :src="u.avatar_url" alt="" class="w-full h-full object-cover" />
-                      <span v-else>{{ u.full_name.charAt(0).toUpperCase() }}</span>
+                      <span v-else>{{ (u.full_name || u.username || '?').charAt(0).toUpperCase() }}</span>
                     </div>
                   </td>
                   <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100">{{ u.full_name }}</td>
@@ -516,11 +516,15 @@
 </template>
 
 <script setup>
+import { localToday } from '../utils/date'
+import { logoutUser } from '../services/authService'
+import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
+import { isValidPhMobile } from '../utils/validators'
 import { getUsers, createStaffUser, updateStaffUser, deleteStaffUser } from '../services/staffService'
 import {
   getUnavailableDates,
@@ -585,7 +589,7 @@ const scheduleError = ref('')
 const newLeaveDate = ref('')
 const newLeaveReason = ref('')
 const isSavingLeave = ref(false)
-const todayStr = new Date().toISOString().split('T')[0]
+const todayStr = localToday()
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
@@ -609,9 +613,12 @@ onMounted(() => {
     return
   }
 
-  userName.value = user.full_name
+  // full_name can be empty for accounts created without one -- fall back so
+  // `.charAt` never runs on null and blanks the whole page.
+  const displayName = user.full_name || user.username || 'User'
+  userName.value = displayName
   userRole.value = user.role
-  userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
   currentUserId.value = user.user_id
 
@@ -642,6 +649,10 @@ function closeAddUserModal() {
 
 async function handleCreateUser() {
   modalError.value = ''
+  if (newUser.value.contact_number && !isValidPhMobile(newUser.value.contact_number)) {
+    modalError.value = 'Enter a valid mobile number, e.g. 09171234567.'
+    return
+  }
   isCreating.value = true
 
   try {
@@ -683,6 +694,24 @@ function closeEditUserModal() {
 
 async function handleUpdateUser() {
   editModalError.value = ''
+
+  // An Admin/Owner who changes their OWN role (e.g. Admin -> Staff) would lose
+  // access to this page immediately and could lock the business out.
+  if (editUser.value.id === currentUserId.value) {
+    const original = userList.value.find((u) => u.id === currentUserId.value)
+    if (original && original.role !== editUser.value.role) {
+      editModalError.value = "You can't change your own role. Ask another Admin/Owner to do it."
+      return
+    }
+  }
+  if (!String(editUser.value.full_name || '').trim()) {
+    editModalError.value = 'Full name is required.'
+    return
+  }
+  if (editUser.value.contact_number && !isValidPhMobile(editUser.value.contact_number)) {
+    editModalError.value = 'Enter a valid mobile number, e.g. 09171234567.'
+    return
+  }
   isSavingEdit.value = true
 
   try {
@@ -778,9 +807,17 @@ function goTo(item) {
   router.push(item.path)
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  // End the real Supabase session too -- clearing sessionStorage alone left it
+  // alive, so Back / typing the URL let the user straight back in.
+  try {
+    await logoutUser()
+  } catch (error) {
+    console.error('Sign out failed:', error)
+  }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
+  resetNotifications()
   router.push('/')
 }
 

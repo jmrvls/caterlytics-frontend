@@ -1,5 +1,20 @@
 import { supabase } from '../supabaseClient';
 
+// supabase.functions.invoke() puts the function's JSON reply on
+// `error.context` (a fetch Response) -- NOT on `data`, and `error.context.error`
+// is always undefined. The old code therefore always showed the useless
+// "Edge Function returned a non-2xx status code" instead of the real reason
+// (e.g. "Username already taken").
+async function functionErrorMessage(error, fallback) {
+  try {
+    const payload = await error.context.json();
+    if (payload?.error) return payload.error;
+  } catch {
+    // No readable body (network down, etc.)
+  }
+  return fallback;
+}
+
 export async function getUsers() {
   const { data, error } = await supabase
     .from('tbl_profiles')
@@ -28,8 +43,7 @@ export async function createStaffUser(username, email, full_name, role, contact_
   });
 
   if (error) {
-    const detail = data?.error || error.context?.error || error.message;
-    throw new Error(detail || 'Failed to create account.');
+    throw new Error(await functionErrorMessage(error, 'Failed to create account.'));
   }
   return data;
 }
@@ -62,8 +76,7 @@ export async function deleteStaffUser(userId) {
   });
 
   if (error) {
-    const detail = data?.error || error.context?.error || error.message;
-    throw new Error(detail || 'Failed to delete account.');
+    throw new Error(await functionErrorMessage(error, 'Failed to delete account.'));
   }
   return data;
 }

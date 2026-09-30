@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { localToday } from '../utils/date';
 
 // Staff members selectable for event assignment (role = 'Staff' only --
 // Admin/Owner-Manager are managers, not field staff to schedule on events).
@@ -121,7 +122,7 @@ export async function getMyAssignedBookings() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('You must be logged in.');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localToday();
 
   const { data, error } = await supabase
     .from('tbl_booking_staff')
@@ -132,7 +133,12 @@ export async function getMyAssignedBookings() {
     .order('event_date', { referencedTable: 'tbl_bookings', ascending: true });
 
   if (error) throw new Error('Failed to load your assigned events.');
-  return (data || []).map((row) => row.tbl_bookings).filter(Boolean);
+  // Ordering on the joined table doesn't reorder the parent rows, so sort here
+  // to make sure the nearest event is always first.
+  return (data || [])
+    .map((row) => row.tbl_bookings)
+    .filter(Boolean)
+    .sort((a, b) => String(a.event_date).localeCompare(String(b.event_date)) || String(a.event_time || '').localeCompare(String(b.event_time || '')));
 }
 
 // Staff role: count of their own upcoming unavailable/leave dates, for the
@@ -142,7 +148,7 @@ export async function getMyUpcomingUnavailableCount() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('You must be logged in.');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = localToday();
 
   const { count, error } = await supabase
     .from('tbl_staff_unavailability')

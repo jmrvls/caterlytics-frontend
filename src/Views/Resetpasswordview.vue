@@ -69,7 +69,8 @@
 import logoUrl from '../Assets/logofinal.png'
 import { ref, onMounted } from 'vue'
 import { supabase } from '../supabaseClient'
-import { updatePassword } from '../services/authService'
+import { updatePassword, logoutUser } from '../services/authService'
+import { validatePassword } from '../utils/validators'
 
 const password = ref('')
 const confirmPassword = ref('')
@@ -97,9 +98,18 @@ async function handleSubmit() {
     return
   }
 
+  const passwordProblem = validatePassword(password.value)
+  if (passwordProblem) {
+    errorMessage.value = passwordProblem
+    return
+  }
+
   isLoading.value = true
   try {
     await updatePassword(password.value)
+    // The invite/recovery link opened a temporary session. End it so the user
+    // really signs in with the new password (and isn't left half-logged-in).
+    await logoutUser().catch(() => {})
     successMessage.value = 'Your password has been updated. You can now sign in.'
   } catch (error) {
     errorMessage.value = error.message || 'Something went wrong. Please try again.'

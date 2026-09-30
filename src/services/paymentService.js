@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { localToday } from '../utils/date';
 
 // Get all payment records (Admin/Staff/Owner see all, Client sees own via RLS)
 export async function getAllPayments() {
@@ -73,14 +74,26 @@ export async function getAllPaymentBookingIds() {
 
 // Create a payment record for a booking (usually done once, when booking is confirmed)
 export async function createPayment(paymentData) {
+  const total = Number(paymentData.total_amount);
+  const paid = Number(paymentData.amount_paid || 0);
+
+  if (!paymentData.booking_id) throw new Error('Please select a booking.');
+  if (!Number.isFinite(total) || total <= 0) throw new Error('Total amount must be greater than 0.');
+  if (!Number.isFinite(paid) || paid < 0) throw new Error('Amount paid cannot be negative.');
+  if (paid > total) throw new Error('Amount paid cannot be more than the total amount.');
+
+  // Fully paid up front is 'Paid', not 'Partial'.
+  const status = paid >= total ? 'Paid' : paid > 0 ? 'Partial' : 'Unpaid';
+
   const { data, error } = await supabase
     .from('tbl_payments')
     .insert([{
       booking_id: paymentData.booking_id,
-      total_amount: paymentData.total_amount,
-      amount_paid: paymentData.amount_paid || 0,
-      payment_status: paymentData.amount_paid > 0 ? 'Partial' : 'Unpaid',
-      payment_date: paymentData.amount_paid > 0 ? new Date().toISOString().slice(0, 10) : null,
+      total_amount: total,
+      amount_paid: paid,
+      payment_status: status,
+      // Local date, not UTC (UTC is still "yesterday" before 8 AM in the PH).
+      payment_date: paid > 0 ? localToday() : null,
     }])
     .select()
     .single();
@@ -94,9 +107,12 @@ export async function createPayment(paymentData) {
 
 // Record an additional payment (e.g. client pays another installment)
 export async function recordPayment(paymentId, additionalAmount) {
+  const amount = Number(additionalAmount);
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Enter an amount greater than 0.');
+
   const { data, error } = await supabase.rpc('record_payment', {
     p_payment_id: paymentId,
-    p_additional_amount: additionalAmount,
+    p_additional_amount: amount,
   });
 
   if (error) throw new Error(error.message || 'Failed to record payment.');

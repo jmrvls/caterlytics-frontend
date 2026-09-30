@@ -141,6 +141,7 @@ import {
   recordHit,
   formatWait
 } from '../utils/antibot'
+import { validatePassword } from '../utils/validators'
 import { requestPasswordReset, verifyPasswordResetOtp, resendPasswordResetOtp, setNewPasswordAfterReset } from '../services/authService'
 
 // 'phone' -> 'otp' -> 'newPassword' -> 'done'
@@ -242,12 +243,9 @@ async function handleSetNewPassword() {
     errorMessage.value = 'Passwords do not match.'
     return
   }
-  if (newPassword.value.length < 8) {
-    errorMessage.value = 'Password must be at least 8 characters long.'
-    return
-  }
-  if (!/[A-Za-z]/.test(newPassword.value) || !/[0-9]/.test(newPassword.value)) {
-    errorMessage.value = 'Password must contain at least one letter and one number.'
+  const passwordProblem = validatePassword(newPassword.value)
+  if (passwordProblem) {
+    errorMessage.value = passwordProblem
     return
   }
 

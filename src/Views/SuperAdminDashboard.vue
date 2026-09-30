@@ -384,6 +384,7 @@ import autoTable from 'jspdf-autotable'
 import logoUrl from '../Assets/logofinal.png'
 import NotificationBell from '../Components/SuperAdminBell.vue'
 import { logoutUser } from '../services/authService'
+import { localToday } from '../utils/date'
 import { supabase } from '../supabaseClient'
 import { resetNotifications } from '../composables/useNotifications'
 import {
@@ -682,7 +683,7 @@ async function exportPDF() {
     doc.text(`Page ${i} of ${pageCount}`, 196, 290, { align: 'right' })
   }
 
-  const dateSlug = new Date().toISOString().split('T')[0]
+  const dateSlug = localToday()
   doc.save(`caterlytics-platform-${statusFilter.value.toLowerCase()}-${dateSlug}.pdf`)
 }
 

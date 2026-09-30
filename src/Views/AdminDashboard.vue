@@ -51,7 +51,7 @@
                  acting under -- the only such indicator anywhere in the
                  app, so a person shouldn't be left guessing whose data
                  they're looking at. -->
-            <span v-if="businessName" class="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap truncate block leading-tight">{{ businessName }}</span>
+            <span v-if="businessName" class="text-base font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap truncate block leading-tight" :title="businessName">{{ businessName }}</span>
           </div>
         </div>
 
@@ -443,6 +443,9 @@
 </template>
 
 <script setup>
+import { localToday } from '../utils/date'
+import { logoutUser } from '../services/authService'
+import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -512,7 +515,7 @@ const scheduleError = ref('')
 const newLeaveDate = ref('')
 const newLeaveReason = ref('')
 const isSavingLeave = ref(false)
-const todayStr = new Date().toISOString().split('T')[0]
+const todayStr = localToday()
 const myUnavailableCount = ref(0)
 const isLoadingUnavailableCount = ref(true)
 
@@ -554,7 +557,9 @@ const lowStockCount = computed(() =>
   allInventory.value.filter(isLowStock).length
 )
 
-const staffOnDutyCount = computed(() => allStaff.value.filter((u) => u.availability === 'Available').length)
+// Only field Staff -- the list also contains Admin and Owner/Manager accounts,
+// which were being counted as "Staff On Duty".
+const staffOnDutyCount = computed(() => allStaff.value.filter((u) => u.role === 'Staff' && u.availability === 'Available').length)
 
 const fullyPaidCount = computed(() => allPayments.value.filter((p) => p.payment_status === 'Paid').length)
 const partialCount = computed(() => allPayments.value.filter((p) => p.payment_status === 'Partial').length)
@@ -565,8 +570,9 @@ const totalRevenue = computed(() =>
 )
 
 const recentBookings = computed(() => {
+  // "Recent" = most recently CREATED, not the furthest-away event date.
   return [...allBookings.value]
-    .sort((a, b) => new Date(b.event_date) - new Date(a.event_date))
+    .sort((a, b) => new Date(b.created_at || b.event_date) - new Date(a.created_at || a.event_date))
     .slice(0, 5)
 })
 
@@ -648,9 +654,12 @@ onMounted(() => {
     return
   }
 
-  userName.value = user.full_name
+  // full_name can be empty for accounts created without one -- fall back so
+  // `.charAt` never runs on null and blanks the whole page.
+  const displayName = user.full_name || user.username || 'User'
+  userName.value = displayName
   userRole.value = user.role
-  userInitial.value = user.full_name.charAt(0).toUpperCase()
+  userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
   currentUserId.value = user.user_id
 
@@ -729,9 +738,17 @@ async function handleRemoveLeaveDate(id) {
   }
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  // End the real Supabase session too -- clearing sessionStorage alone left it
+  // alive, so Back / typing the URL let the user straight back in.
+  try {
+    await logoutUser()
+  } catch (error) {
+    console.error('Sign out failed:', error)
+  }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
+  resetNotifications()
   router.push('/')
 }
 
