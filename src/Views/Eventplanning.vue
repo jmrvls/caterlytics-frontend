@@ -433,7 +433,7 @@ import {
   seatGuest,
   summarizeDietary,
   rsvpSummary
-} from '../services/planningService'
+} from '../services/planningservice'
 
 const router = useRouter()
 const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
@@ -697,7 +697,13 @@ const allNavItems = [
   { name: 'Staff Management', path: '/admin/staff', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', path: '/admin/reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
 ]
-const navItems = computed(() => allNavItems)
+// Staff only sees Dashboard, Event Planning and Payment Records.
+const staffAllowedSections = ['Dashboard', 'Event Planning', 'Payment Records']
+const navItems = computed(() =>
+  userRole.value === 'Staff'
+    ? allNavItems.filter(item => staffAllowedSections.includes(item.name))
+    : allNavItems
+)
 
 function goTo(item) {
   isMobileSidebarOpen.value = false
@@ -723,8 +729,8 @@ onMounted(() => {
     return
   }
   const user = JSON.parse(storedUser)
-  if (!['Admin', 'Owner/Manager'].includes(user.role)) {
-    router.push(user.role === 'Staff' ? '/admin/dashboard' : '/')
+  if (!['Admin', 'Staff', 'Owner/Manager'].includes(user.role)) {
+    router.push('/')
     return
   }
   const displayName = user.full_name || user.username || 'User'
