@@ -357,7 +357,7 @@ import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useRouter } from 'vue-router'
 import { getAllInventory } from '../services/inventoryService'
-import { getWasteLogs, logWaste } from '../services/wasteService'
+import { getWasteLogs, logWaste } from '../services/wasteservice'
 import { formatQty } from '../utils/inventory'
 import {
   WASTE_REASONS, RANGE_OPTIONS, summarize, buildInsights, costOf, formatPeso,
