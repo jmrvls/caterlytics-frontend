@@ -76,6 +76,24 @@
         <h3 class="font-bold text-gray-800 dark:text-gray-100">Choose a Catering Business</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Tap the caterer you want, then fill in your event details.</p>
 
+        <div v-if="businesses.length" class="flex flex-wrap items-center gap-3 mb-3">
+          <label class="text-xs font-semibold text-gray-500 dark:text-gray-400">Sort by</label>
+          <select v-model="businessSort" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
+            <option value="name">Name (A–Z)</option>
+            <option value="popular">Most popular</option>
+            <option value="rating">Top rated</option>
+            <option value="price">Lowest price</option>
+          </select>
+          <button
+            type="button"
+            @click="businessFavoritesOnly = !businessFavoritesOnly"
+            :class="businessFavoritesOnly ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800 text-red-600 dark:text-red-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'"
+            class="px-3 py-2 border rounded-xl text-sm font-semibold transition"
+          >
+            ♥ Favorites{{ favoriteBusinessIds.size ? ` (${favoriteBusinessIds.size})` : '' }}
+          </button>
+        </div>
+
         <div v-if="businesses.length" class="relative mb-4">
           <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -97,14 +115,19 @@
         </div>
 
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <button
+          <div
             v-for="b in filteredBusinessesForBooking"
             :key="b.business_id"
-            type="button"
+            role="button"
+            tabindex="0"
             @click="selectBusiness(b.business_id)"
-            class="group text-left bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-2xl p-5 transition focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            @keydown.enter.self="selectBusiness(b.business_id)"
+            class="group relative cursor-pointer text-left bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-emerald-500 dark:hover:border-emerald-500 rounded-2xl p-5 transition focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
-            <div class="flex items-center gap-3">
+            <div class="absolute top-3 right-3">
+              <HeartButton small :active="favoriteBusinessIds.has(b.business_id)" @toggle="toggleFavoriteBusiness(b.business_id)" />
+            </div>
+            <div class="flex items-center gap-3 pr-8">
               <img
                 v-if="b.logo_url"
                 :src="b.logo_url"
@@ -120,12 +143,19 @@
               </div>
             </div>
             <p v-if="b.contact_number" class="text-xs text-gray-500 dark:text-gray-400 mt-3">{{ b.contact_number }}</p>
+            <div class="flex items-center justify-between gap-2 mt-2">
+              <div class="flex items-center gap-1.5">
+                <StarRating :model-value="b.avg_rating || 0" />
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ b.review_count ? `${b.avg_rating?.toFixed(1)} (${b.review_count})` : 'No reviews yet' }}</span>
+              </div>
+              <button type="button" @click.stop="openBusinessProfile(b.business_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">View profile</button>
+            </div>
             <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
               <span class="text-xs text-gray-500 dark:text-gray-400">{{ b.package_count }} package{{ b.package_count === 1 ? '' : 's' }}</span>
               <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400">From ₱{{ formatPrice(b.min_price) }}/head</span>
             </div>
             <span class="mt-4 block w-full text-center bg-emerald-600 group-hover:bg-emerald-700 text-white py-2 rounded-xl text-sm font-semibold transition">Book with this caterer</span>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -156,37 +186,111 @@
               </p>
             </div>
           </div>
-          <button type="button" @click="clearBusiness" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline whitespace-nowrap">Change</button>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <HeartButton small :active="favoriteBusinessIds.has(selectedBusinessId)" @toggle="toggleFavoriteBusiness(selectedBusinessId)" />
+            <button type="button" @click="openBusinessProfile(selectedBusinessId)" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline whitespace-nowrap">Profile &amp; reviews</button>
+            <button type="button" @click="clearBusiness" class="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:underline whitespace-nowrap">Change</button>
+          </div>
         </div>
 
         <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-1">Choose a Package</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Tap a package to see the full details and fill in your event info.</p>
 
+        <!-- 18 / 19 / 23: search, filter, sort, price display -->
+        <div v-if="businessPackages.length" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-3 sm:p-4 mb-5 space-y-3">
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" v-model="pkgSearch" placeholder="Search packages (e.g. wedding, lechon)..." class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div>
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Event type</label>
+              <select v-model="pkgType" :disabled="!availablePackageTypes.length" class="w-full mt-1 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 disabled:opacity-50">
+                <option value="All">All types</option>
+                <option v-for="t in availablePackageTypes" :key="t" :value="t">{{ t }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">No. of guests</label>
+              <input type="number" min="1" v-model.number="form.guest_count" placeholder="Any" class="w-full mt-1 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100" />
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Min ₱ / head</label>
+              <input type="number" min="0" v-model.number="pkgMinPrice" placeholder="0" class="w-full mt-1 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100" />
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Max ₱ / head</label>
+              <input type="number" min="0" v-model.number="pkgMaxPrice" placeholder="Any" class="w-full mt-1 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100" />
+            </div>
+            <div class="col-span-2 lg:col-span-1">
+              <label class="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Sort by</label>
+              <select v-model="pkgSort" class="w-full mt-1 p-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100">
+                <option value="popular">Most popular</option>
+                <option value="price_asc">Price: low to high</option>
+                <option value="price_desc">Price: high to low</option>
+                <option value="rating">Top rated</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs font-semibold">
+              <button type="button" @click="priceMode = 'head'" :class="priceMode === 'head' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'" class="px-3 py-1.5">Per head</button>
+              <button type="button" @click="priceMode = 'total'" :class="priceMode === 'total' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'" class="px-3 py-1.5">Total price</button>
+            </div>
+            <div class="flex items-center gap-3">
+              <button type="button" @click="pkgFavoritesOnly = !pkgFavoritesOnly" :class="pkgFavoritesOnly ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'" class="text-xs font-semibold">♥ Favorites only</button>
+              <button v-if="hasActivePackageFilters" type="button" @click="resetPackageFilters" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Clear filters</button>
+              <span class="text-xs text-gray-400 dark:text-gray-500">{{ visiblePackages.length }} of {{ businessPackages.length }}</span>
+            </div>
+          </div>
+        </div>
+
         <p v-if="!businessPackages.length" class="text-sm text-gray-400 dark:text-gray-500 text-center py-14">This business has no packages yet.</p>
 
+        <p v-else-if="!visiblePackages.length" class="text-sm text-gray-400 dark:text-gray-500 text-center py-14">
+          No packages match your filters.
+          <button type="button" @click="resetPackageFilters" class="ml-1 font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Clear filters</button>
+        </p>
+
         <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          <button
-            v-for="p in businessPackages"
+          <div
+            v-for="p in visiblePackages"
             :key="p.package_id"
-            type="button"
+            role="button"
+            tabindex="0"
             @click="viewPackageDetails(p)"
-            class="text-left rounded-lg overflow-hidden transition bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
+            @keydown.enter.self="viewPackageDetails(p)"
+            class="cursor-pointer text-left rounded-lg overflow-hidden transition bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
           >
             <div class="relative w-full aspect-square bg-gray-100 dark:bg-gray-800 overflow-hidden">
               <img v-if="p.image_url" :src="p.image_url" :alt="p.package_name" class="w-full h-full object-cover" />
               <div v-else class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs">No image</div>
+              <div class="absolute top-2 right-2">
+                <HeartButton small :active="favoritePackageIds.has(p.package_id)" @toggle="toggleFavoritePackage(p.package_id)" />
+              </div>
+              <span v-if="p.package_type" class="absolute bottom-2 left-2 text-[10px] font-semibold bg-black/55 text-white px-2 py-0.5 rounded-full">{{ p.package_type }}</span>
             </div>
             <div class="p-2.5">
               <p class="text-xs sm:text-sm text-gray-700 dark:text-gray-200 leading-snug line-clamp-2 min-h-[2.5em]">{{ p.package_name }}</p>
-              <div class="flex items-baseline gap-1 mt-1.5">
-                <span class="text-sm sm:text-base text-emerald-600 dark:text-emerald-400 font-bold">₱{{ formatPrice(p.price_per_head) }}</span>
+              <div class="flex items-center gap-1 mt-1">
+                <StarRating :model-value="pkgStats(p).avg_rating || 0" />
+                <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ pkgStats(p).review_count ? `(${pkgStats(p).review_count})` : 'New' }}</span>
               </div>
+              <div class="flex items-baseline gap-1 mt-1.5">
+                <span class="text-sm sm:text-base text-emerald-600 dark:text-emerald-400 font-bold">₱{{ formatPrice(priceLines(p).main) }}</span>
+                <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ priceLines(p).mainLabel }}</span>
+              </div>
+              <p v-if="priceLines(p).sub" class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{{ priceLines(p).sub }}</p>
               <div class="flex items-center justify-between mt-1">
-                <span class="text-[10px] text-gray-400 dark:text-gray-500">per head</span>
-                <span class="text-[10px] text-gray-400 dark:text-gray-500">View details ›</span>
+                <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ guestRangeLabel(p) }}<template v-if="pkgStats(p).booking_count"> · {{ pkgStats(p).booking_count }} booked</template></span>
+                <span class="text-[10px] text-gray-400 dark:text-gray-500">Details ›</span>
               </div>
             </div>
-          </button>
+          </div>
         </div>
       </div>
 
@@ -206,18 +310,9 @@
         <form @submit.prevent="submitBooking">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10">
 
-            <!-- LEFT: product image, stays put while the buy-box scrolls -->
+            <!-- LEFT: photo gallery, stays put while the buy-box scrolls -->
             <div class="lg:sticky lg:top-24 lg:self-start">
-              <div class="w-full aspect-square bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden">
-                <img v-if="selectedPackage?.image_url" :src="selectedPackage.image_url" :alt="selectedPackage.package_name" class="w-full h-full object-cover" />
-                <div v-else class="w-full h-full flex items-center justify-center text-gray-400 dark:text-gray-600 text-sm">No image</div>
-              </div>
-              <div class="flex gap-2 mt-3">
-                <div class="w-14 h-14 rounded-md overflow-hidden border-2 border-emerald-500 flex-shrink-0">
-                  <img v-if="selectedPackage?.image_url" :src="selectedPackage.image_url" :alt="selectedPackage.package_name" class="w-full h-full object-cover" />
-                  <div v-else class="w-full h-full bg-gray-100 dark:bg-gray-900"></div>
-                </div>
-              </div>
+              <PackageGallery :images="galleryImages" :alt="selectedPackage?.package_name || 'Package photo'" />
 
               <!-- Catering store card (fills the space under the thumbnail) -->
               <div v-if="selectedBusiness" class="mt-5 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
@@ -242,6 +337,13 @@
                   <span class="text-xs text-gray-500 dark:text-gray-400">{{ selectedBusiness.package_count }} package{{ selectedBusiness.package_count === 1 ? '' : 's' }} available</span>
                   <button type="button" @click="clearBusiness" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Change store</button>
                 </div>
+                <div class="flex items-center justify-between gap-2 mt-3">
+                  <div class="flex items-center gap-1.5">
+                    <StarRating :model-value="selectedBusiness.avg_rating || 0" />
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ selectedBusiness.review_count ? `${selectedBusiness.avg_rating?.toFixed(1)} (${selectedBusiness.review_count})` : 'No reviews yet' }}</span>
+                  </div>
+                  <button type="button" @click="openBusinessProfile(selectedBusiness.business_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Profile &amp; reviews</button>
+                </div>
               </div>
             </div>
 
@@ -249,10 +351,31 @@
             <div class="space-y-5">
               <div>
                 <p class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 leading-snug">{{ selectedPackage?.package_name }}</p>
-                <div class="flex items-baseline gap-1.5 mt-2">
-                  <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(selectedPackage?.price_per_head) }}</span>
-                  <span class="text-xs font-medium text-gray-400 dark:text-gray-500">/ head</span>
+                <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                  <span v-if="selectedPackage?.package_type" class="text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full">{{ selectedPackage.package_type }}</span>
+                  <span v-if="selectedPackage && guestRangeLabel(selectedPackage)" class="text-[11px] text-gray-500 dark:text-gray-400">Good for {{ guestRangeLabel(selectedPackage) }}</span>
+                  <StarRating :model-value="pkgStats(selectedPackage).avg_rating || 0" />
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ pkgStats(selectedPackage).review_count ? `${pkgStats(selectedPackage).avg_rating?.toFixed(1)} (${pkgStats(selectedPackage).review_count} reviews)` : 'No reviews yet' }}</span>
+                  <HeartButton small :active="favoritePackageIds.has(selectedPackage?.package_id)" @toggle="toggleFavoritePackage(selectedPackage.package_id)" />
                 </div>
+                <div v-if="selectedPackage" class="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
+                  <div>
+                    <div class="flex items-baseline gap-1.5">
+                      <span class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">₱{{ formatPrice(selectedPackage.price_per_head) }}</span>
+                      <span class="text-xs font-medium text-gray-400 dark:text-gray-500">/ head</span>
+                    </div>
+                  </div>
+                  <div v-if="guestsNum > 0">
+                    <div class="flex items-baseline gap-1.5">
+                      <span class="text-lg font-bold text-gray-800 dark:text-gray-100">₱{{ formatPrice((selectedPackage.price_per_head || 0) * guestsNum) }}</span>
+                      <span class="text-xs font-medium text-gray-400 dark:text-gray-500">total for {{ guestsNum }} guest{{ guestsNum === 1 ? '' : 's' }}</span>
+                    </div>
+                  </div>
+                  <p v-else class="text-xs text-gray-400 dark:text-gray-500">Enter your number of guests below to see the total.</p>
+                </div>
+                <p v-if="selectedPackage && !fitsGuests(selectedPackage)" class="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                  Heads up: this package is meant for {{ guestRangeLabel(selectedPackage) }}, but you entered {{ guestsNum }}.
+                </p>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -363,16 +486,23 @@
                     <label
                       v-for="item in cat.items"
                       :key="item.item_id"
-                      class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+                      class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-2"
                     >
                       <input
                         type="checkbox"
                         :checked="(selectedMenuItems[cat.category] || []).includes(item.item_id)"
                         :disabled="!(selectedMenuItems[cat.category] || []).includes(item.item_id) && (selectedMenuItems[cat.category]?.length || 0) >= cat.max"
                         @change="toggleMenuItem(cat.category, item.item_id, cat.max)"
-                        class="rounded-none accent-emerald-600"
+                        class="rounded-none accent-emerald-600 mt-1"
                       />
-                      {{ item.item_name }}
+                      <img v-if="item.image_url" :src="item.image_url" :alt="item.item_name" class="w-14 h-14 rounded-md object-cover flex-shrink-0" />
+                      <span class="min-w-0">
+                        <span class="block font-medium">{{ item.item_name }}</span>
+                        <span v-if="item.tags?.length" class="flex flex-wrap gap-1 mt-0.5">
+                          <span v-for="t in item.tags" :key="t" :class="tagMeta(t)?.cls || 'bg-gray-100 text-gray-600'" class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full">{{ tagMeta(t)?.label || t }}</span>
+                        </span>
+                        <span v-if="item.description" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ item.description }}</span>
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -387,7 +517,10 @@
 
               <div class="flex flex-col sm:flex-row sm:items-end gap-3">
                 <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4 text-left flex-1">
-                  <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    ₱{{ formatPrice(selectedPackage.price_per_head) }} × {{ form.guest_count || 0 }} guests = ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0)) }}<template v-if="addonsSubtotal > 0"> + ₱{{ formatPrice(addonsSubtotal) }} add-ons</template>
+                  </p>
+                  <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
                     Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
                   </p>
                 </div>
@@ -418,6 +551,24 @@
                   <span>{{ line.text }}</span>
                 </p>
               </template>
+            </div>
+          </div>
+
+          <!-- ============ KASAMA / HINDI KASAMA ============ -->
+          <div v-if="packageInclusions.length" class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div v-if="includedItems.length">
+              <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Included in the price</p>
+              <p v-for="i in includedItems" :key="i.inclusion_id" class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300 mb-1">
+                <svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span>{{ i.label }}</span>
+              </p>
+            </div>
+            <div v-if="excludedItems.length">
+              <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Not included</p>
+              <p v-for="i in excludedItems" :key="i.inclusion_id" class="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300 mb-1">
+                <svg class="w-4 h-4 mt-0.5 flex-shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                <span>{{ i.label }}</span>
+              </p>
             </div>
           </div>
         </form>
@@ -539,6 +690,14 @@
               >
                 Cancel
               </button>
+              <button
+                v-if="b.booking_status === 'Completed' && b.package_id && !reviewedBookingIds.has(String(b.booking_id))"
+                @click="reviewTarget = b"
+                class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+              >
+                ★ Rate
+              </button>
+              <span v-else-if="reviewedBookingIds.has(String(b.booking_id))" class="text-xs text-gray-400 dark:text-gray-500">Reviewed ✓</span>
               <span :class="statusBadgeClass(b.booking_status)" class="px-3 py-1.5 rounded-full text-xs font-semibold">
                 {{ b.booking_status }}
               </span>
@@ -718,6 +877,21 @@
         </div>
       </div>
 
+      <!-- ============ BUSINESS PROFILE + REVIEW MODALS ============ -->
+      <BusinessProfileModal
+        v-if="showProfile"
+        :profile="profileData"
+        :stats="bizStats(profileBusinessId)"
+        :reviews="profileReviews"
+        :is-loading="isLoadingProfile"
+        :is-favorite="favoriteBusinessIds.has(profileBusinessId)"
+        :show-book-button="activeTab === 'Book Catering' && profileBusinessId !== selectedBusinessId"
+        @close="showProfile = false"
+        @toggle-favorite="toggleFavoriteBusiness(profileBusinessId)"
+        @book="bookFromProfile"
+      />
+      <ReviewModal v-if="reviewTarget" :booking="reviewTarget" @close="reviewTarget = null" @submitted="onReviewSubmitted" />
+
     </main>
   </div>
 </template>
@@ -731,6 +905,15 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
+import {
+  DIETARY_TAGS, getCatalogStats, getPackagePhotos, getPackageInclusions, getBusinessProfile,
+  getBusinessReviews, getMyReviewedBookingIds, getMyFavorites, setFavoriteBusiness, setFavoritePackage
+} from '../services/catalogService'
+import StarRating from '../Components/StarRating.vue'
+import HeartButton from '../Components/HeartButton.vue'
+import PackageGallery from '../Components/PackageGallery.vue'
+import BusinessProfileModal from '../Components/BusinessProfileModal.vue'
+import ReviewModal from '../Components/ReviewModal.vue'
 import { getBusinessAddons, getBookingAddons, setBookingAddons, sumAddons } from '../services/addonService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -1007,7 +1190,14 @@ async function loadPackageMenu(packageId) {
     const ids = Object.values(menu.itemsByCategory).flat()
     let names = []
     if (ids.length) {
-      const { data } = await supabase.from('tbl_menu_items').select('item_id, item_name').in('item_id', ids)
+      let { data, error: itemsError } = await supabase
+        .from('tbl_menu_items')
+        .select('item_id, item_name, description, image_url, tags')
+        .in('item_id', ids)
+      if (itemsError) {
+        // Migration not run yet -> fall back to the basic columns.
+        ;({ data } = await supabase.from('tbl_menu_items').select('item_id, item_name').in('item_id', ids))
+      }
       names = data || []
     }
     // A newer load (or "Back to packages") started meanwhile -- drop this result.
@@ -1116,6 +1306,7 @@ function handleEditPackageChange() {
 function viewPackageDetails(p) {
   form.value.package_id = p.package_id
   loadPackageMenu(p.package_id)
+  loadPackageExtras(p.package_id)
 }
 
 // "Back to packages" only clears the package (and its menu picks) so the
@@ -1128,9 +1319,216 @@ function backToPackages() {
   showMenuWarning.value = false
   selectedMenuItems.value = {}
   packageMenu.value = { limits: [], itemsByCategory: {} }
+  loadPackageExtras('')
 }
 
 const selectedPackage = computed(() => packages.value.find((p) => p.package_id === form.value.package_id))
+
+// =====================================================================
+// CATALOG FEATURES (18-26): search/filter, sort, gallery, dish tags,
+// inclusions, per-head vs total price, business profile, reviews, favorites
+// =====================================================================
+const catalogStats = ref({ packages: {}, businesses: {} })
+const favoriteBusinessIds = ref(new Set())
+const favoritePackageIds = ref(new Set())
+const reviewedBookingIds = ref(new Set())
+
+// 18 / 19: package filters + sort
+const pkgSearch = ref('')
+const pkgType = ref('All')
+const pkgMinPrice = ref(null)
+const pkgMaxPrice = ref(null)
+const pkgSort = ref('popular') // popular | price_asc | price_desc | rating
+const pkgFavoritesOnly = ref(false)
+// 23: 'head' = presyo kada ulo, 'total' = kabuuang presyo (price x guest count)
+const priceMode = ref('head')
+
+// Business grid (Step 1) sort + favorites filter
+const businessSort = ref('name') // name | price | rating | popular
+const businessFavoritesOnly = ref(false)
+
+// Per-package extras (20 gallery, 22 inclusions)
+const packagePhotos = ref([])
+const packageInclusions = ref([])
+let packageExtrasToken = 0
+
+// 24 / 25: business profile modal + review modal
+const showProfile = ref(false)
+const profileBusinessId = ref('')
+const profileData = ref(null)
+const profileReviews = ref([])
+const isLoadingProfile = ref(false)
+const reviewTarget = ref(null)
+
+const guestsNum = computed(() => Number(form.value.guest_count) || 0)
+
+function pkgStats(p) {
+  return catalogStats.value.packages[p?.package_id] || { booking_count: 0, review_count: 0, avg_rating: null }
+}
+function bizStats(id) {
+  return catalogStats.value.businesses[id] || { booking_count: 0, review_count: 0, avg_rating: null }
+}
+function tagMeta(key) {
+  return DIETARY_TAGS.find((t) => t.key === key)
+}
+
+// 23: main price shown on a card / page, plus the "other" price underneath.
+function priceLines(p) {
+  const head = Number(p?.price_per_head) || 0
+  const g = guestsNum.value
+  const total = head * g
+  if (priceMode.value === 'total' && g > 0) {
+    return { main: total, mainLabel: `for ${g} guest${g === 1 ? '' : 's'}`, sub: `₱${formatPrice(head)} per head` }
+  }
+  return {
+    main: head,
+    mainLabel: 'per head',
+    sub: g > 0 ? `₱${formatPrice(total)} for ${g} guest${g === 1 ? '' : 's'}` : (priceMode.value === 'total' ? 'Enter guest count to see total' : '')
+  }
+}
+
+// 18: guest-count fit (null min/max = no limit)
+function fitsGuests(p) {
+  const g = guestsNum.value
+  if (!g) return true
+  if (p.min_guests != null && g < p.min_guests) return false
+  if (p.max_guests != null && g > p.max_guests) return false
+  return true
+}
+function guestRangeLabel(p) {
+  if (p.min_guests != null && p.max_guests != null) return `${p.min_guests}–${p.max_guests} guests`
+  if (p.min_guests != null) return `${p.min_guests}+ guests`
+  if (p.max_guests != null) return `up to ${p.max_guests} guests`
+  return ''
+}
+
+const availablePackageTypes = computed(() => {
+  const set = new Set()
+  for (const p of businessPackages.value) if (p.package_type) set.add(p.package_type)
+  return [...set].sort()
+})
+
+const visiblePackages = computed(() => {
+  const q = pkgSearch.value.trim().toLowerCase()
+  const min = pkgMinPrice.value === null || pkgMinPrice.value === '' ? null : Number(pkgMinPrice.value)
+  const max = pkgMaxPrice.value === null || pkgMaxPrice.value === '' ? null : Number(pkgMaxPrice.value)
+
+  const list = businessPackages.value.filter((p) => {
+    const price = Number(p.price_per_head) || 0
+    if (q && !`${p.package_name || ''} ${p.description || ''} ${p.package_type || ''}`.toLowerCase().includes(q)) return false
+    if (pkgType.value !== 'All' && p.package_type !== pkgType.value) return false
+    if (min !== null && price < min) return false
+    if (max !== null && price > max) return false
+    if (!fitsGuests(p)) return false
+    if (pkgFavoritesOnly.value && !favoritePackageIds.value.has(p.package_id)) return false
+    return true
+  })
+
+  const byPrice = (a, b) => (Number(a.price_per_head) || 0) - (Number(b.price_per_head) || 0)
+  const popular = (a, b) => pkgStats(b).booking_count - pkgStats(a).booking_count
+  const rating = (a, b) => (pkgStats(b).avg_rating || 0) - (pkgStats(a).avg_rating || 0)
+  const sorters = {
+    popular: (a, b) => popular(a, b) || rating(a, b) || byPrice(a, b),
+    price_asc: byPrice,
+    price_desc: (a, b) => byPrice(b, a),
+    rating: (a, b) => rating(a, b) || popular(a, b)
+  }
+  return [...list].sort(sorters[pkgSort.value] || sorters.popular)
+})
+
+const hasActivePackageFilters = computed(() =>
+  !!pkgSearch.value.trim() || pkgType.value !== 'All' || !!pkgMinPrice.value || !!pkgMaxPrice.value ||
+  pkgFavoritesOnly.value || guestsNum.value > 0
+)
+function resetPackageFilters() {
+  pkgSearch.value = ''
+  pkgType.value = 'All'
+  pkgMinPrice.value = null
+  pkgMaxPrice.value = null
+  pkgFavoritesOnly.value = false
+  form.value.guest_count = null
+}
+
+// 20: gallery = cover image first, then extra photos (no duplicates)
+const galleryImages = computed(() => {
+  const urls = [selectedPackage.value?.image_url, ...packagePhotos.value.map((ph) => ph.image_url)].filter(Boolean)
+  return [...new Set(urls)]
+})
+// 22: kasama / hindi kasama
+const includedItems = computed(() => packageInclusions.value.filter((i) => i.is_included))
+const excludedItems = computed(() => packageInclusions.value.filter((i) => !i.is_included))
+
+async function loadPackageExtras(packageId) {
+  const token = ++packageExtrasToken
+  packagePhotos.value = []
+  packageInclusions.value = []
+  if (!packageId) return
+  const [photos, inclusions] = await Promise.allSettled([getPackagePhotos(packageId), getPackageInclusions(packageId)])
+  if (token !== packageExtrasToken) return
+  if (photos.status === 'fulfilled') packagePhotos.value = photos.value
+  if (inclusions.status === 'fulfilled') packageInclusions.value = inclusions.value
+}
+
+// Every piece is optional: if the catalog_features.sql migration hasn't been
+// run yet, these just fail quietly and the page behaves like before.
+async function loadCatalogExtras() {
+  const [stats, favs, reviewed] = await Promise.allSettled([getCatalogStats(), getMyFavorites(), getMyReviewedBookingIds()])
+  if (stats.status === 'fulfilled') catalogStats.value = stats.value
+  if (favs.status === 'fulfilled') {
+    favoriteBusinessIds.value = favs.value.businesses
+    favoritePackageIds.value = favs.value.packages
+  }
+  if (reviewed.status === 'fulfilled') reviewedBookingIds.value = reviewed.value
+}
+
+// 26: favorites (optimistic, revert on failure)
+async function toggleFavoriteBusiness(id) {
+  const on = !favoriteBusinessIds.value.has(id)
+  on ? favoriteBusinessIds.value.add(id) : favoriteBusinessIds.value.delete(id)
+  try {
+    await setFavoriteBusiness(id, on)
+  } catch (e) {
+    on ? favoriteBusinessIds.value.delete(id) : favoriteBusinessIds.value.add(id)
+    pageError.value = e.message
+  }
+}
+async function toggleFavoritePackage(id) {
+  const on = !favoritePackageIds.value.has(id)
+  on ? favoritePackageIds.value.add(id) : favoritePackageIds.value.delete(id)
+  try {
+    await setFavoritePackage(id, on)
+  } catch (e) {
+    on ? favoritePackageIds.value.delete(id) : favoritePackageIds.value.add(id)
+    pageError.value = e.message
+  }
+}
+
+// 24 / 25: business profile + reviews
+async function openBusinessProfile(id) {
+  profileBusinessId.value = id
+  profileData.value = null
+  profileReviews.value = []
+  showProfile.value = true
+  isLoadingProfile.value = true
+  const [profile, reviews] = await Promise.allSettled([getBusinessProfile(id), getBusinessReviews(id)])
+  if (profileBusinessId.value !== id) return
+  const fallback = businesses.value.find((b) => b.business_id === id) || null
+  profileData.value = profile.status === 'fulfilled' && profile.value ? profile.value : fallback
+  if (reviews.status === 'fulfilled') profileReviews.value = reviews.value
+  isLoadingProfile.value = false
+}
+function bookFromProfile() {
+  const id = profileBusinessId.value
+  showProfile.value = false
+  if (id && id !== selectedBusinessId.value) selectBusiness(id)
+}
+function onReviewSubmitted(bookingId) {
+  reviewedBookingIds.value.add(String(bookingId))
+  reviewTarget.value = null
+  successMessage.value = 'Thanks for your review!'
+  setTimeout(() => { successMessage.value = '' }, 4000)
+  getCatalogStats().then((st) => { catalogStats.value = st }).catch(() => {})
+}
 
 // Splits a package's free-text description into display lines for the
 // full-width "What's Included" section. A line ending in ':' with no
@@ -1174,16 +1572,25 @@ const businesses = computed(() => {
       })
     }
   }
-  return [...map.values()].sort((a, b) => a.business_name.localeCompare(b.business_name))
+  return [...map.values()]
+    .map((b) => ({ ...b, ...bizStats(b.business_id) }))
+    .sort((a, b) => a.business_name.localeCompare(b.business_name))
 })
 // Search/filter for Step 1's business grid -- matches on name or address.
 const businessSearch = ref('')
 const filteredBusinessesForBooking = computed(() => {
   const q = businessSearch.value.trim().toLowerCase()
-  if (!q) return businesses.value
-  return businesses.value.filter((b) =>
-    b.business_name.toLowerCase().includes(q) || (b.address || '').toLowerCase().includes(q)
+  let list = businesses.value.filter((b) =>
+    (!q || b.business_name.toLowerCase().includes(q) || (b.address || '').toLowerCase().includes(q)) &&
+    (!businessFavoritesOnly.value || favoriteBusinessIds.value.has(b.business_id))
   )
+  const sorters = {
+    name: (a, b) => a.business_name.localeCompare(b.business_name),
+    price: (a, b) => a.min_price - b.min_price,
+    rating: (a, b) => (b.avg_rating || 0) - (a.avg_rating || 0) || b.review_count - a.review_count,
+    popular: (a, b) => b.booking_count - a.booking_count
+  }
+  return [...list].sort(sorters[businessSort.value] || sorters.name)
 })
 
 // Search/filter for the My Bookings tab -- status, text search (package
@@ -1225,6 +1632,11 @@ function selectBusiness(id) {
   packageMenuToken++
   isLoadingPackageMenu.value = false
   selectedBusinessId.value = id
+  pkgSearch.value = ''
+  pkgType.value = 'All'
+  pkgMinPrice.value = null
+  pkgMaxPrice.value = null
+  pkgFavoritesOnly.value = false
   form.value.package_id = ''
   conflictWarning.value = ''
   selectedMenuItems.value = {}
@@ -1273,6 +1685,7 @@ onMounted(() => {
 
   loadPackages()
   loadMyBookings()
+  loadCatalogExtras()
 })
 
 // Compares freshly-fetched bookings against what was last seen (localStorage,
