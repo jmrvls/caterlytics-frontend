@@ -27,6 +27,7 @@ import EventPlanning from './Views/Eventplanning.vue'
 import PackageManagement from './Views/PackageManagement.vue'
 import InventoryManagement from './Views/InventoryManagement.vue'
 import WasteTracking from './Views/Wastetracking.vue'
+import FleetManagement from './Views/FleetManagement.vue'
 import PaymentManagement from './Views/PaymentManagement.vue'
 import StaffManagement from './Views/StaffManagement.vue'
 import ReportsAnalytics from './Views/ReportsAnalytics.vue'
@@ -52,6 +53,7 @@ const routes = [
   { path: '/admin/packages', component: PackageManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/inventory', component: InventoryManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/waste', component: WasteTracking, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
+  { path: '/admin/fleet', component: FleetManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/payments', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/staff', component: StaffManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/reports', component: ReportsAnalytics, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
