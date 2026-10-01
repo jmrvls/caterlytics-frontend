@@ -307,7 +307,7 @@
           </section>
 
           <!-- ============ DIETARY ============ -->
-          <section v-else>
+          <section v-else-if="activeTab === 'Dietary'">
             <div class="flex items-center justify-between mb-3 print:hidden">
               <p class="text-sm text-gray-500 dark:text-gray-400">Counts exclude guests who declined, so this is what the kitchen prepares for.</p>
               <button @click="printSummary" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none">Print</button>
@@ -354,6 +354,115 @@
                 </ul>
               </div>
             </div>
+          </section>
+
+          <!-- ============ KITCHEN PREP ============ -->
+          <section v-else>
+            <div v-if="isLoadingPrep" class="text-sm text-gray-500 dark:text-gray-400">Generating prep list…</div>
+            <p v-else-if="prepError" class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2">{{ prepError }}</p>
+
+            <template v-else-if="prep">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 print:hidden">
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  Generated from the booking's package and picked dishes for <span class="font-semibold">{{ prep.booking.guest_count }} guests</span>. Tick items off as the kitchen finishes them.
+                </p>
+                <div class="flex items-center gap-3">
+                  <span class="text-sm font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">{{ prepDoneCount }} / {{ prepTaskCount }} done</span>
+                  <button @click="loadPrep" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none">Refresh</button>
+                  <button @click="printSummary" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none">Print</button>
+                </div>
+              </div>
+
+              <div class="hidden print:block mb-3">
+                <p class="text-lg font-bold">Kitchen Prep List — {{ selectedBooking.client_name }}</p>
+                <p class="text-sm">{{ formatDateOnly(selectedBooking.event_date) }}<span v-if="prep.booking.event_time"> · {{ prep.booking.event_time.slice(0, 5) }}</span> · {{ selectedBooking.event_location }} · {{ prep.booking.guest_count }} guests · {{ prep.booking.package_name || 'No package' }}</p>
+              </div>
+
+              <div class="h-1.5 bg-gray-100 dark:bg-gray-700 mb-4 print:hidden">
+                <div class="h-full bg-emerald-600 transition-all" :style="{ width: prepTaskCount ? (prepDoneCount / prepTaskCount) * 100 + '%' : '0%' }"></div>
+              </div>
+
+              <p v-if="prepShortItems.length" class="mb-4 text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2">
+                Not enough stock for: <span class="font-semibold">{{ prepShortItems.map((t) => `${t.name} (short ${formatPrepQty(t.short_by, t.unit)})`).join(', ') }}</span>. Restock before the event.
+              </p>
+
+              <!-- Notes the kitchen must see -->
+              <div v-if="prepNotes.length || dietary.withAllergies.length || prepDietaryTags.length" class="mb-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+                <p class="font-semibold text-amber-800 dark:text-amber-200 mb-2">Heads-up for the kitchen</p>
+                <ul class="space-y-1 text-sm text-gray-800 dark:text-gray-200">
+                  <li v-for="n in prepNotes" :key="n.label"><span class="font-medium">{{ n.label }}:</span> {{ n.text }}</li>
+                  <li v-if="prepDietaryTags.length">
+                    <span class="font-medium">Dietary (attending guests):</span>
+                    {{ prepDietaryTags.map((t) => `${t} × ${dietary.counts[t]}`).join(', ') }}
+                  </li>
+                  <li v-for="g in dietary.withAllergies" :key="g.guest_id" class="text-red-700 dark:text-red-300">
+                    <span class="font-medium">Allergy — {{ g.full_name }}</span> ({{ tableLabel(g.table_id) }}): {{ g.allergies }}
+                  </li>
+                </ul>
+              </div>
+
+              <p v-if="prep.dishes.length === 0 && prep.totals.length === 0" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                Nothing to prep yet. This booking has no package ingredients or picked dishes. Set them in Catering Packages and make sure the client has chosen their menu.
+              </p>
+
+              <div v-else class="grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
+                <!-- Dishes -->
+                <div class="xl:col-span-2 space-y-4">
+                  <p v-if="prep.dishes.length === 0" class="text-sm text-gray-500 dark:text-gray-400">No dishes picked for this booking yet.</p>
+                  <div v-for="grp in prepDishGroups" :key="grp.category">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">{{ grp.category }}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div v-for="d in grp.dishes" :key="d.item_id" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 break-inside-avoid">
+                        <label class="flex items-start gap-2 cursor-pointer">
+                          <input type="checkbox" :checked="isPrepDone(dishKey(d.item_id))" @change="togglePrep(dishKey(d.item_id), $event)" class="mt-1 w-4 h-4 accent-emerald-600" />
+                          <span class="flex-1 min-w-0">
+                            <span class="font-semibold text-gray-900 dark:text-gray-100" :class="isPrepDone(dishKey(d.item_id)) ? 'line-through opacity-60' : ''">{{ d.name }}</span>
+                            <span v-for="t in d.tags" :key="t" class="ml-1 text-xs px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 capitalize">{{ t }}</span>
+                          </span>
+                        </label>
+                        <ul class="mt-2 ml-6 text-sm text-gray-700 dark:text-gray-300 divide-y divide-gray-100 dark:divide-gray-700">
+                          <li v-for="ing in d.ingredients" :key="ing.item_id" class="flex justify-between gap-2 py-1">
+                            <span class="truncate">{{ ing.name }}</span>
+                            <span class="font-medium whitespace-nowrap">{{ formatPrepQty(ing.total, ing.unit) }}</span>
+                          </li>
+                          <li v-if="d.ingredients.length === 0" class="py-1 text-xs text-gray-400">No ingredients set for this dish.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div v-if="prep.packageIngredients.length">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Included with the package</p>
+                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 break-inside-avoid">
+                      <ul class="text-sm text-gray-700 dark:text-gray-300 divide-y divide-gray-100 dark:divide-gray-700">
+                        <li v-for="ing in prep.packageIngredients" :key="ing.item_id" class="flex justify-between gap-2 py-1">
+                          <span class="truncate">{{ ing.name }}</span>
+                          <span class="font-medium whitespace-nowrap">{{ formatPrepQty(ing.total, ing.unit) }}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Pull list -->
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 break-inside-avoid">
+                  <p class="font-semibold text-gray-900 dark:text-gray-100">Ingredient pull list</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Total per ingredient across all dishes, rounded up like the stock deduction.</p>
+                  <ul class="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
+                    <li v-for="t in prep.totals" :key="t.item_id" class="py-1.5">
+                      <label class="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-gray-200">
+                        <input type="checkbox" :checked="isPrepDone(ingKey(t.item_id))" @change="togglePrep(ingKey(t.item_id), $event)" class="w-4 h-4 accent-emerald-600" />
+                        <span class="flex-1 min-w-0 truncate" :class="isPrepDone(ingKey(t.item_id)) ? 'line-through opacity-60' : ''">{{ t.name }}</span>
+                        <span class="font-semibold whitespace-nowrap">{{ t.total }} {{ t.unit }}</span>
+                      </label>
+                      <p v-if="t.short_by > 0" class="ml-6 text-xs text-red-600 dark:text-red-400">Only {{ t.in_stock }} {{ t.unit }} in stock — short {{ t.short_by }} {{ t.unit }}</p>
+                    </li>
+                    <li v-if="prep.totals.length === 0" class="py-2 text-xs text-gray-400">No ingredients set for this package.</li>
+                  </ul>
+                  <p v-if="prep.stockReserved" class="text-xs text-gray-400 mt-3">Stock for this booking was already deducted when it was confirmed.</p>
+                </div>
+              </div>
+            </template>
           </section>
         </template>
       </div>
@@ -434,6 +543,14 @@ import {
   summarizeDietary,
   rsvpSummary
 } from '../services/planningservice'
+import {
+  dishKey,
+  ingKey,
+  getKitchenPrepList,
+  setPrepTaskDone,
+  formatPrepQty,
+  groupDishesByCategory
+} from '../services/kitchenservice'
 
 const router = useRouter()
 const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
@@ -450,7 +567,7 @@ function toggleSidebar() {
 }
 
 // ---------- State ----------
-const tabs = ['Guest List', 'Seating', 'Dietary']
+const tabs = ['Guest List', 'Seating', 'Dietary', 'Kitchen Prep']
 const activeTab = ref('Guest List')
 const bookings = ref([])
 const selectedBookingId = ref('')
@@ -681,6 +798,80 @@ async function autoFillTables() {
     if (pageError.value) break
   }
 }
+
+// ---------- Kitchen prep list ----------
+const prep = ref(null)
+const isLoadingPrep = ref(false)
+const prepError = ref('')
+
+const prepDishGroups = computed(() => (prep.value ? groupDishesByCategory(prep.value.dishes) : []))
+const prepShortItems = computed(() => (prep.value ? prep.value.totals.filter((t) => t.short_by > 0) : []))
+const prepTaskCount = computed(() => (prep.value ? prep.value.dishes.length + prep.value.totals.length : 0))
+const prepDoneCount = computed(() => {
+  if (!prep.value) return 0
+  const keys = [
+    ...prep.value.dishes.map((d) => dishKey(d.item_id)),
+    ...prep.value.totals.map((t) => ingKey(t.item_id))
+  ]
+  return keys.filter((k) => k in prep.value.checks).length
+})
+const prepDietaryTags = computed(() => DIETARY_OPTIONS.filter((t) => dietary.value.counts[t] > 0))
+const prepNotes = computed(() => {
+  const b = prep.value?.booking
+  if (!b) return []
+  return [
+    { label: 'Special requests', text: b.special_requests },
+    { label: 'Dietary notes', text: b.dietary_notes }
+  ].filter((n) => n.text)
+})
+
+function isPrepDone(key) {
+  return !!prep.value && key in prep.value.checks
+}
+
+async function loadPrep() {
+  const bookingId = selectedBookingId.value
+  if (!bookingId) return
+  isLoadingPrep.value = true
+  prepError.value = ''
+  try {
+    const result = await getKitchenPrepList(bookingId)
+    if (bookingId !== selectedBookingId.value) return // user switched events meanwhile
+    prep.value = result
+  } catch (e) {
+    if (bookingId !== selectedBookingId.value) return
+    prep.value = null
+    prepError.value = e.message
+  } finally {
+    if (bookingId === selectedBookingId.value) isLoadingPrep.value = false
+  }
+}
+
+// Optimistic tick: update the UI right away, undo it if saving fails.
+async function togglePrep(key, event) {
+  if (!prep.value) return
+  const bookingId = selectedBookingId.value
+  const done = event.target.checked
+  const checks = { ...prep.value.checks }
+  if (done) checks[key] = new Date().toISOString()
+  else delete checks[key]
+  prep.value = { ...prep.value, checks }
+  try {
+    await setPrepTaskDone(bookingId, key, done)
+  } catch (e) {
+    pageError.value = e.message
+    if (bookingId === selectedBookingId.value) await loadPrep()
+  }
+}
+
+// Load lazily: only when the Kitchen Prep tab is open for an event.
+watch([activeTab, selectedBookingId], ([tab]) => {
+  if (tab === 'Kitchen Prep') loadPrep()
+})
+watch(selectedBookingId, () => {
+  prep.value = null
+  prepError.value = ''
+})
 
 function printSummary() {
   window.print()
