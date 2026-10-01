@@ -80,7 +80,7 @@
 
         <a v-for="item in navItems" :key="item.name"
           href="#"
-        @click.prevent="isMobileSidebarOpen = false; item.name === 'Event Bookings' ? router.push('/admin/bookings') : item.name === 'Event Planning' ? router.push('/admin/planning') : item.name === 'Catering Packages' ? router.push('/admin/packages') : item.name === 'Inventory' ? router.push('/admin/inventory') : item.name === 'Payment Records' ? router.push('/admin/payments') : item.name === 'Staff Management' ? router.push('/admin/staff') : item.name === 'Reports' ? router.push('/admin/reports') : (activeSection = item.name)"
+        @click.prevent="isMobileSidebarOpen = false; item.name === 'Event Bookings' ? router.push('/admin/bookings') : item.name === 'Event Planning' ? router.push('/admin/planning') : item.name === 'Catering Packages' ? router.push('/admin/packages') : item.name === 'Inventory' ? router.push('/admin/inventory') : item.name === 'Waste Tracking' ? router.push('/admin/waste') : item.name === 'Payment Records' ? router.push('/admin/payments') : item.name === 'Staff Management' ? router.push('/admin/staff') : item.name === 'Reports' ? router.push('/admin/reports') : (activeSection = item.name)"
           :class="activeSection === item.name ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
           class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
@@ -758,6 +758,7 @@ const allNavItems = [
   { name: 'Event Planning', iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
   { name: 'Catering Packages', iconPath: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
   { name: 'Inventory', iconPath: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4' },
+  { name: 'Waste Tracking', iconPath: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
   { name: 'Payment Records', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },
   { name: 'Staff Management', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' }
