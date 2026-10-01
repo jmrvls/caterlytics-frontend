@@ -23,6 +23,7 @@ import ForgotPasswordView from './Views/Forgotpasswordview.vue'
 import ResetPasswordView from './Views/Resetpasswordview.vue'
 import AdminDashboard from './Views/AdminDashboard.vue'
 import BookingManagement from './Views/BookingManagement.vue'
+import EventPlanning from './Views/EventPlanning.vue'
 import PackageManagement from './Views/PackageManagement.vue'
 import InventoryManagement from './Views/InventoryManagement.vue'
 import PaymentManagement from './Views/PaymentManagement.vue'
@@ -46,6 +47,7 @@ const routes = [
   { path: '/super-admin/dashboard', component: SuperAdminDashboard, meta: { requiresAuth: true, roles: ['Super Admin'] } },
   { path: '/admin/dashboard', component: AdminDashboard, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/bookings', component: BookingManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
+  { path: '/admin/planning', component: EventPlanning, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/packages', component: PackageManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/inventory', component: InventoryManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/payments', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
