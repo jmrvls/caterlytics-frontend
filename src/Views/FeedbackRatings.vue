@@ -75,12 +75,17 @@
           href="#"
           @click.prevent="goTo(item)"
           :class="item.name === 'Feedback & Ratings' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
+          class="relative flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="item.iconPath" />
           </svg>
           <span v-if="sidebarExpanded" class="whitespace-nowrap">{{ item.name }}</span>
+          <span
+            v-if="item.name === 'Support Chat' && chatUnread"
+            :class="sidebarExpanded ? 'ml-auto min-w-[20px] h-5 px-1.5' : 'absolute top-1 right-1 min-w-[16px] h-4 px-1'"
+            class="rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
+          >{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
         </a>
       </nav>
 
@@ -307,12 +312,14 @@ import { ref, computed, onMounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import StarRating from '../Components/StarRating.vue'
 import { useSidebarState } from '../composables/useSidebarState'
+import { useChatUnread } from '../composables/useChatUnread'
 import { useRouter } from 'vue-router'
 import { getOwnerReviews, replyToReview, summarizeReviews, formatReviewDate } from '../services/reviewService'
 
 const router = useRouter()
 
 const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
+const { chatUnread } = useChatUnread()
 const isLogoHovered = ref(false)
 
 function toggleSidebar() {
@@ -490,6 +497,7 @@ const navItems = [
   { name: 'Waste Tracking', path: '/admin/waste', iconPath: wasteIcon },
   { name: 'Delivery & Fleet', path: '/admin/fleet', iconPath: fleetIcon },
   { name: 'Payment Records', path: '/admin/payments', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },
+  { name: 'Branches', path: '/admin/branches', iconPath: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01' },
   { name: 'Staff Management', path: '/admin/staff', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', path: '/admin/reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
   { name: 'Feedback & Ratings', path: '/admin/feedback', iconPath: feedbackIcon },

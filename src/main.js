@@ -32,6 +32,7 @@ import SupportChat from './Views/SupportChat.vue'
 import FleetManagement from './Views/FleetManagement.vue'
 import PaymentManagement from './Views/PaymentManagement.vue'
 import StaffManagement from './Views/StaffManagement.vue'
+import BranchManagement from './Views/BranchManagement.vue'
 import ReportsAnalytics from './Views/ReportsAnalytics.vue'
 import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
@@ -59,6 +60,7 @@ const routes = [
   { path: '/admin/support', component: SupportChat, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/fleet', component: FleetManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/payments', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
+  { path: '/admin/branches', component: BranchManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/staff', component: StaffManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/reports', component: ReportsAnalytics, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/client/bookings', component: ClientDashboard, meta: { requiresAuth: true, roles: ['Client'] } },

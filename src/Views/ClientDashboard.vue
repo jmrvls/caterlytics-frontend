@@ -57,9 +57,13 @@
           v-for="tab in tabs" :key="tab"
           @click="activeTab = tab"
           :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
-          class="px-4 py-2 rounded-lg text-sm font-semibold transition"
+          class="relative px-4 py-2 rounded-lg text-sm font-semibold transition"
         >
           {{ tab }}
+          <span
+            v-if="tab === 'Messages' && chatUnread"
+            class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
+          >{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
         </button>
       </div>
 
@@ -945,6 +949,7 @@ import PackageGallery from '../Components/PackageGallery.vue'
 import BusinessProfileModal from '../Components/BusinessProfileModal.vue'
 import ReviewModal from '../Components/ReviewModal.vue'
 import ChatInbox from '../Components/ChatInbox.vue'
+import { useChatUnread, resetChatUnread } from '../composables/useChatUnread'
 import { getBusinessAddons, getBookingAddons, setBookingAddons, sumAddons } from '../services/addonService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -957,6 +962,7 @@ const userAvatarUrl = ref('')
 const showAccountMenu = ref(false)
 
 const tabs = ['Book Catering', 'My Bookings', 'Messages']
+const { chatUnread } = useChatUnread()
 const activeTab = ref('Book Catering')
 
 const packages = ref([])
@@ -2188,6 +2194,7 @@ async function handleLogout() {
   } catch (error) {
     console.error('Sign out failed:', error)
   }
+  resetChatUnread()
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('user')
   router.push('/')

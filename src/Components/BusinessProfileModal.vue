@@ -78,8 +78,11 @@
         </section>
       </div>
 
-      <div v-if="showBookButton" class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4">
-        <button type="button" @click="emit('book')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition">
+      <div v-if="showBookButton || showMessageButton" class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 p-4 flex gap-3">
+        <button v-if="showMessageButton" type="button" @click="emit('message')" class="flex-1 border border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 py-3 rounded-xl text-sm font-bold transition">
+          Message
+        </button>
+        <button v-if="showBookButton" type="button" @click="emit('book')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-sm font-bold transition">
           Book with this caterer
         </button>
       </div>
@@ -97,9 +100,10 @@ defineProps({
   reviews: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
   isFavorite: { type: Boolean, default: false },
-  showBookButton: { type: Boolean, default: true }
+  showBookButton: { type: Boolean, default: true },
+  showMessageButton: { type: Boolean, default: true }
 })
-const emit = defineEmits(['close', 'toggle-favorite', 'book'])
+const emit = defineEmits(['close', 'toggle-favorite', 'book', 'message'])
 
 function formatReviewDate(d) {
   if (!d) return ''

@@ -2,6 +2,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { supabase } from '../supabaseClient'
 import { getLowStockItems } from '../services/inventoryService'
 import { getMyAssignedBookings } from '../services/staffassignmentservice'
+import { resetChatUnread } from './useChatUnread'
 
 // Shared, app-wide notification state: low-stock alerts + new booking alerts
 // (Admin/Owner), and event-assignment alerts (Staff).
@@ -86,6 +87,7 @@ function resetNotificationState() {
 // Call on logout so the next person to log in on this tab starts clean.
 export function resetNotifications() {
   resetNotificationState()
+  resetChatUnread()
   lastUserKey = null
 }
 

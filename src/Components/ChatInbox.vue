@@ -131,6 +131,7 @@ import {
   listConversations, startConversation, getMessages, sendMessage,
   markConversationRead, subscribeToChat, formatChatTime
 } from '../services/chatService'
+import { setChatUnread } from '../composables/useChatUnread'
 
 const props = defineProps({
   // 'client' = a customer chatting with caterers, 'staff' = the business inbox
@@ -152,6 +153,7 @@ const scrollEl = ref(null)
 
 const active = computed(() => conversations.value.find((c) => c.conversation_id === activeId.value) || null)
 const totalUnread = computed(() => conversations.value.reduce((n, c) => n + c.unread, 0))
+watch(totalUnread, (n) => setChatUnread(n))
 const myRole = computed(() => (props.mode === 'client' ? 'client' : 'staff'))
 
 function titleOf(c) {
