@@ -357,6 +357,32 @@ export async function getBookingSelections(bookingId) {
   return data || [];
 }
 
+// Saved menu picks for many bookings at once (one query), for display on the
+// My Bookings cards and the admin Booking Management list.
+// Returns { [booking_id]: [{ item_id, item_name, category, portion }, ...] }
+export async function getSelectionsForBookings(bookingIds) {
+  const ids = [...new Set((bookingIds || []).filter(Boolean))];
+  if (ids.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('tbl_booking_selected_items')
+    .select('booking_id, item_id, category, portion, tbl_menu_items(item_name)')
+    .in('booking_id', ids);
+
+  if (error) throw error;
+
+  const map = {};
+  for (const r of data || []) {
+    (map[r.booking_id] ||= []).push({
+      item_id: r.item_id,
+      item_name: r.tbl_menu_items?.item_name || 'Unnamed dish',
+      category: r.category,
+      portion: r.portion || 'Regular',
+    });
+  }
+  return map;
+}
+
 // Replace the client's menu picks for a booking, atomically, with the
 // per-category limits enforced server-side (set_booking_selected_items).
 // selections = [{ item_id, portion? }, ...]  (portion: 'Small' | 'Regular' | 'Large', default 'Regular')

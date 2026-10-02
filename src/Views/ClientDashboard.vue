@@ -681,6 +681,21 @@
                 Add-ons: {{ b.addons.map(a => `${a.addon_name} ×${a.quantity}`).join(', ') }} (+₱{{ formatPrice(sumAddons(b.addons)) }})
               </p>
 
+              <div v-if="b.menuPicks?.length" class="mt-2">
+                <button type="button" @click="toggleBookingMenu(b.booking_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                  {{ expandedBookingMenus.has(b.booking_id) ? 'Hide menu' : `View menu (${b.menuPicks.length} dishes)` }}
+                </button>
+                <div v-if="expandedBookingMenus.has(b.booking_id)" class="mt-1.5 space-y-2">
+                  <div v-for="grp in groupMenuPicks(b.menuPicks)" :key="grp.category">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ grp.category }}</p>
+                    <p v-for="p in grp.items" :key="p.item_id" class="text-xs text-gray-600 dark:text-gray-300">
+                      {{ p.item_name }}
+                      <span v-if="p.portion !== 'Regular'" class="ml-1 px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px] font-semibold">{{ p.portion }}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div v-if="b.tbl_payments" class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
                 <span :class="paymentBadgeClass(b.tbl_payments.payment_status)" class="px-2.5 py-1 rounded-full text-xs font-semibold">
                   {{ b.tbl_payments.payment_status }}
@@ -937,7 +952,7 @@ import { supabase } from '../supabaseClient'
 import { logoutUser } from '../services/authService'
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { PORTIONS, createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
+import { PORTIONS, getSelectionsForBookings, createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
 import {
   DIETARY_TAGS, getCatalogStats, getPackagePhotos, getPackageInclusions, getBusinessProfile,
@@ -1791,11 +1806,32 @@ async function loadPackages() {
   }
 }
 
+// Expand/collapse the saved menu on a My Bookings card.
+const expandedBookingMenus = ref(new Set())
+function toggleBookingMenu(id) {
+  const next = new Set(expandedBookingMenus.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  expandedBookingMenus.value = next
+}
+function groupMenuPicks(picks) {
+  const groups = {}
+  for (const p of picks) (groups[p.category] ||= []).push(p)
+  return MENU_CATEGORIES.filter((c) => groups[c]).map((c) => ({ category: c, items: groups[c] }))
+    .concat(Object.keys(groups).filter((c) => !MENU_CATEGORIES.includes(c)).map((c) => ({ category: c, items: groups[c] })))
+}
+
 async function loadMyBookings() {
   isLoading.value = true
   try {
     myBookings.value = await getMyBookings()
     checkStatusChanges(myBookings.value)
+    // Attach each booking's saved dishes + serving sizes for display.
+    try {
+      const picks = await getSelectionsForBookings(myBookings.value.map((b) => b.booking_id))
+      myBookings.value.forEach((b) => { b.menuPicks = picks[b.booking_id] || [] })
+    } catch (error) {
+      console.error('Failed to load menu picks', error)
+    }
     // Attach each booking's saved add-ons for display (My Bookings + receipt).
     await Promise.all(myBookings.value.map(async (b) => {
       try {
@@ -1970,7 +2006,16 @@ async function handleSaveEdit() {
     }
 
     const target = myBookings.value.find((b) => b.booking_id === updated.booking_id)
-    if (target) Object.assign(target, updated)
+    if (target) {
+      Object.assign(target, updated)
+      // Menu picks were just re-saved above; refresh what the card shows.
+      try {
+        const picks = await getSelectionsForBookings([updated.booking_id])
+        target.menuPicks = picks[updated.booking_id] || []
+      } catch (error) {
+        console.error('Failed to refresh menu picks', error)
+      }
+    }
     successMessage.value = 'Booking updated!'
     bookingToEdit.value = null
   } catch (error) {

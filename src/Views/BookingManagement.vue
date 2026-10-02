@@ -233,6 +233,18 @@
               </p>
             </div>
 
+            <div v-if="menuPicksFor(b.booking_id).length" class="mb-2.5">
+              <button type="button" @click="toggleMenuRow(b.booking_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                {{ expandedMenuRows.has(b.booking_id) ? 'Hide menu' : `View menu (${menuPicksFor(b.booking_id).length})` }}
+              </button>
+              <ul v-if="expandedMenuRows.has(b.booking_id)" class="mt-1 space-y-0.5">
+                <li v-for="p in menuPicksFor(b.booking_id)" :key="p.item_id" class="text-xs text-gray-600 dark:text-gray-300">
+                  <span class="text-gray-400 dark:text-gray-500">{{ p.category }}:</span> {{ p.item_name }}
+                  <span v-if="p.portion !== 'Regular'" class="ml-1 px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px] font-semibold">{{ p.portion }}</span>
+                </li>
+              </ul>
+            </div>
+
             <div class="flex items-center gap-1.5 flex-wrap mb-2.5">
               <span v-if="assignedStaffNames(b.booking_id).length === 0" class="text-xs text-gray-400 dark:text-gray-500">No staff assigned</span>
               <span v-for="name in assignedStaffNames(b.booking_id)" :key="name" class="px-2 py-0.5 rounded-full text-[11px] font-semibold text-gray-900 dark:text-gray-100">
@@ -316,7 +328,20 @@
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatTime(b.event_time) }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 max-w-[12rem] truncate capitalize" :title="b.event_location">{{ b.event_location }}</td>
                   <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.package_name || '—' }}</td>
+                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">
+                    {{ b.package_name || '—' }}
+                    <div v-if="menuPicksFor(b.booking_id).length" class="mt-1">
+                      <button type="button" @click="toggleMenuRow(b.booking_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                        {{ expandedMenuRows.has(b.booking_id) ? 'Hide menu' : `View menu (${menuPicksFor(b.booking_id).length})` }}
+                      </button>
+                      <ul v-if="expandedMenuRows.has(b.booking_id)" class="mt-1 space-y-0.5 min-w-[11rem]">
+                        <li v-for="p in menuPicksFor(b.booking_id)" :key="p.item_id" class="text-xs">
+                          <span class="text-gray-400 dark:text-gray-500">{{ p.category }}:</span> {{ p.item_name }}
+                          <span v-if="p.portion !== 'Regular'" class="ml-1 px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px] font-semibold">{{ p.portion }}</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </td>
                   <td class="px-6 py-3.5">
                     <div class="flex flex-wrap gap-1 max-w-[10rem]">
                       <span v-if="assignedStaffNames(b.booking_id).length === 0" class="text-xs text-gray-400 dark:text-gray-500">—</span>
@@ -597,7 +622,8 @@ import {
   getBookingStockCount,
   deleteBooking,
   checkDateConflict,
-  setBookingSelections
+  setBookingSelections,
+  getSelectionsForBookings
 } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, getAllMenuItems } from '../services/packageService'
 import { sendBookingConfirmationSms } from '../services/smsService'
@@ -788,6 +814,7 @@ async function fetchBookings() {
     totalBookings.value = page.total
     statusCounts.value = counts
     loadAssignedStaffFor(page.rows)
+    loadMenuPicksFor(page.rows)
   } catch (error) {
     pageError.value = 'Failed to load bookings. Please refresh the page.'
     console.error(error)
@@ -804,11 +831,34 @@ async function loadMoreBookings() {
     bookings.value = [...bookings.value, ...page.rows]
     totalBookings.value = page.total
     loadAssignedStaffFor(page.rows)
+    loadMenuPicksFor(page.rows)
   } catch (error) {
     pageError.value = 'Failed to load more bookings.'
     console.error(error)
   } finally {
     isLoadingMore.value = false
+  }
+}
+
+// Saved dishes + serving sizes per booking, for the "View menu" toggle.
+const menuPicksByBooking = ref({}) // booking_id -> [{ item_id, item_name, category, portion }]
+const expandedMenuRows = ref(new Set())
+function menuPicksFor(bookingId) {
+  return menuPicksByBooking.value[bookingId] || []
+}
+function toggleMenuRow(id) {
+  const next = new Set(expandedMenuRows.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  expandedMenuRows.value = next
+}
+async function loadMenuPicksFor(rows) {
+  try {
+    const map = await getSelectionsForBookings(rows.map((b) => b.booking_id))
+    // Bookings with no picks get an explicit empty list so stale data clears.
+    const filled = Object.fromEntries(rows.map((b) => [b.booking_id, map[b.booking_id] || []]))
+    menuPicksByBooking.value = { ...menuPicksByBooking.value, ...filled }
+  } catch (error) {
+    console.error('Failed to load menu picks:', error)
   }
 }
 
@@ -936,6 +986,7 @@ async function handleCreateBooking() {
     if (flatSelections.length) {
       try {
         await setBookingSelections(booking.booking_id, flatSelections)
+        loadMenuPicksFor([booking])
       } catch (selError) {
         // The booking exists; don't lose it, but tell the admin clearly.
         pageError.value = selError?.message || 'Booking created, but the menu picks could not be saved.'
