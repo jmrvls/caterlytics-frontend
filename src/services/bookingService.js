@@ -14,30 +14,56 @@ export async function getAllBookings() {
 // Paginated fetch for the Booking Management table (Load More pattern).
 // Keeps getAllBookings() untouched for Reports/Dashboard/conflict-check,
 // which need the complete dataset to compute correct totals.
-export async function getBookingsPage({ offset = 0, limit = 50 } = {}) {
-  const { data, error, count } = await supabase
+//
+// Status + search are applied IN THE QUERY (not on the loaded rows), so a
+// filter or a search finds matches anywhere in the table, not just in the
+// pages that happen to be loaded already.
+//
+// Order: newest event date first, so upcoming events are on page 1 instead of
+// years of past Completed/Cancelled bookings. `booking_id` is a tiebreaker:
+// without it, rows sharing a date can repeat or vanish between pages.
+export async function getBookingsPage({ offset = 0, limit = 50, status = '', search = '' } = {}) {
+  let query = supabase
     .from('tbl_bookings')
-    .select('*', { count: 'exact' })
-    .order('event_date', { ascending: true })
+    .select('*', { count: 'exact' });
+
+  if (status) query = query.eq('booking_status', status);
+
+  // Strip characters that have meaning inside a PostgREST .or() filter.
+  const term = String(search || '').replace(/[%,()*\\]/g, ' ').trim();
+  if (term) {
+    query = query.or(`client_name.ilike.%${term}%,client_contact_number.ilike.%${term}%`);
+  }
+
+  const { data, error, count } = await query
+    .order('event_date', { ascending: false })
+    .order('booking_id', { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) throw error;
   return { rows: data || [], total: count ?? 0 };
 }
 
-// Lightweight query (single narrow column, not full rows) so the status
-// tabs/counters stay accurate even when the table itself hasn't fully
-// loaded yet.
-export async function getBookingStatusCounts() {
-  const { data, error } = await supabase
-    .from('tbl_bookings')
-    .select('booking_status');
+// One head-only COUNT per status (no rows downloaded), so the numbers stay
+// exact even past Supabase's 1000-row default limit, and the status tabs stay
+// accurate even when the table itself hasn't fully loaded.
+const BOOKING_STATUSES = ['Pending', 'Confirmed', 'Completed', 'Cancelled'];
 
-  if (error) throw error;
+export async function getBookingStatusCounts() {
+  const results = await Promise.all(
+    BOOKING_STATUSES.map((status) =>
+      supabase
+        .from('tbl_bookings')
+        .select('booking_id', { count: 'exact', head: true })
+        .eq('booking_status', status)
+    )
+  );
+
   const counts = {};
-  for (const row of data || []) {
-    counts[row.booking_status] = (counts[row.booking_status] || 0) + 1;
-  }
+  results.forEach((res, i) => {
+    if (res.error) throw res.error;
+    counts[BOOKING_STATUSES[i]] = res.count ?? 0;
+  });
   return counts;
 }
 

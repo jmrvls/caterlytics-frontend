@@ -205,7 +205,7 @@
         <div class="md:hidden space-y-3">
           <div v-if="isLoading" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
           <div v-else-if="filteredBookings.length === 0" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
-            {{ bookings.length === 0 ? 'No bookings yet. Tap "New Booking" to create one.' : 'No bookings match your filters.' }}
+            {{ !hasActiveFilters ? 'No bookings yet. Tap "New Booking" to create one.' : 'No bookings match your filters.' }}
           </div>
           <div
             v-for="b in filteredBookings" :key="b.booking_id"
@@ -315,7 +315,7 @@
                 </tr>
                 <tr v-else-if="filteredBookings.length === 0">
                   <td colspan="10" class="text-center py-10 text-gray-400 dark:text-gray-500">
-                    {{ bookings.length === 0 ? 'No bookings yet. Click "New Booking" to create one.' : 'No bookings match your filters.' }}
+                    {{ !hasActiveFilters ? 'No bookings yet. Click "New Booking" to create one.' : 'No bookings match your filters.' }}
                   </td>
                 </tr>
                 <tr v-for="b in filteredBookings" :key="b.booking_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
@@ -609,7 +609,7 @@ import { localToday } from '../utils/date'
 import { logoutUser } from '../services/authService'
 import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useChatUnread } from '../composables/useChatUnread'
@@ -802,32 +802,51 @@ onMounted(() => {
   getAllMenuItems().then((rows) => { allMenuItems.value = rows }).catch(console.error)
 })
 
-async function fetchBookings() {
+// Guards against out-of-order responses: if the admin types/filters quickly,
+// only the most recent request is allowed to write to the table.
+let fetchSeq = 0
+
+async function fetchBookings({ refreshCounts = true } = {}) {
+  const seq = ++fetchSeq
   isLoading.value = true
   pageError.value = ''
   try {
     const [page, counts] = await Promise.all([
-      getBookingsPage({ offset: 0, limit: PAGE_SIZE }),
-      getBookingStatusCounts()
+      getBookingsPage({
+        offset: 0,
+        limit: PAGE_SIZE,
+        status: statusFilter.value,
+        search: searchQuery.value
+      }),
+      refreshCounts ? getBookingStatusCounts() : Promise.resolve(null)
     ])
+    if (seq !== fetchSeq) return // a newer request superseded this one
     bookings.value = page.rows
     totalBookings.value = page.total
-    statusCounts.value = counts
+    if (counts) statusCounts.value = counts
     loadAssignedStaffFor(page.rows)
     loadMenuPicksFor(page.rows)
   } catch (error) {
+    if (seq !== fetchSeq) return
     pageError.value = 'Failed to load bookings. Please refresh the page.'
     console.error(error)
   } finally {
-    isLoading.value = false
+    if (seq === fetchSeq) isLoading.value = false
   }
 }
 
 async function loadMoreBookings() {
   if (isLoadingMore.value || !hasMoreBookings.value) return
+  const seq = fetchSeq
   isLoadingMore.value = true
   try {
-    const page = await getBookingsPage({ offset: bookings.value.length, limit: PAGE_SIZE })
+    const page = await getBookingsPage({
+      offset: bookings.value.length,
+      limit: PAGE_SIZE,
+      status: statusFilter.value,
+      search: searchQuery.value
+    })
+    if (seq !== fetchSeq) return // filters changed while loading; drop this page
     bookings.value = [...bookings.value, ...page.rows]
     totalBookings.value = page.total
     loadAssignedStaffFor(page.rows)
@@ -839,6 +858,19 @@ async function loadMoreBookings() {
     isLoadingMore.value = false
   }
 }
+
+// Status dropdown: refetch right away. Search box: wait for a pause in typing.
+// The status counts don't depend on the filters, so they aren't re-queried.
+let searchTimer = null
+watch(statusFilter, () => fetchBookings({ refreshCounts: false }))
+watch(searchQuery, () => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => fetchBookings({ refreshCounts: false }), 300)
+})
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  clearTimeout(stockNoticeTimer)
+})
 
 // Saved dishes + serving sizes per booking, for the "View menu" toggle.
 const menuPicksByBooking = ref({}) // booking_id -> [{ item_id, item_name, category, portion }]
@@ -872,14 +904,10 @@ async function loadAssignedStaffFor(rows) {
   }
 }
 
-const filteredBookings = computed(() => {
-  return bookings.value.filter((b) => {
-    const q = searchQuery.value.toLowerCase()
-    const matchesSearch = b.client_name?.toLowerCase().includes(q) || (b.client_contact_number || '').includes(q)
-    const matchesStatus = !statusFilter.value || b.booking_status === statusFilter.value
-    return matchesSearch && matchesStatus
-  })
-})
+// Filtering/search happen in the query (see getBookingsPage), so the loaded
+// rows are already exactly what should be shown.
+const filteredBookings = computed(() => bookings.value)
+const hasActiveFilters = computed(() => Boolean(statusFilter.value || searchQuery.value.trim()))
 
 function countByStatus(status) {
   return statusCounts.value[status] || 0
@@ -1184,6 +1212,7 @@ const allNavItems = [
   { name: 'Event Planning', path: '/admin/planning', iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
   { name: 'Catering Packages', path: '/admin/packages', iconPath: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4' },
   { name: 'Inventory', path: '/admin/inventory', iconPath: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4' },
+  { name: 'Suppliers', path: '/admin/suppliers', iconPath: 'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21' },
   { name: 'Waste Tracking', path: '/admin/waste', iconPath: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' },
   { name: 'Delivery & Fleet', path: '/admin/fleet', iconPath: 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12' },
   { name: 'Payment Records', path: '/admin/payments', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },

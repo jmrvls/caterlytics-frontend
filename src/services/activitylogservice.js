@@ -23,6 +23,8 @@ export const TABLE_LABELS = {
   tbl_inventory: 'Inventory',
   tbl_addons: 'Add-on',
   tbl_expenses: 'Expense',
+  tbl_suppliers: 'Supplier',
+  tbl_purchase_orders: 'Purchase order',
   tbl_profiles: 'Staff / user',
   tbl_booking_staff: 'Staff assignment',
   tbl_branch: 'Branch',
