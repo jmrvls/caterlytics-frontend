@@ -253,7 +253,7 @@ import { useChatUnread } from '../composables/useChatUnread'
 import { useRouter } from 'vue-router'
 import {
   getBranchOverview, createBranch, updateBranch, setBranchActive, setMainBranch, deleteBranch
-} from '../services/branchService'
+} from '../services/branchservice'
 
 const router = useRouter()
 
