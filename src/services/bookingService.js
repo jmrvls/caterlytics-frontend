@@ -337,11 +337,20 @@ export async function getMenuGapsForBookings(bookings) {
 
 // ---------- Menu Selections (client's picks within a package) ----------
 
+// Serving size per picked dish. The database derives the multiplier from the
+// label (Small 0.75, Regular 1, Large 1.25) and uses it for stock deduction and
+// the kitchen prep list. The package price stays per head.
+export const PORTIONS = [
+  { value: 'Small', label: 'Small' },
+  { value: 'Regular', label: 'Regular' },
+  { value: 'Large', label: 'Large' },
+];
+
 // The client's currently-saved menu picks for one booking, grouped by category.
 export async function getBookingSelections(bookingId) {
   const { data, error } = await supabase
     .from('tbl_booking_selected_items')
-    .select('item_id, category, tbl_menu_items(item_name)')
+    .select('item_id, category, portion, tbl_menu_items(item_name)')
     .eq('booking_id', bookingId);
 
   if (error) throw error;
@@ -350,7 +359,7 @@ export async function getBookingSelections(bookingId) {
 
 // Replace the client's menu picks for a booking, atomically, with the
 // per-category limits enforced server-side (set_booking_selected_items).
-// selections = [{ item_id }, ...]
+// selections = [{ item_id, portion? }, ...]  (portion: 'Small' | 'Regular' | 'Large', default 'Regular')
 export async function setBookingSelections(bookingId, selections) {
   const { data, error } = await supabase.rpc('set_booking_selected_items', {
     p_booking_id: bookingId,

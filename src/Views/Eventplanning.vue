@@ -417,6 +417,7 @@
                           <input type="checkbox" :checked="isPrepDone(dishKey(d.item_id))" @change="togglePrep(dishKey(d.item_id), $event)" class="mt-1 w-4 h-4 accent-emerald-600" />
                           <span class="flex-1 min-w-0">
                             <span class="font-semibold text-gray-900 dark:text-gray-100" :class="isPrepDone(dishKey(d.item_id)) ? 'line-through opacity-60' : ''">{{ d.name }}</span>
+                            <span v-if="d.portion && d.portion !== 'Regular'" class="ml-1 text-xs px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold">{{ d.portion }} serving</span>
                             <span v-for="t in d.tags" :key="t" class="ml-1 text-xs px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 capitalize">{{ t }}</span>
                           </span>
                         </label>

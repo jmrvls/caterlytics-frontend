@@ -472,6 +472,7 @@
               </div>
               <div v-else-if="packageMenuCategories.length" class="space-y-4">
                 <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Choose Your Menu</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 -mt-2">Pick your dishes, then tap Small, Regular or Large for each one. The price stays per head.</p>
                 <div v-for="cat in packageMenuCategories" :key="cat.category" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
                   <div class="flex items-center justify-between mb-2">
                     <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ cat.category }}</p>
@@ -483,10 +484,9 @@
                     </span>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                    <div v-for="item in cat.items" :key="item.item_id" class="flex flex-col bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg">
                     <label
-                      v-for="item in cat.items"
-                      :key="item.item_id"
-                      class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-2"
+                      class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-200 cursor-pointer p-2"
                     >
                       <input
                         type="checkbox"
@@ -504,6 +504,18 @@
                         <span v-if="item.description" class="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ item.description }}</span>
                       </span>
                     </label>
+                    <div v-if="(selectedMenuItems[cat.category] || []).includes(item.item_id)" class="flex flex-wrap items-center gap-1.5 px-2 pb-2 pl-8">
+                      <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Serving:</span>
+                      <button
+                        v-for="p in PORTIONS"
+                        :key="p.value"
+                        type="button"
+                        @click="selectedPortions[item.item_id] = p.value"
+                        :class="(selectedPortions[item.item_id] || 'Regular') === p.value ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'"
+                        class="text-[11px] font-semibold px-2 py-0.5 border rounded-full"
+                      >{{ p.label }}</button>
+                    </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -834,6 +846,7 @@
             </div>
             <div v-else-if="editPackageMenuCategories.length" class="space-y-4">
               <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Choose Your Menu</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 -mt-2">Pick your dishes, then tap Small, Regular or Large for each one. The price stays per head.</p>
               <div v-for="cat in editPackageMenuCategories" :key="cat.category" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
                 <div class="flex items-center justify-between mb-2">
                   <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ cat.category }}</p>
@@ -845,9 +858,8 @@
                   </span>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                  <div v-for="item in cat.items" :key="item.item_id" class="flex flex-col">
                   <label
-                    v-for="item in cat.items"
-                    :key="item.item_id"
                     class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
                   >
                     <input
@@ -859,6 +871,18 @@
                     />
                     {{ item.item_name }}
                   </label>
+                  <div v-if="(editSelectedMenuItems[cat.category] || []).includes(item.item_id)" class="flex flex-wrap items-center gap-1.5 pl-6 pb-1">
+                    <span class="text-[11px] font-semibold text-gray-500 dark:text-gray-400">Serving:</span>
+                    <button
+                      v-for="p in PORTIONS"
+                      :key="p.value"
+                      type="button"
+                      @click="editSelectedPortions[item.item_id] = p.value"
+                      :class="(editSelectedPortions[item.item_id] || 'Regular') === p.value ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'"
+                      class="text-[11px] font-semibold px-2 py-0.5 border rounded-full"
+                    >{{ p.label }}</button>
+                  </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -909,7 +933,7 @@ import { supabase } from '../supabaseClient'
 import { logoutUser } from '../services/authService'
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
+import { PORTIONS, createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
 import {
   DIETARY_TAGS, getCatalogStats, getPackagePhotos, getPackageInclusions, getBusinessProfile,
@@ -958,6 +982,7 @@ const editForm = ref({
 // booking form's in-progress selections.
 const editPackageMenu = ref({ limits: [], itemsByCategory: {} })
 const editSelectedMenuItems = ref({}) // { [category]: [item_id, ...] }
+const editSelectedPortions = ref({}) // { [item_id]: 'Small' | 'Regular' | 'Large' }
 const isLoadingEditPackageMenu = ref(false)
 const editAllMenuItemsFlat = ref([])
 
@@ -1087,6 +1112,7 @@ const form = ref({
 // per category, and how many per category, for the package they picked.
 const packageMenu = ref({ limits: [], itemsByCategory: {} })
 const selectedMenuItems = ref({}) // { [category]: [item_id, ...] }
+const selectedPortions = ref({}) // { [item_id]: 'Small' | 'Regular' | 'Large' }
 const isLoadingPackageMenu = ref(false)
 
 // Only categories that actually have a limit configured for this package
@@ -1182,6 +1208,7 @@ let packageMenuToken = 0
 async function loadPackageMenu(packageId) {
   const token = ++packageMenuToken // invalidates any earlier in-flight load
   selectedMenuItems.value = {}
+  selectedPortions.value = {}
   showMenuWarning.value = false
   packageMenu.value = { limits: [], itemsByCategory: {} }
   allMenuItemsFlat.value = []
@@ -1325,6 +1352,7 @@ function backToPackages() {
   form.value.package_id = ''
   showMenuWarning.value = false
   selectedMenuItems.value = {}
+  selectedPortions.value = {}
   packageMenu.value = { limits: [], itemsByCategory: {} }
   loadPackageExtras('')
 }
@@ -1655,6 +1683,7 @@ function selectBusiness(id) {
   form.value.package_id = ''
   conflictWarning.value = ''
   selectedMenuItems.value = {}
+  selectedPortions.value = {}
   packageMenu.value = { limits: [], itemsByCategory: {} }
   loadBusinessAddons(id)
   calendarViewDate.value = startOfMonth(new Date())
@@ -1673,6 +1702,7 @@ function clearBusiness() {
   form.value.package_id = ''
   conflictWarning.value = ''
   selectedMenuItems.value = {}
+  selectedPortions.value = {}
   packageMenu.value = { limits: [], itemsByCategory: {} }
   addonQuantities.value = {}
   businessAddons.value = []
@@ -1813,16 +1843,20 @@ async function openEditModal(booking) {
   // Load this package's menu setup, then prefill with whatever the client
   // already picked for this booking (so opening Edit doesn't wipe their picks).
   editSelectedMenuItems.value = {}
+  editSelectedPortions.value = {}
   if (editForm.value.package_id) {
     await loadEditPackageMenu(editForm.value.package_id, { preserveSelections: true })
     try {
       const existing = await getBookingSelections(booking.booking_id)
       const byCategory = {}
+      const portions = {}
       for (const row of existing) {
         if (!byCategory[row.category]) byCategory[row.category] = []
         byCategory[row.category].push(row.item_id)
+        portions[row.item_id] = row.portion || 'Regular'
       }
       editSelectedMenuItems.value = byCategory
+      editSelectedPortions.value = portions
     } catch (error) {
       console.error('Failed to load existing menu selections:', error)
     }
@@ -1890,7 +1924,7 @@ async function handleSaveEdit() {
     // from the old package sitting against this booking_id.
     const flatEditSelections = Object.values(editSelectedMenuItems.value)
       .flat()
-      .map((item_id) => ({ item_id }))
+      .map((item_id) => ({ item_id, portion: editSelectedPortions.value[item_id] || 'Regular' }))
     try {
       await setBookingSelections(updated.booking_id, flatEditSelections)
     } catch (selError) {
@@ -1991,7 +2025,7 @@ async function submitBooking() {
     // (only relevant when this package actually has a menu configured).
     const flatSelections = Object.values(selectedMenuItems.value)
       .flat()
-      .map((item_id) => ({ item_id }))
+      .map((item_id) => ({ item_id, portion: selectedPortions.value[item_id] || 'Regular' }))
     if (flatSelections.length) {
       try {
         await setBookingSelections(newBooking.booking_id, flatSelections)
@@ -2018,6 +2052,7 @@ async function submitBooking() {
     form.value = { ...form.value, event_date: '', event_time: '', event_location: '', guest_count: null, package_id: '' }
     selectedBusinessId.value = ''
     selectedMenuItems.value = {}
+    selectedPortions.value = {}
     packageMenu.value = { limits: [], itemsByCategory: {} }
     addonQuantities.value = {}
     businessAddons.value = []
