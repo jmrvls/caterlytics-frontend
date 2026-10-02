@@ -570,7 +570,7 @@
             </div>
           </div>
 
-          <!-- ============ KASAMA / HINDI KASAMA ============ -->
+          <!-- ============ INCLUDED / NOT INCLUDED ============ -->
           <div v-if="packageInclusions.length" class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div v-if="includedItems.length">
               <p class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-3">Included in the price</p>
@@ -1518,7 +1518,7 @@ const galleryImages = computed(() => {
   const urls = [selectedPackage.value?.image_url, ...packagePhotos.value.map((ph) => ph.image_url)].filter(Boolean)
   return [...new Set(urls)]
 })
-// 22: kasama / hindi kasama
+// 22: included / not included
 const includedItems = computed(() => packageInclusions.value.filter((i) => i.is_included))
 const excludedItems = computed(() => packageInclusions.value.filter((i) => !i.is_included))
 

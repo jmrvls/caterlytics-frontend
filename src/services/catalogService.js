@@ -1,9 +1,9 @@
 import { supabase } from '../supabaseClient';
 
-// Mga "uri" ng event na pwedeng piliin ng owner para sa package.
+// Event types the owner can choose from for a package.
 export const PACKAGE_TYPES = ['Wedding', 'Birthday', 'Debut', 'Corporate', 'Christening', 'Anniversary', 'Fiesta / Community', 'Others'];
 
-// Dietary tags ng menu items. key = nasa database, label = ipinapakita.
+// Dietary tags for menu items. key = stored in the database, label = shown in the UI.
 export const DIETARY_TAGS = [
   { key: 'vegetarian', label: 'Vegetarian', cls: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
   { key: 'halal', label: 'Halal', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
@@ -51,7 +51,7 @@ export async function getPackagePhotos(packageId) {
   return data || [];
 }
 
-// Owner-side: mag-upload ng bagong larawan sa gallery (gamit ang "avatars" bucket tulad ng ibang uploads).
+// Owner-side: upload a new photo to the gallery (uses the "avatars" bucket, like the other uploads).
 export async function uploadPackagePhoto(ownerId, packageId, file) {
   const ext = file.name.split('.').pop();
   const filePath = `${ownerId}/package-${packageId}-gallery-${Date.now()}.${ext}`;
@@ -75,7 +75,7 @@ export async function deletePackagePhoto(photoId) {
   if (error) throw new Error('Failed to delete photo.');
 }
 
-// ---------- 22: kasama / hindi kasama ----------
+// ---------- 22: included / not included ----------
 export async function getPackageInclusions(packageId) {
   const { data, error } = await supabase
     .from('tbl_package_inclusions')
@@ -87,7 +87,7 @@ export async function getPackageInclusions(packageId) {
   return data || [];
 }
 
-// Owner-side: palitan ang buong listahan. items = [{ label, is_included }]
+// Owner-side: replace the whole list. items = [{ label, is_included }]
 export async function setPackageInclusions(packageId, items) {
   const clean = (items || [])
     .map((it, i) => ({ package_id: packageId, label: String(it.label || '').trim(), is_included: it.is_included !== false, sort_order: i }))
@@ -149,7 +149,7 @@ export async function getBusinessProfile(businessId) {
   return data;
 }
 
-// Owner-side: i-update ang about / oras / policies ng sariling business.
+// Owner-side: update the about / hours / policies of the owner's own business.
 export async function updateBusinessProfile(businessId, { about, opening_hours, policies }) {
   const { data, error } = await supabase
     .from('tbl_business')
@@ -181,7 +181,7 @@ export async function submitReview(bookingId, rating, comment) {
   return data;
 }
 
-// Aling mga booking ID ang na-review na ng kasalukuyang user (para itago ang "Rate" button).
+// Which booking IDs the current user has already reviewed (used to hide the "Rate" button).
 export async function getMyReviewedBookingIds() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return new Set();

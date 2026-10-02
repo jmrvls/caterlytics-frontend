@@ -29,7 +29,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
-// images: array ng URL strings. Ang unang larawan ay karaniwang ang cover ng package.
+// images: array of URL strings. The first image is usually the package cover.
 const props = defineProps({
   images: { type: Array, default: () => [] },
   alt: { type: String, default: 'Package photo' }
