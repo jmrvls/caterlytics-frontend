@@ -80,7 +80,7 @@
 
         <a v-for="item in navItems" :key="item.name"
           href="#"
-        @click.prevent="isMobileSidebarOpen = false; item.name === 'Event Bookings' ? router.push('/admin/bookings') : item.name === 'Event Planning' ? router.push('/admin/planning') : item.name === 'Catering Packages' ? router.push('/admin/packages') : item.name === 'Inventory' ? router.push('/admin/inventory') : item.name === 'Waste Tracking' ? router.push('/admin/waste') : item.name === 'Delivery & Fleet' ? router.push('/admin/fleet') : item.name === 'Payment Records' ? router.push('/admin/payments') : item.name === 'Staff Management' ? router.push('/admin/staff') : item.name === 'Reports' ? router.push('/admin/reports') : item.name === 'Feedback & Ratings' ? router.push('/admin/feedback') : (activeSection = item.name)"
+        @click.prevent="isMobileSidebarOpen = false; item.name === 'Event Bookings' ? router.push('/admin/bookings') : item.name === 'Event Planning' ? router.push('/admin/planning') : item.name === 'Catering Packages' ? router.push('/admin/packages') : item.name === 'Inventory' ? router.push('/admin/inventory') : item.name === 'Waste Tracking' ? router.push('/admin/waste') : item.name === 'Delivery & Fleet' ? router.push('/admin/fleet') : item.name === 'Payment Records' ? router.push('/admin/payments') : item.name === 'Staff Management' ? router.push('/admin/staff') : item.name === 'Reports' ? router.push('/admin/reports') : item.name === 'Feedback & Ratings' ? router.push('/admin/feedback') : item.name === 'Support Chat' ? router.push('/admin/support') : (activeSection = item.name)"
           :class="activeSection === item.name ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
           class="flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
@@ -763,13 +763,14 @@ const allNavItems = [
   { name: 'Payment Records', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },
   { name: 'Staff Management', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-  { name: 'Feedback & Ratings', iconPath: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' }
+  { name: 'Feedback & Ratings', iconPath: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
+  { name: 'Support Chat', iconPath: 'M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' }
 ]
 
 // Staff (per the manuscript's Use Case Diagram) only has access to
 // Login/Authentication and Manage Payments -- so their sidebar only
 // shows Dashboard (general landing view) and Payments.
-const staffAllowedSections = ['Dashboard', 'Payment Records']
+const staffAllowedSections = ['Dashboard', 'Payment Records', 'Support Chat']
 
 const navItems = computed(() =>
   userRole.value === 'Staff'

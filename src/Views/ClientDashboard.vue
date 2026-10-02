@@ -574,6 +574,11 @@
         </form>
       </div>
 
+      <!-- ============ MESSAGES TAB (real-time chat with the caterer's staff) ============ -->
+      <div v-else-if="activeTab === 'Messages'">
+        <ChatInbox mode="client" :start-business-id="chatStartBusinessId" />
+      </div>
+
       <!-- ============ MY BOOKINGS TAB ============ -->
       <div v-else-if="activeTab === 'My Bookings'">
         <div
@@ -889,6 +894,7 @@
         @close="showProfile = false"
         @toggle-favorite="toggleFavoriteBusiness(profileBusinessId)"
         @book="bookFromProfile"
+        @message="messageBusiness"
       />
       <ReviewModal v-if="reviewTarget" :booking="reviewTarget" @close="reviewTarget = null" @submitted="onReviewSubmitted" />
 
@@ -914,6 +920,7 @@ import HeartButton from '../Components/HeartButton.vue'
 import PackageGallery from '../Components/PackageGallery.vue'
 import BusinessProfileModal from '../Components/BusinessProfileModal.vue'
 import ReviewModal from '../Components/ReviewModal.vue'
+import ChatInbox from '../Components/ChatInbox.vue'
 import { getBusinessAddons, getBookingAddons, setBookingAddons, sumAddons } from '../services/addonService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -925,7 +932,7 @@ const userInitial = ref('U')
 const userAvatarUrl = ref('')
 const showAccountMenu = ref(false)
 
-const tabs = ['Book Catering', 'My Bookings']
+const tabs = ['Book Catering', 'My Bookings', 'Messages']
 const activeTab = ref('Book Catering')
 
 const packages = ref([])
@@ -1355,6 +1362,14 @@ let packageExtrasToken = 0
 // 24 / 25: business profile modal + review modal
 const showProfile = ref(false)
 const profileBusinessId = ref('')
+// Chat: set when the client taps "Message" on a business profile.
+const chatStartBusinessId = ref(null)
+watch(activeTab, (t) => { if (t !== 'Messages') chatStartBusinessId.value = null })
+function messageBusiness() {
+  chatStartBusinessId.value = profileBusinessId.value || null
+  showProfile.value = false
+  activeTab.value = 'Messages'
+}
 const profileData = ref(null)
 const profileReviews = ref([])
 const isLoadingProfile = ref(false)

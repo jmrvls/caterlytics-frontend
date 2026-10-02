@@ -28,6 +28,7 @@ import PackageManagement from './Views/PackageManagement.vue'
 import InventoryManagement from './Views/InventoryManagement.vue'
 import WasteTracking from './Views/Wastetracking.vue'
 import FeedbackRatings from './Views/FeedbackRatings.vue'
+import SupportChat from './Views/SupportChat.vue'
 import FleetManagement from './Views/FleetManagement.vue'
 import PaymentManagement from './Views/PaymentManagement.vue'
 import StaffManagement from './Views/StaffManagement.vue'
@@ -55,6 +56,7 @@ const routes = [
   { path: '/admin/inventory', component: InventoryManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/waste', component: WasteTracking, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/feedback', component: FeedbackRatings, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
+  { path: '/admin/support', component: SupportChat, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/fleet', component: FleetManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/payments', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/staff', component: StaffManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
