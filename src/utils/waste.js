@@ -1,6 +1,6 @@
 // Shared helpers for Waste Tracking. Pure functions only (no Supabase calls),
 // so the numbers on screen can be unit-tested and never drift between views.
-import { roundQty } from './inventory';
+import { roundQty, isLowStock, formatQty } from './inventory';
 
 export const WASTE_REASONS = [
   'Spoiled / Expired',
@@ -198,4 +198,128 @@ export function logsToCSV(logs) {
     String(l.waste_date).slice(0, 10), l.item_name, l.quantity, l.unit, l.reason, l.unit_cost, costOf(l).toFixed(2), l.note,
   ]);
   return [head, ...rows].map((r) => r.map(esc).join(',')).join('\r\n');
+}
+
+// ---------------------------------------------------------------------------
+// Reorder suggestions driven by waste + real usage.
+//   usage  = stock deducted by bookings (net of cancellations), from the
+//            inventory movement history -- NOT the waste entries.
+//   waste  = what was thrown away (waste logs).
+// Rule-based and transparent: every number is shown on screen.
+//   reorder   -> at/below the low-stock level, or under 7 days of stock left.
+//                Quantity covers `coverDays` of recent usage. It does NOT add a
+//                buffer for waste -- the goal is to stop paying for waste.
+//   hold off  -> already holds more than twice the cover period AND has waste.
+//   reduce    -> 25%+ of what left stock was wasted (2+ entries): order smaller.
+// ---------------------------------------------------------------------------
+export const COVER_OPTIONS = [
+  { days: 7, label: 'Cover 7 days' },
+  { days: 14, label: 'Cover 14 days' },
+  { days: 30, label: 'Cover 30 days' },
+];
+
+function dayDiff(fromISO, toISO) {
+  const a = new Date(`${fromISO}T12:00:00`);
+  const b = new Date(`${toISO}T12:00:00`);
+  return Math.round((b - a) / 86400000);
+}
+
+export function buildReorderPlan(items, logs, movements, { days = 30, coverDays = 14 } = {}) {
+  const startDate = daysAgoISO(days - 1);
+  let earliest = null;
+  const seen = (iso) => { if (!earliest || iso < earliest) earliest = iso; };
+
+  const used = new Map();
+  for (const m of movements || []) {
+    const d = localISODate(new Date(m.created_at));
+    if (d < startDate) continue;
+    seen(d);
+    const k = String(m.item_id);
+    used.set(k, (used.get(k) || 0) - (Number(m.delta) || 0)); // deduction = negative delta
+  }
+
+  const wasted = new Map();
+  const wasteEntries = new Map();
+  for (const l of logs || []) {
+    const d = String(l.waste_date).slice(0, 10);
+    if (d < startDate) continue;
+    seen(d);
+    if (l.item_id == null) continue;
+    const k = String(l.item_id);
+    wasted.set(k, (wasted.get(k) || 0) + (Number(l.quantity) || 0));
+    wasteEntries.set(k, (wasteEntries.get(k) || 0) + 1);
+  }
+
+  // Only divide by the days we actually have data for, so a new system doesn't
+  // look like it uses almost nothing.
+  const observedDays = earliest ? Math.min(Math.max(dayDiff(earliest, localISODate()) + 1, 1), days) : days;
+
+  const rows = [];
+  for (const it of items || []) {
+    const k = String(it.item_id);
+    const usedQty = Math.max(0, roundQty(used.get(k) || 0));
+    const wastedQty = roundQty(wasted.get(k) || 0);
+    const entries = wasteEntries.get(k) || 0;
+    const onHand = Number(it.quantity) || 0;
+    const threshold = Number(it.low_stock_threshold) || 0;
+    const unitCost = Number(it.unit_cost) || 0;
+
+    const perDay = usedQty / observedDays;
+    const daysLeft = perDay > 0 ? onHand / perDay : null;
+    const wastePct = usedQty + wastedQty > 0 ? (wastedQty / (usedQty + wastedQty)) * 100 : 0;
+    const highWaste = wastePct >= 25 && entries >= 2;
+    const low = isLowStock(it);
+
+    let status = 'ok';
+    let qty = 0;
+    let note = '';
+
+    if (low || (daysLeft !== null && daysLeft < 7)) {
+      const need = Math.ceil(perDay * coverDays);
+      const target = Math.max(need, low ? threshold * 2 : 0);
+      qty = Math.max(Math.ceil(target - onHand), 0);
+      if (qty > 0) {
+        status = 'reorder';
+        note = perDay > 0
+          ? `Covers about ${coverDays} days of recent usage.`
+          : 'No recent usage recorded, so this is based on your low-stock level.';
+        if (highWaste) note += ` ${Math.round(wastePct)}% of this item was wasted, so order for actual use only, no extra buffer.`;
+      }
+    } else if (daysLeft !== null && daysLeft > coverDays * 2 && wastedQty > 0) {
+      status = 'hold';
+      note = `Enough stock for about ${Math.round(daysLeft)} days and ${formatQty(wastedQty, it.unit)} was already wasted. Hold off ordering.`;
+    } else if (highWaste) {
+      status = 'reduce';
+      note = `${Math.round(wastePct)}% of what left stock was wasted (${entries} entries). Order smaller batches or lower the stock you keep.`;
+    }
+
+    if (status === 'ok') continue;
+    rows.push({
+      item_id: it.item_id, name: it.item_name, unit: it.unit || 'kg',
+      onHand, threshold, used: usedQty, wasted: wastedQty, wastePct,
+      daysLeft, status, qty, cost: qty * unitCost, note,
+    });
+  }
+
+  const order = { reorder: 0, hold: 1, reduce: 2 };
+  rows.sort((a, b) => order[a.status] - order[b.status] || (a.daysLeft ?? 1e9) - (b.daysLeft ?? 1e9));
+
+  return {
+    rows,
+    observedDays,
+    hasUsage: used.size > 0,
+    totalCost: rows.reduce((s, r) => s + r.cost, 0),
+    reorderCount: rows.filter((r) => r.status === 'reorder').length,
+  };
+}
+
+export function reorderToCSV(rows) {
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const head = ['Item', 'Status', 'On hand', 'Unit', 'Used', 'Wasted', 'Waste %', 'Days left', 'Suggested order qty', 'Est. cost', 'Note'];
+  const label = { reorder: 'Reorder', hold: 'Hold off', reduce: 'Order less' };
+  const body = (rows || []).map((r) => [
+    r.name, label[r.status], r.onHand, r.unit, r.used, r.wasted, r.wastePct.toFixed(0),
+    r.daysLeft === null ? '' : Math.round(r.daysLeft), r.qty, r.cost.toFixed(2), r.note,
+  ]);
+  return [head, ...body].map((r) => r.map(esc).join(',')).join('\r\n');
 }

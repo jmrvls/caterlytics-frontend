@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { logActivity } from './activitylogservice';
 
 // Accepts either a username or a contact number (any common PH format:
 // 09171234567, +639171234567, with or without spaces/dashes). Email is no
@@ -103,6 +104,10 @@ export async function loginUser(identifier, password) {
     }
   }
 
+  // Activity tracking: record the sign-in for business accounts (best-effort,
+  // never blocks login).
+  if (profile.business_id) await logActivity('LOGIN', 'Auth', 'Signed in');
+
   return {
     message: 'Login successful',
     token: data.session.access_token,
@@ -171,6 +176,8 @@ export async function resendRegistrationOtp(contact_number, username) {
 }
 
 export async function logoutUser() {
+  // Must run BEFORE signOut -- log_activity() needs the live session to know who.
+  await logActivity('LOGOUT', 'Auth', 'Signed out');
   await supabase.auth.signOut();
 }
 

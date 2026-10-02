@@ -74,7 +74,7 @@
         <a v-for="item in navItems" :key="item.name"
           href="#"
           @click.prevent="goTo(item)"
-          :class="item.name === 'Support Chat' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
+          :class="item.name === 'Audit Logs' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 font-semibold' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'"
           class="relative flex items-center gap-3 px-3 py-2.5 rounded-none text-sm transition"
         >
           <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,13 +130,104 @@
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
-            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">Support Chat</h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Talk to your clients directly. New messages appear instantly.</p>
+            <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">Audit Logs &amp; Activity</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Who did what, and when, across your business. Records can't be edited or deleted from the app.</p>
           </div>
-          <div class="hidden lg:block"><NotificationBell /></div>
+          <div class="flex items-center gap-2 sm:gap-3">
+            <button @click="exportCsv" :disabled="!rows.length" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-none text-sm font-semibold transition">Export CSV</button>
+            <div class="hidden lg:block"><NotificationBell /></div>
+          </div>
         </div>
 
-        <ChatInbox mode="staff" />
+        <div v-if="pageError" class="mb-4 px-4 py-3 border border-red-200 bg-red-50 dark:bg-red-900/30 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-start justify-between gap-3">
+          <span>{{ pageError }}</span>
+          <button @click="pageError = ''" class="font-semibold">Dismiss</button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+          <button v-for="t in tabs" :key="t.key" @click="switchTab(t.key)"
+            :class="tab === t.key ? 'border-emerald-600 text-emerald-700 dark:text-emerald-300 font-semibold' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+            class="px-4 py-2.5 text-sm border-b-2 -mb-px transition">{{ t.label }}</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
+          <select v-if="tab === 'changes'" v-model="filters.table" @change="applyFilters" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
+            <option value="">All records</option>
+            <option v-for="(label, key) in TABLE_LABELS" :key="key" :value="key">{{ label }}</option>
+          </select>
+          <select v-model="filters.action" @change="applyFilters" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
+            <option value="">All actions</option>
+            <option v-for="a in actionOptions" :key="a.value" :value="a.value">{{ a.label }}</option>
+          </select>
+          <select v-model="filters.actor" @change="applyFilters" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
+            <option value="">Everyone</option>
+            <option v-for="a in actors" :key="a.actor_id" :value="a.actor_id">{{ a.actor_name }}{{ a.actor_role ? ' (' + a.actor_role + ')' : '' }}</option>
+          </select>
+          <input type="date" v-model="filters.from" @change="applyFilters" aria-label="From date" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none" />
+          <input type="date" v-model="filters.to" @change="applyFilters" aria-label="To date" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none" />
+          <button @click="clearFilters" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none">Clear filters</button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-900/40 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <tr>
+                <th class="px-4 py-3 font-semibold whitespace-nowrap">When</th>
+                <th class="px-4 py-3 font-semibold">Who</th>
+                <th class="px-4 py-3 font-semibold">Action</th>
+                <th class="px-4 py-3 font-semibold">{{ tab === 'changes' ? 'Record' : 'Details' }}</th>
+                <th v-if="tab === 'changes'" class="px-4 py-3 font-semibold text-right">Changes</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+              <tr v-if="isLoading"><td :colspan="5" class="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr v-else-if="!rows.length"><td :colspan="5" class="px-4 py-8 text-center text-gray-400">No activity found for these filters.</td></tr>
+              <template v-else v-for="r in rows" :key="rowKey(r)">
+                <tr class="text-gray-700 dark:text-gray-200 align-top">
+                  <td class="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400">{{ formatWhen(r.created_at) }}</td>
+                  <td class="px-4 py-3">
+                    <p class="font-medium">{{ r.actor_name || 'System' }}</p>
+                    <p v-if="r.actor_role" class="text-xs text-gray-400">{{ r.actor_role }}</p>
+                  </td>
+                  <td class="px-4 py-3">
+                    <span :class="badgeClass(r.action)" class="inline-block px-2 py-0.5 text-xs font-semibold">{{ actionLabel(r.action) }}</span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <template v-if="tab === 'changes'">{{ TABLE_LABELS[r.table_name] || r.table_name }}<span v-if="r.record_id" class="text-gray-400"> #{{ r.record_id }}</span></template>
+                    <template v-else>{{ r.summary || r.entity }}</template>
+                  </td>
+                  <td v-if="tab === 'changes'" class="px-4 py-3 text-right">
+                    <button v-if="changesOf(r).length" @click="toggleRow(r.audit_id)" class="text-emerald-700 dark:text-emerald-300 font-semibold text-xs">{{ expanded === r.audit_id ? 'Hide' : 'View' }}</button>
+                    <span v-else class="text-gray-300">—</span>
+                  </td>
+                </tr>
+                <tr v-if="tab === 'changes' && expanded === r.audit_id" class="bg-gray-50 dark:bg-gray-900/40">
+                  <td :colspan="5" class="px-4 py-3">
+                    <ul class="space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                      <li v-for="c in changesOf(r)" :key="c.key">
+                        <span class="font-semibold">{{ prettyKey(c.key) }}:</span>
+                        <template v-if="r.action === 'UPDATE'"> <span class="line-through text-gray-400">{{ show(c.from) }}</span> → <span class="font-medium">{{ show(c.to) }}</span></template>
+                        <template v-else> {{ show(c.to) }}</template>
+                      </li>
+                    </ul>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
+          <span>{{ total ? `${offset + 1}–${Math.min(offset + pageSize, total)} of ${total}` : '0 results' }}</span>
+          <div class="flex gap-2">
+            <button @click="prevPage" :disabled="offset === 0" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Previous</button>
+            <button @click="nextPage" :disabled="offset + pageSize >= total" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Next</button>
+          </div>
+        </div>
 
       </div>
     </main>
@@ -149,10 +240,13 @@ import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
 import { ref, computed, onMounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
-import ChatInbox from '../Components/ChatInbox.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useChatUnread } from '../composables/useChatUnread'
 import { useRouter } from 'vue-router'
+import {
+  getAuditLog, getActivityLog, getAuditActors, logActivity,
+  TABLE_LABELS, ACTION_LABELS, describeChange
+} from '../services/activitylogservice'
 
 const router = useRouter()
 
@@ -166,19 +260,112 @@ function toggleSidebar() {
 }
 const showAccountMenu = ref(false)
 const userName = ref('User')
-const userRole = ref('Staff')
+const userRole = ref('Admin')
 const userInitial = ref('U')
 const userAvatarUrl = ref('')
 
-onMounted(() => {
+// ---------- state ----------
+const tabs = [
+  { key: 'changes', label: 'Data changes' },
+  { key: 'activity', label: 'Sign-ins & exports' },
+]
+const tab = ref('changes')
+const rows = ref([])
+const total = ref(0)
+const actors = ref([])
+const isLoading = ref(false)
+const pageError = ref('')
+const expanded = ref(null)
+const pageSize = 25
+const offset = ref(0)
+const filters = ref({ table: '', action: '', actor: '', from: '', to: '' })
+
+const actionOptions = computed(() =>
+  tab.value === 'changes'
+    ? [{ value: 'INSERT', label: 'Created' }, { value: 'UPDATE', label: 'Updated' }, { value: 'DELETE', label: 'Deleted' }]
+    : [{ value: 'LOGIN', label: 'Sign-in' }, { value: 'LOGOUT', label: 'Sign-out' }, { value: 'EXPORT', label: 'Export' }]
+)
+
+// ---------- helpers ----------
+const ACTIVITY_LABELS = { LOGIN: 'Sign-in', LOGOUT: 'Sign-out', EXPORT: 'Export' }
+const actionLabel = (a) => ACTION_LABELS[a] || ACTIVITY_LABELS[a] || a
+function badgeClass(a) {
+  if (a === 'INSERT' || a === 'LOGIN') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+  if (a === 'DELETE') return 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+  if (a === 'UPDATE') return 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+}
+const rowKey = (r) => (tab.value === 'changes' ? 'c' + r.audit_id : 'a' + r.log_id)
+const formatWhen = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+const prettyKey = (k) => k.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
+const show = (v) => (v === undefined || v === null || v === '' ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v))
+const changesOf = (r) => describeChange(r)
+const toggleRow = (id) => { expanded.value = expanded.value === id ? null : id }
+
+function dateRange() {
+  const f = filters.value
+  return {
+    from: f.from ? new Date(f.from + 'T00:00:00').toISOString() : null,
+    to: f.to ? new Date(f.to + 'T23:59:59.999').toISOString() : null,
+  }
+}
+
+// ---------- data ----------
+async function load() {
+  isLoading.value = true
+  pageError.value = ''
+  expanded.value = null
+  try {
+    const { from, to } = dateRange()
+    const f = filters.value
+    const res = tab.value === 'changes'
+      ? await getAuditLog({ limit: pageSize, offset: offset.value, table: f.table, action: f.action, actor: f.actor, from, to })
+      : await getActivityLog({ limit: pageSize, offset: offset.value, action: f.action, actor: f.actor, from, to })
+    rows.value = res.rows
+    total.value = res.total
+  } catch (e) {
+    rows.value = []
+    total.value = 0
+    pageError.value = e.message
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function applyFilters() { offset.value = 0; load() }
+function clearFilters() { filters.value = { table: '', action: '', actor: '', from: '', to: '' }; applyFilters() }
+function switchTab(key) { if (tab.value !== key) { tab.value = key; clearFilters() } }
+function prevPage() { offset.value = Math.max(0, offset.value - pageSize); load() }
+function nextPage() { offset.value += pageSize; load() }
+
+// ---------- export ----------
+function exportCsv() {
+  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const header = tab.value === 'changes'
+    ? ['When', 'Who', 'Role', 'Action', 'Record', 'Record ID', 'Changes']
+    : ['When', 'Who', 'Role', 'Action', 'Details']
+  const lines = rows.value.map((r) => tab.value === 'changes'
+    ? [formatWhen(r.created_at), r.actor_name, r.actor_role, actionLabel(r.action), TABLE_LABELS[r.table_name] || r.table_name, r.record_id,
+       changesOf(r).map((c) => r.action === 'UPDATE' ? `${c.key}: ${show(c.from)} -> ${show(c.to)}` : `${c.key}: ${show(c.to)}`).join('; ')]
+    : [formatWhen(r.created_at), r.actor_name, r.actor_role, actionLabel(r.action), r.summary || r.entity])
+  const csv = [header, ...lines].map((l) => l.map(esc).join(',')).join('\r\n')
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `audit-log-${tab.value}-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+  logActivity('EXPORT', 'Audit Logs', `Exported ${rows.value.length} ${tab.value === 'changes' ? 'data-change' : 'activity'} rows`)
+}
+
+onMounted(async () => {
   const storedUser = sessionStorage.getItem('user')
   if (!storedUser) {
     router.push('/')
     return
   }
   const user = JSON.parse(storedUser)
-  // Same access as the route guard in main.js (the chat RPCs also enforce this server-side).
-  if (!['Admin', 'Owner/Manager', 'Staff'].includes(user.role)) {
+  if (!['Admin', 'Owner/Manager'].includes(user.role)) {
     router.push('/')
     return
   }
@@ -187,8 +374,11 @@ onMounted(() => {
   userRole.value = user.role
   userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
+  try { actors.value = await getAuditActors() } catch { /* filter just stays empty */ }
+  load()
 })
 
+// ---------- sidebar ----------
 function goTo(item) {
   isMobileSidebarOpen.value = false
   router.push(item.path)
@@ -209,6 +399,8 @@ const handleLogout = async () => {
 const wasteIcon = 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
 const fleetIcon = 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12'
 
+const branchIcon = 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01'
+
 const allNavItems = [
   { name: 'Dashboard', path: '/admin/dashboard', iconPath: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
   { name: 'Event Bookings', path: '/admin/bookings', iconPath: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
@@ -218,7 +410,7 @@ const allNavItems = [
   { name: 'Waste Tracking', path: '/admin/waste', iconPath: wasteIcon },
   { name: 'Delivery & Fleet', path: '/admin/fleet', iconPath: fleetIcon },
   { name: 'Payment Records', path: '/admin/payments', iconPath: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0018.75 4.5H5.25A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z' },
-  { name: 'Branches', path: '/admin/branches', iconPath: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01' },
+  { name: 'Branches', path: '/admin/branches', iconPath: branchIcon },
   { name: 'Staff Management', path: '/admin/staff', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', path: '/admin/reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
   { name: 'Audit Logs', path: '/admin/audit-logs', iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
@@ -226,11 +418,6 @@ const allNavItems = [
   { name: 'Support Chat', path: '/admin/support', iconPath: 'M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' }
 ]
 
-// Staff only see the sections they are allowed to use (same rule as the other admin pages).
-const staffAllowedSections = ['Dashboard', 'Event Planning', 'Payment Records', 'Support Chat']
-const navItems = computed(() =>
-  userRole.value === 'Staff'
-    ? allNavItems.filter((item) => staffAllowedSections.includes(item.name))
-    : allNavItems
-)
+// Admin / Owner-Manager only (route + onMounted enforce this).
+const navItems = computed(() => allNavItems)
 </script>

@@ -61,3 +61,20 @@ export async function logWaste(form, item) {
   }
   return data;
 }
+
+// Stock deducted by bookings since `fromDate` (YYYY-MM-DD). Used to work out how
+// fast each item is really used, so reorder suggestions aren't based on waste alone.
+// Admin / Owner-Manager only (RLS). Waste deductions are skipped here on purpose:
+// they already come from the waste logs.
+export async function getUsageMovements(fromDate) {
+  const fromIso = new Date(`${fromDate}T00:00:00`).toISOString();
+  const { data, error } = await supabase
+    .from('tbl_inventory_movements')
+    .select('item_id, delta, reason, created_at')
+    .gte('created_at', fromIso)
+    .like('reason', 'Booking%')
+    .limit(10000);
+
+  if (error) throw new Error(error.message || 'Failed to load stock usage.');
+  return data || [];
+}

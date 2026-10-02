@@ -196,6 +196,59 @@
             </ul>
           </div>
 
+          <!-- Reorder suggestions (waste + real usage) -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 sm:p-5 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+              <div>
+                <h2 class="font-semibold text-gray-800 dark:text-gray-100">Reorder suggestions</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Based on how fast each item is used and how much of it gets wasted ({{ reorderPlan.observedDays }} {{ reorderPlan.observedDays === 1 ? 'day' : 'days' }} of data).</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <select v-model.number="coverDays" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option v-for="c in COVER_OPTIONS" :key="c.days" :value="c.days">{{ c.label }}</option>
+                </select>
+                <button @click="exportReorderCSV" :disabled="!reorderPlan.rows.length" class="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-none text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition whitespace-nowrap">Export list</button>
+              </div>
+            </div>
+
+            <div v-if="usageMissing" class="text-xs text-amber-700 dark:text-amber-300 mb-3">Couldn't load stock usage, so quantities fall back to your low-stock levels.</div>
+            <div v-else-if="!reorderPlan.hasUsage" class="text-xs text-gray-500 dark:text-gray-400 mb-3">No bookings have used stock in this period yet, so quantities are based on your low-stock levels.</div>
+
+            <div v-if="!reorderPlan.rows.length" class="text-sm text-gray-400 dark:text-gray-500 py-4">Nothing to reorder right now, and no item stands out for waste.</div>
+            <template v-else>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                      <th class="px-3 py-2 font-medium">Item</th>
+                      <th class="px-3 py-2 font-medium">Suggestion</th>
+                      <th class="px-3 py-2 font-medium whitespace-nowrap">On hand</th>
+                      <th class="px-3 py-2 font-medium whitespace-nowrap">Used / Wasted</th>
+                      <th class="px-3 py-2 font-medium whitespace-nowrap">Days left</th>
+                      <th class="px-3 py-2 font-medium text-right whitespace-nowrap">Order qty</th>
+                      <th class="px-3 py-2 font-medium text-right whitespace-nowrap">Est. cost</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <tr v-for="r in reorderPlan.rows" :key="r.item_id" class="text-gray-700 dark:text-gray-300 align-top">
+                      <td class="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">{{ r.name }}</td>
+                      <td class="px-3 py-2.5 min-w-[220px]">
+                        <span :class="STATUS_UI[r.status].cls" class="inline-block px-2 py-0.5 text-xs font-semibold mb-1">{{ STATUS_UI[r.status].label }}</span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ r.note }}</p>
+                      </td>
+                      <td class="px-3 py-2.5 whitespace-nowrap">{{ formatQty(r.onHand, r.unit) }}</td>
+                      <td class="px-3 py-2.5 whitespace-nowrap">{{ formatQty(r.used, r.unit) }} / {{ formatQty(r.wasted, r.unit) }} <span class="text-xs text-gray-400">({{ Math.round(r.wastePct) }}%)</span></td>
+                      <td class="px-3 py-2.5 whitespace-nowrap">{{ r.daysLeft === null ? '—' : Math.round(r.daysLeft) }}</td>
+                      <td class="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{{ r.status === 'reorder' ? formatQty(r.qty, r.unit) : '—' }}</td>
+                      <td class="px-3 py-2.5 text-right whitespace-nowrap">{{ r.status === 'reorder' ? formatPeso(r.cost) : '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-if="reorderPlan.reorderCount" class="text-sm font-semibold text-gray-800 dark:text-gray-100 mt-3 text-right">Estimated reorder cost: {{ formatPeso(reorderPlan.totalCost) }}</p>
+            </template>
+          </div>
+
           <div v-if="!summary.entries" class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-center py-12 text-gray-400 dark:text-gray-500 text-sm mb-6">
             No waste logged in this period. Tap "Log Waste" whenever food is thrown away so the numbers stay accurate.
           </div>
@@ -363,11 +416,12 @@ import { useSidebarState } from '../composables/useSidebarState'
 import { useChatUnread } from '../composables/useChatUnread'
 import { useRouter } from 'vue-router'
 import { getAllInventory } from '../services/inventoryService'
-import { getWasteLogs, logWaste } from '../services/wasteservice'
+import { getWasteLogs, logWaste, getUsageMovements } from '../services/wasteservice'
 import { formatQty } from '../utils/inventory'
 import {
   WASTE_REASONS, RANGE_OPTIONS, summarize, buildInsights, costOf, formatPeso,
-  formatShortDate, daysAgoISO, localISODate, logsToCSV
+  formatShortDate, daysAgoISO, localISODate, logsToCSV,
+  COVER_OPTIONS, buildReorderPlan, reorderToCSV
 } from '../utils/waste'
 
 const router = useRouter()
@@ -388,6 +442,9 @@ const userAvatarUrl = ref('')
 
 const items = ref([])
 const logs = ref([])
+const movements = ref([])
+const usageMissing = ref(false)
+const coverDays = ref(14)
 const rangeDays = ref(30)
 const isLoading = ref(false)
 const pageError = ref('')
@@ -405,6 +462,12 @@ const form = ref(emptyForm())
 
 const summary = computed(() => summarize(logs.value, rangeDays.value))
 const insights = computed(() => buildInsights(summary.value, items.value))
+const reorderPlan = computed(() => buildReorderPlan(items.value, summary.value.current, movements.value, { days: rangeDays.value, coverDays: coverDays.value }))
+const STATUS_UI = {
+  reorder: { label: 'Reorder', cls: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  hold: { label: 'Hold off', cls: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  reduce: { label: 'Order less', cls: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+}
 const maxBucket = computed(() => Math.max(...summary.value.buckets.map((b) => b.cost), 1))
 
 const selectedItem = computed(() => items.value.find((i) => i.item_id === form.value.item_id) || null)
@@ -456,6 +519,14 @@ async function loadAll() {
     ])
     items.value = inv
     logs.value = wasteRows
+    try {
+      movements.value = await getUsageMovements(daysAgoISO(rangeDays.value - 1))
+      usageMissing.value = false
+    } catch (e) {
+      movements.value = []
+      usageMissing.value = true
+      console.error(e)
+    }
   } catch (error) {
     if (error?.code === 'WASTE_NOT_SET_UP') {
       setupMissing.value = true
@@ -513,6 +584,19 @@ function exportCSV() {
   URL.revokeObjectURL(url)
 }
 
+function exportReorderCSV() {
+  const csv = reorderToCSV(reorderPlan.value.rows)
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `reorder-suggestions-${localISODate()}.csv`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
 function goTo(item) {
   isMobileSidebarOpen.value = false
   router.push(item.path)
@@ -545,6 +629,7 @@ const allNavItems = [
   { name: 'Branches', path: '/admin/branches', iconPath: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01' },
   { name: 'Staff Management', path: '/admin/staff', iconPath: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z' },
   { name: 'Reports', path: '/admin/reports', iconPath: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+  { name: 'Audit Logs', path: '/admin/audit-logs', iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
   { name: 'Feedback & Ratings', path: '/admin/feedback', iconPath: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
   { name: 'Support Chat', path: '/admin/support', iconPath: 'M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' }
 ]

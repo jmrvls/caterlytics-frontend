@@ -34,6 +34,7 @@ import PaymentManagement from './Views/PaymentManagement.vue'
 import StaffManagement from './Views/StaffManagement.vue'
 import BranchManagement from './Views/BranchManagement.vue'
 import ReportsAnalytics from './Views/ReportsAnalytics.vue'
+import AuditLogs from './Views/AuditLogs.vue'
 import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
 import RegisterBusinessView from './Views/Registerbusinessview.vue'
@@ -63,6 +64,7 @@ const routes = [
   { path: '/admin/branches', component: BranchManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/staff', component: StaffManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/reports', component: ReportsAnalytics, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
+  { path: '/admin/audit-logs', component: AuditLogs, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/client/bookings', component: ClientDashboard, meta: { requiresAuth: true, roles: ['Client'] } },
   // Self-service business onboarding: only plain Client accounts can
   // register a new business (matches the guard inside register_business()
