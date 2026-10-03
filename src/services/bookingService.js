@@ -1,5 +1,9 @@
 import { supabase } from '../supabaseClient';
 import { toTitleCase } from '../utils/textFormat';
+import { localToday } from '../utils/date';
+
+// Mirrors the database CHECK (guest_count_positive) so users get a clear message.
+export const MAX_GUESTS = 5000;
 
 export async function getAllBookings() {
   const { data, error } = await supabase
@@ -87,8 +91,16 @@ export async function createBooking(bookingData) {
   if (!Number.isInteger(guestCount) || guestCount < 1) {
     throw new Error('Guest count must be a whole number of at least 1.');
   }
+  if (guestCount > MAX_GUESTS) {
+    throw new Error(`Guest count cannot be more than ${MAX_GUESTS.toLocaleString()}.`);
+  }
   if (!bookingData.event_date) {
     throw new Error('Event date is required.');
+  }
+  // Same rule as the database trigger (trg_booking_date_guard); the date
+  // input's min= can be bypassed, this and the trigger cannot.
+  if (bookingData.event_date < localToday()) {
+    throw new Error('Event date cannot be in the past.');
   }
 
   const contactNumber = String(bookingData.client_contact_number || '').replace(/[\s-]/g, '');
@@ -262,6 +274,17 @@ export async function updateMyBooking(id, updates) {
     throw new Error('Only Pending bookings can be edited. Please cancel and rebook instead.');
   }
 
+  const newGuests = Number(updates.guest_count);
+  if (!Number.isInteger(newGuests) || newGuests < 1) {
+    throw new Error('Guest count must be a whole number of at least 1.');
+  }
+  if (newGuests > MAX_GUESTS) {
+    throw new Error(`Guest count cannot be more than ${MAX_GUESTS.toLocaleString()}.`);
+  }
+  if (updates.event_date && updates.event_date !== currentBooking.event_date && updates.event_date < localToday()) {
+    throw new Error('Event date cannot be in the past.');
+  }
+
   // If the date is changing, re-check for conflicts (excluding this booking).
   // Must be scoped to the booking's business: a client can only read their own
   // bookings (RLS), so scanning getAllBookings() both missed other clients'
@@ -283,7 +306,7 @@ export async function updateMyBooking(id, updates) {
       event_date: updates.event_date,
       event_time: updates.event_time,
       event_location: toTitleCase(updates.event_location),
-      guest_count: updates.guest_count,
+      guest_count: newGuests,
       package_name: updates.package_name || null,
       package_id: updates.package_id || null,
     })

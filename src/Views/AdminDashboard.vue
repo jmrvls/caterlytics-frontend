@@ -143,7 +143,7 @@
           <!-- Welcome Banner -->
           <div class="flex items-start justify-between mb-8">
             <div>
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ firstName }}!</h2>
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ greetingName }}</h2>
               <p class="text-gray-500 dark:text-gray-400 mt-1">You can view and manage client payments here.</p>
             </div>
             <div class="hidden lg:flex items-center gap-3">
@@ -261,7 +261,7 @@
           <!-- Header -->
           <div class="flex items-start justify-between mb-6">
             <div>
-              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ greeting }}, {{ firstName }}!</h2>
+              <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ greetingName }}</h2>
               <span class="text-sm text-gray-400 dark:text-gray-500">{{ todayLabel }}</span>
             </div>
             <div class="hidden lg:flex items-center gap-3">
@@ -496,6 +496,8 @@ const userInitial = ref('U')
 const userAvatarUrl = ref('')
 const currentUserId = ref('')
 const businessName = ref('')
+// Heading shows the business name; falls back to the person's first name until it loads
+const greetingName = computed(() => businessName.value || firstName.value)
 const unreadBusinessNotifications = ref([])
 
 async function dismissBusinessNotification(notificationId) {
@@ -598,13 +600,6 @@ function formatDate(dateStr) {
 const todayLabel = new Date().toLocaleDateString('en-PH', {
   weekday: 'short', month: 'short', day: 'numeric'
 })
-
-const greeting = (() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
-})()
 
 function statusBadgeClass(status) {
   switch (status) {
