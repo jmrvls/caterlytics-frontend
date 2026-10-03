@@ -713,6 +713,13 @@
             </div>
             <div class="flex items-center gap-3 flex-shrink-0">
               <button
+                v-if="['Pending', 'Confirmed'].includes(b.booking_status)"
+                @click="plannerTarget = b"
+                class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline"
+              >
+                Plan Event
+              </button>
+              <button
                 v-if="b.booking_status === 'Pending'"
                 @click="openEditModal(b)"
                 class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:underline"
@@ -940,6 +947,7 @@
         @message="messageBusiness"
       />
       <ReviewModal v-if="reviewTarget" :booking="reviewTarget" @close="reviewTarget = null" @submitted="onReviewSubmitted" />
+      <EventPlanner v-if="plannerTarget" :booking="plannerTarget" @close="plannerTarget = null" />
 
     </main>
   </div>
@@ -963,6 +971,7 @@ import HeartButton from '../Components/HeartButton.vue'
 import PackageGallery from '../Components/PackageGallery.vue'
 import BusinessProfileModal from '../Components/BusinessProfileModal.vue'
 import ReviewModal from '../Components/ReviewModal.vue'
+import EventPlanner from '../Components/EventPlanner.vue'
 import ChatInbox from '../Components/ChatInbox.vue'
 import { useChatUnread, resetChatUnread } from '../composables/useChatUnread'
 import { getBusinessAddons, getBookingAddons, setBookingAddons, sumAddons } from '../services/addonService'
@@ -1423,6 +1432,8 @@ const profileData = ref(null)
 const profileReviews = ref([])
 const isLoadingProfile = ref(false)
 const reviewTarget = ref(null)
+// Booking currently open in the Event Planning tools (guest list / seating / dietary).
+const plannerTarget = ref(null)
 
 const guestsNum = computed(() => Number(form.value.guest_count) || 0)
 
