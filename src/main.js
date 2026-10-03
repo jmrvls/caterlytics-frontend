@@ -32,6 +32,7 @@ import SupplierManagement from './Views/SupplierManagement.vue'
 import FeedbackRatings from './Views/FeedbackRatings.vue'
 import SupportChat from './Views/SupportChat.vue'
 import FleetManagement from './Views/FleetManagement.vue'
+import DriverDeliveries from './Views/DriverDeliveries.vue'
 import PaymentManagement from './Views/PaymentManagement.vue'
 import StaffManagement from './Views/StaffManagement.vue'
 import BranchManagement from './Views/BranchManagement.vue'
@@ -64,6 +65,7 @@ const routes = [
   { path: '/admin/suppliers', component: SupplierManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/feedback', component: FeedbackRatings, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/support', component: SupportChat, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
+  { path: '/driver/deliveries', component: DriverDeliveries, meta: { requiresAuth: true, roles: ['Staff'] } },
   { path: '/admin/fleet', component: FleetManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/payments', component: PaymentManagement, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/branches', component: BranchManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
@@ -123,7 +125,7 @@ router.beforeEach(async (to) => {
 
   const { data: profile, error: profileError } = await supabase
     .from('tbl_profiles')
-    .select('username, full_name, role, avatar_url, business_id')
+    .select('username, full_name, role, position, avatar_url, business_id')
     .eq('id', session.user.id)
     .single()
 
@@ -162,6 +164,7 @@ router.beforeEach(async (to) => {
     username: profile.username,
     full_name: profile.full_name,
     role: profile.role,
+    position: profile.position || null,
     business_id: profile.business_id || null,
     avatar_url: profile.avatar_url || '',
   }
@@ -171,7 +174,7 @@ router.beforeEach(async (to) => {
     // Send the user back to a page they do have access to instead
     // of letting them in.
     if (profile.role === 'Staff') {
-      return '/admin/payments'
+      return profile.position === 'Driver' ? '/driver/deliveries' : '/admin/payments'
     } else if (profile.role === 'Client') {
       return '/client/bookings'
     } else if (profile.role === 'Super Admin') {

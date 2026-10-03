@@ -247,8 +247,15 @@
                     </div>
                   </div>
 
-                  <button @click="confirmRemove = d" class="self-start text-xs text-red-500 dark:text-red-400 hover:underline whitespace-nowrap">Remove</button>
+                  <div class="self-start flex lg:flex-col items-center lg:items-end gap-3 lg:gap-1">
+                    <button @click="openEditDelivery(d)" class="text-xs text-emerald-700 dark:text-emerald-300 hover:underline whitespace-nowrap">{{ d.status === 'Failed' ? 'Reschedule' : 'Date & notes' }}</button>
+                    <button @click="confirmRemove = d" class="text-xs text-red-500 dark:text-red-400 hover:underline whitespace-nowrap">Remove</button>
+                  </div>
                 </div>
+
+                <p v-if="d.notes" :class="d.status === 'Failed' ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'" class="mt-2 text-xs break-words">
+                  <span class="font-semibold">{{ d.status === 'Failed' ? 'Reason:' : 'Note:' }}</span> {{ d.notes }}
+                </p>
 
                 <ul v-if="warningsFor(d).length" class="mt-3 space-y-1">
                   <li v-for="(w, i) in warningsFor(d)" :key="i" class="flex gap-2 text-xs text-amber-700 dark:text-amber-300">
@@ -290,6 +297,7 @@
                   <p>
                     <span class="text-gray-400 dark:text-gray-500">Last seen:</span>
                     {{ timeAgo(v.last_location_at) }}
+                    <span class="block text-[11px] text-gray-400 dark:text-gray-500">The driver's phone updates this automatically while a delivery is Loading or En Route.</span>
                     <a v-if="v.last_lat != null && v.last_lng != null" :href="`https://www.google.com/maps?q=${v.last_lat},${v.last_lng}`" target="_blank" rel="noopener" class="text-emerald-700 dark:text-emerald-300 hover:underline ml-1">View on map</a>
                   </p>
                   <p v-if="v.notes" class="text-xs text-gray-500 dark:text-gray-400">{{ v.notes }}</p>
@@ -297,7 +305,7 @@
 
                 <div class="mt-4 flex flex-wrap items-center gap-2">
                   <button @click="shareLocation(v)" :disabled="locatingId === v.vehicle_id" class="px-3 py-1.5 border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 transition">
-                    {{ locatingId === v.vehicle_id ? 'Locating...' : 'Update location from this device' }}
+                    {{ locatingId === v.vehicle_id ? 'Locating...' : 'Set position manually (this device)' }}
                   </button>
                   <button @click="openVehicleModal(v)" class="px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:underline">Edit</button>
                   <button @click="confirmDeleteVehicle = v" class="px-3 py-1.5 text-xs font-semibold text-red-500 dark:text-red-400 hover:underline">Delete</button>
@@ -525,9 +533,35 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Average driving speed (km/h)</label>
         <input v-model="settingsForm.avg_speed_kph" type="number" min="1" max="120" step="1" class="w-full mb-4 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
 
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estimated load per guest (kg)</label>
+        <input v-model="settingsForm.kg_per_guest" type="number" min="0.1" max="20" step="0.1" class="w-full mb-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Used to warn when a vehicle's stops add up to more than its capacity (guests x this number).</p>
+
         <div class="flex justify-end gap-2">
           <button @click="showSettings = false" class="px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</button>
           <button @click="saveSettings" :disabled="isSaving" class="px-4 py-2.5 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">{{ isSaving ? 'Saving...' : 'Save' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EDIT DELIVERY: date + notes (+ reschedule a failed one) -->
+    <div v-if="editDelivery" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50" @click="editDelivery = null"></div>
+      <div class="relative bg-white dark:bg-gray-800 w-full max-w-md p-5 shadow-xl">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">{{ editDelivery.reopen ? 'Reschedule delivery' : 'Delivery date & notes' }}</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{{ editDelivery.client_name }} · event on {{ formatDateOnly(editDelivery.event_date) }}</p>
+        <div v-if="modalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-3">{{ modalError }}</div>
+
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Deliver on</label>
+        <input v-model="editDelivery.run_date" type="date" :max="editDelivery.event_date || undefined" class="w-full mb-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Can be the day before the event, but not after it.</p>
+
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ editDelivery.status === 'Failed' ? 'Why it failed / new plan' : 'Notes' }}</label>
+        <textarea v-model="editDelivery.notes" rows="3" maxlength="500" placeholder="Gate code, contact person, reason for failure..." class="w-full mb-4 px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+
+        <div class="flex justify-end gap-2">
+          <button @click="editDelivery = null" class="px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</button>
+          <button @click="saveEditDelivery" :disabled="isSaving" class="px-4 py-2.5 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50">{{ isSaving ? 'Saving...' : (editDelivery.reopen ? 'Reschedule' : 'Save') }}</button>
         </div>
       </div>
     </div>
@@ -573,13 +607,14 @@ import { useRouter } from 'vue-router'
 import {
   getFleetSettings, saveFleetSettings, getVehicles, createVehicle, updateVehicle, setVehicleStatus,
   updateVehicleLocation, deleteVehicle, getDrivers, getUnavailableStaffIds, getDeliveries,
-  getBookingsToSchedule, addDelivery, updateDelivery, removeDelivery, saveRouteOrder,
+  getBookingsToSchedule, addDelivery, updateDelivery, removeDelivery, saveRouteOrder, rescheduleDelivery,
   geocodeAddress, getCurrentPosition
 } from '../services/fleetservice'
 import {
   VEHICLE_TYPES, VEHICLE_STATUSES, DELIVERY_STATUSES, DEFAULT_SPEED_KPH, SERVICE_MIN, SETUP_BUFFER_MIN,
   hasCoords, parseLatLng, routeDistanceKm, optimizeRoute, evaluateRoute, mapsDirectionsUrl,
-  timeToMinutes, minutesToClock, formatClock, timeAgo, vehicleStatusClass, deliveryStatusClass
+  timeToMinutes, minutesToClock, formatClock, timeAgo, vehicleStatusClass, deliveryStatusClass,
+  estimateLoadKg, DEFAULT_KG_PER_GUEST
 } from '../utils/fleet'
 import { localToday, formatDateOnly } from '../utils/date'
 
@@ -648,6 +683,7 @@ const rows = computed(() =>
       ...d,
       client_name: d.tbl_bookings?.client_name || 'Unknown client',
       event_time: d.tbl_bookings?.event_time || null,
+      event_date: d.tbl_bookings?.event_date || null,
       guest_count: d.tbl_bookings?.guest_count ?? 0,
     }))
     .sort((a, b) => {
@@ -698,6 +734,17 @@ function warningsFor(d) {
       rows.value.filter((r) => r.vehicle_id === d.vehicle_id && r.driver_id && r.driver_id !== d.driver_id && !isFinal(r)).map((r) => r.driver_id)
     )
     if (otherDrivers.size) out.push('This vehicle has more than one driver on this date.')
+  }
+
+  // Capacity: estimated load of every open stop on this van today vs its capacity.
+  if (v && v.capacity_kg) {
+    const load = estimateLoadKg(
+      rows.value.filter((r) => r.vehicle_id === v.vehicle_id && !isFinal(r)),
+      settings.value?.kg_per_guest ?? DEFAULT_KG_PER_GUEST
+    )
+    if (load > Number(v.capacity_kg)) {
+      out.push(`Estimated load ~${Math.round(load)} kg is over ${v.name}'s capacity (${v.capacity_kg} kg) with the stops on this date.`)
+    }
   }
   return out
 }
@@ -806,6 +853,44 @@ async function assign(d, field, raw) {
     await refresh() // snap the dropdown back to the saved value
   } finally {
     busyId.value = null
+  }
+}
+
+// ---------- date & notes / reschedule ----------
+const editDelivery = ref(null)
+
+function openEditDelivery(d) {
+  modalError.value = ''
+  editDelivery.value = {
+    delivery_id: d.delivery_id,
+    client_name: d.client_name,
+    event_date: d.event_date,
+    run_date: d.run_date,
+    notes: d.notes || '',
+    status: d.status,
+    reopen: d.status === 'Failed', // saving a failed delivery puts it back on the board as Scheduled
+  }
+}
+
+async function saveEditDelivery() {
+  const e = editDelivery.value
+  if (!e) return
+  if (!e.run_date) { modalError.value = 'Choose a delivery date.'; return }
+  if (e.event_date && e.run_date > e.event_date) { modalError.value = 'The delivery date cannot be after the event date.'; return }
+  isSaving.value = true
+  modalError.value = ''
+  try {
+    await rescheduleDelivery(e.delivery_id, { runDate: e.run_date, notes: e.notes, reopen: e.reopen })
+    const moved = e.run_date !== runDate.value
+    editDelivery.value = null
+    preview.value = null
+    flash(moved ? `Delivery moved to ${formatDateOnly(e.run_date)}.` : 'Delivery updated.')
+    if (moved) runDate.value = e.run_date // the runDate watcher loads that day
+    else await refresh()
+  } catch (error) {
+    modalError.value = error?.message || 'Failed to update delivery.'
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -931,7 +1016,7 @@ async function shareLocation(v) {
 // ---------- base & settings ----------
 const showSettings = ref(false)
 const findingBase = ref(false)
-const settingsForm = ref({ base_name: 'Main Kitchen', base_address: '', base_lat: '', base_lng: '', avg_speed_kph: DEFAULT_SPEED_KPH })
+const settingsForm = ref({ base_name: 'Main Kitchen', base_address: '', base_lat: '', base_lng: '', avg_speed_kph: DEFAULT_SPEED_KPH, kg_per_guest: DEFAULT_KG_PER_GUEST })
 
 function openSettings() {
   modalError.value = ''
@@ -942,6 +1027,7 @@ function openSettings() {
     base_lat: s?.base_lat ?? '',
     base_lng: s?.base_lng ?? '',
     avg_speed_kph: s?.avg_speed_kph ?? DEFAULT_SPEED_KPH,
+    kg_per_guest: s?.kg_per_guest ?? DEFAULT_KG_PER_GUEST,
   }
   showSettings.value = true
 }

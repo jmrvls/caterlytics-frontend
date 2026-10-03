@@ -210,6 +210,8 @@ const handleLogin = async () => {
       router.push('/client/bookings')
     } else if (result.user.role === 'Super Admin') {
       router.push('/super-admin/dashboard')
+    } else if (result.user.role === 'Staff' && result.user.position === 'Driver') {
+      router.push('/driver/deliveries')
     } else {
       router.push('/admin/dashboard')
     }

@@ -28,7 +28,7 @@ function fail(error, fallback) {
 export async function getFleetSettings() {
   const { data, error } = await supabase
     .from('tbl_fleet_settings')
-    .select('business_id, base_name, base_address, base_lat, base_lng, avg_speed_kph')
+    .select('business_id, base_name, base_address, base_lat, base_lng, avg_speed_kph, kg_per_guest')
     .maybeSingle();
   if (error) fail(error, 'Failed to load fleet settings.');
   return data || null;
@@ -37,6 +37,8 @@ export async function getFleetSettings() {
 export async function saveFleetSettings(businessId, s) {
   const speed = Number(s.avg_speed_kph);
   if (!Number.isFinite(speed) || speed <= 0 || speed > 120) throw new Error('Average speed must be between 1 and 120 km/h.');
+  const kg = s.kg_per_guest === '' || s.kg_per_guest === null || s.kg_per_guest === undefined ? 0.7 : Number(s.kg_per_guest);
+  if (!Number.isFinite(kg) || kg <= 0 || kg > 20) throw new Error('Kg per guest must be between 0.1 and 20.');
   const lat = s.base_lat === '' || s.base_lat === null ? null : Number(s.base_lat);
   const lng = s.base_lng === '' || s.base_lng === null ? null : Number(s.base_lng);
   if ((lat === null) !== (lng === null)) throw new Error('Set both latitude and longitude for the base, or leave both empty.');
@@ -50,6 +52,7 @@ export async function saveFleetSettings(businessId, s) {
     base_lat: lat,
     base_lng: lng,
     avg_speed_kph: speed,
+    kg_per_guest: kg,
     updated_at: new Date().toISOString(),
   };
   const { data, error } = await supabase
@@ -194,17 +197,49 @@ export async function removeDelivery(deliveryId) {
 }
 
 // updates: [{ delivery_id, stop_order, leg_km, leg_minutes }]
+// One database call (save_delivery_route): either every stop is saved or none are.
 export async function saveRouteOrder(updates) {
-  const results = await Promise.all(
-    updates.map((u) =>
-      supabase
-        .from('tbl_deliveries')
-        .update({ stop_order: u.stop_order, leg_km: u.leg_km, leg_minutes: u.leg_minutes })
-        .eq('delivery_id', u.delivery_id)
-    )
-  );
-  const failed = results.find((r) => r.error);
-  if (failed) fail(failed.error, 'Failed to save the route.');
+  const { error } = await supabase.rpc('save_delivery_route', { p_updates: updates });
+  if (error) fail(error, 'Failed to save the route.');
+}
+
+// Office-side: change the delivery date and/or note. A Failed delivery goes back
+// to "Scheduled" so it shows on the board again. The database rejects a date
+// after the event date.
+export async function rescheduleDelivery(deliveryId, { runDate, notes, reopen = false }) {
+  const patch = { run_date: runDate, notes: String(notes || '').trim() || null };
+  if (reopen) {
+    patch.status = 'Scheduled';
+    patch.stop_order = null;
+    patch.leg_km = null;
+    patch.leg_minutes = null;
+  }
+  const { error } = await supabase.from('tbl_deliveries').update(patch).eq('delivery_id', deliveryId);
+  if (error) fail(error, 'Failed to update delivery.');
+}
+
+// ---------- Driver side (Staff with position "Driver") ----------
+// These call database functions that only ever touch the signed-in driver's own
+// deliveries, so a driver needs no direct table access.
+export async function getMyDeliveries() {
+  const { data, error } = await supabase.rpc('get_my_deliveries');
+  if (error) fail(error, 'Failed to load your deliveries.');
+  return data || [];
+}
+
+export async function driverSetDeliveryStatus(deliveryId, status, notes = null) {
+  const { error } = await supabase.rpc('driver_set_delivery_status', {
+    p_delivery_id: deliveryId,
+    p_status: status,
+    p_notes: notes,
+  });
+  if (error) fail(error, 'Failed to update the delivery.');
+}
+
+// Called from the driver's own phone while a delivery is active.
+export async function driverReportLocation(vehicleId, lat, lng) {
+  const { error } = await supabase.rpc('driver_report_location', { p_vehicle_id: vehicleId, p_lat: lat, p_lng: lng });
+  if (error) fail(error, 'Failed to send location.');
 }
 
 // ---------- Geocoding ----------

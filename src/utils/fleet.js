@@ -12,6 +12,16 @@ export const ROAD_FACTOR = 1.35;
 export const DEFAULT_SPEED_KPH = 30; // Metro Manila-ish average with traffic
 export const SERVICE_MIN = 15; // unloading time per stop
 export const SETUP_BUFFER_MIN = 30; // food should arrive this long before the event
+// Fallback load per guest (food + trays + equipment) when the business has not
+// set its own "kg per guest" in Fleet settings. An ESTIMATE, used only for the
+// capacity warning on the dispatch board.
+export const DEFAULT_KG_PER_GUEST = 0.7;
+
+// Estimated kg a vehicle carries for a set of stops: [{ guest_count }].
+export function estimateLoadKg(stops, kgPerGuest = DEFAULT_KG_PER_GUEST) {
+  const k = Number(kgPerGuest) > 0 ? Number(kgPerGuest) : DEFAULT_KG_PER_GUEST;
+  return stops.reduce((sum, s) => sum + (Number(s.guest_count) || 0) * k, 0);
+}
 
 export function hasCoords(p) {
   return (

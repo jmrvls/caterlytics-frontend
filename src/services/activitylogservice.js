@@ -35,6 +35,9 @@ export const TABLE_LABELS = {
   tbl_branch: 'Branch',
   tbl_business: 'Business profile',
   tbl_reviews: 'Review reply',
+  tbl_vehicles: 'Vehicle',
+  tbl_deliveries: 'Delivery',
+  tbl_fleet_settings: 'Fleet settings',
 };
 
 export const ACTION_LABELS = { INSERT: 'Created', UPDATE: 'Updated', DELETE: 'Deleted' };
@@ -101,7 +104,8 @@ export function describeChange(row) {
 
 function summarize(obj) {
   const pick = ['booking_status', 'package_name', 'item_name', 'full_name', 'role', 'branch_name',
-    'description', 'category', 'amount', 'amount_paid', 'payment_status', 'event_date', 'guest_count', 'quantity']
+    'description', 'category', 'amount', 'amount_paid', 'payment_status', 'event_date', 'guest_count', 'quantity',
+    'name', 'plate_number', 'vehicle_type', 'status', 'run_date']
     .filter(k => obj[k] !== undefined && obj[k] !== null);
   return pick.map(k => ({ key: k, from: undefined, to: obj[k] }));
 }
