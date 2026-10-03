@@ -784,7 +784,7 @@
                 Cancel
               </button>
               <button
-                v-if="b.booking_status === 'Completed' && b.package_id && !reviewedBookingIds.has(String(b.booking_id))"
+                v-if="b.booking_status === 'Completed' && !reviewedBookingIds.has(String(b.booking_id))"
                 @click="reviewTarget = b"
                 class="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
               >

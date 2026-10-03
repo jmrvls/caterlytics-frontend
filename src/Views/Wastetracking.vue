@@ -86,6 +86,11 @@
             :class="sidebarExpanded ? 'ml-auto min-w-[20px] h-5 px-1.5' : 'absolute top-1 right-1 min-w-[16px] h-4 px-1'"
             class="rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
           >{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
+          <span
+            v-if="item.name === 'Feedback & Ratings' && reviewPending"
+            :class="sidebarExpanded ? 'ml-auto min-w-[20px] h-5 px-1.5' : 'absolute top-1 right-1 min-w-[16px] h-4 px-1'"
+            class="rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
+          >{{ reviewPending > 99 ? '99+' : reviewPending }}</span>
         </a>
       </nav>
 
@@ -414,6 +419,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useChatUnread } from '../composables/useChatUnread'
+import { useReviewAlerts } from '../composables/useReviewAlerts'
 import { useRouter } from 'vue-router'
 import { getAllInventory } from '../services/inventoryService'
 import { getWasteLogs, logWaste, getUsageMovements } from '../services/wasteservice'
@@ -428,6 +434,7 @@ const router = useRouter()
 
 const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
 const { chatUnread } = useChatUnread()
+const { reviewPending } = useReviewAlerts()
 const isLogoHovered = ref(false)
 
 function toggleSidebar() {

@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient'
 import { getLowStockItems } from '../services/inventoryService'
 import { getMyAssignedBookings } from '../services/staffassignmentservice'
 import { resetChatUnread } from './useChatUnread'
+import { resetReviewAlerts } from './useReviewAlerts'
 
 // Shared, app-wide notification state: low-stock alerts + new booking alerts
 // (Admin/Owner), and event-assignment alerts (Staff).
@@ -88,6 +89,7 @@ function resetNotificationState() {
 export function resetNotifications() {
   resetNotificationState()
   resetChatUnread()
+  resetReviewAlerts()
   lastUserKey = null
 }
 

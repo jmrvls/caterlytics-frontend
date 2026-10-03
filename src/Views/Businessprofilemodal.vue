@@ -73,6 +73,10 @@
                 <span v-if="r.package_name" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ r.package_name }}</span>
               </div>
               <p v-if="r.comment" class="text-sm text-gray-700 dark:text-gray-300 mt-2 whitespace-pre-line">{{ r.comment }}</p>
+              <div v-if="r.owner_reply" class="mt-3 border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 rounded-r-lg p-3">
+                <p class="text-xs font-bold text-emerald-700 dark:text-emerald-300 mb-1">Reply from the caterer <span v-if="r.replied_at" class="font-normal text-gray-400 dark:text-gray-500">· {{ formatReviewDate(r.replied_at) }}</span></p>
+                <p class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line break-words">{{ r.owner_reply }}</p>
+              </div>
             </li>
           </ul>
         </section>

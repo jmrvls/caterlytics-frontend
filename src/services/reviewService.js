@@ -17,6 +17,14 @@ export async function getOwnerReviews() {
   }));
 }
 
+// Number of reviews in the caller's business that still have no owner reply
+// (drives the red badge on the sidebar). Returns 0 for non-Admin/Owner users.
+export async function getUnrepliedReviewCount() {
+  const { data, error } = await supabase.rpc('get_unreplied_review_count');
+  if (error) throw new Error(error.message || 'Failed to load review count.');
+  return Number(data) || 0;
+}
+
 // Saves (or edits) the owner's public reply. An empty string removes it.
 export async function replyToReview(reviewId, reply) {
   const text = (reply || '').trim();

@@ -86,6 +86,11 @@
             :class="sidebarExpanded ? 'ml-auto min-w-[20px] h-5 px-1.5' : 'absolute top-1 right-1 min-w-[16px] h-4 px-1'"
             class="rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
           >{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
+          <span
+            v-if="item.name === 'Feedback & Ratings' && reviewPending"
+            :class="sidebarExpanded ? 'ml-auto min-w-[20px] h-5 px-1.5' : 'absolute top-1 right-1 min-w-[16px] h-4 px-1'"
+            class="rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
+          >{{ reviewPending > 99 ? '99+' : reviewPending }}</span>
         </a>
       </nav>
 
@@ -313,6 +318,7 @@ import NotificationBell from '../Components/NotificationBell.vue'
 import StarRating from '../Components/StarRating.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useChatUnread } from '../composables/useChatUnread'
+import { useReviewAlerts, setReviewPending } from '../composables/useReviewAlerts'
 import { useRouter } from 'vue-router'
 import { getOwnerReviews, replyToReview, summarizeReviews, formatReviewDate } from '../services/reviewService'
 
@@ -320,6 +326,7 @@ const router = useRouter()
 
 const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
 const { chatUnread } = useChatUnread()
+const { reviewPending } = useReviewAlerts()
 const isLogoHovered = ref(false)
 
 function toggleSidebar() {
@@ -416,6 +423,7 @@ async function loadAll() {
   pageError.value = ''
   try {
     reviews.value = await getOwnerReviews()
+    setReviewPending(stats.value.awaitingReply)
   } catch (e) {
     pageError.value = e.message || 'Failed to load reviews.'
   } finally {
@@ -447,6 +455,7 @@ async function persistReply(r, text, message) {
     const clean = text.trim()
     r.owner_reply = clean || null
     r.replied_at = clean ? new Date().toISOString() : null
+    setReviewPending(stats.value.awaitingReply)
     cancelReply()
     flash(message)
   } catch (e) {

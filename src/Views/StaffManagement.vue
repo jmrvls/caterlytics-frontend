@@ -86,6 +86,11 @@
             :class="sidebarExpanded ? 'ml-auto min-w-[20px] h-5 px-1.5' : 'absolute top-1 right-1 min-w-[16px] h-4 px-1'"
             class="rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
           >{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
+          <span
+            v-if="item.name === 'Feedback & Ratings' && reviewPending"
+            :class="sidebarExpanded ? 'ml-auto min-w-[20px] h-5 px-1.5' : 'absolute top-1 right-1 min-w-[16px] h-4 px-1'"
+            class="rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
+          >{{ reviewPending > 99 ? '99+' : reviewPending }}</span>
         </a>
       </nav>
 
@@ -172,6 +177,8 @@
             </select>
           </div>
         </div>
+
+        <div v-if="usersError" class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2 mb-3">{{ usersError }}</div>
 
         <div class="bg-white dark:bg-gray-800 rounded-none shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
 
@@ -530,7 +537,8 @@ import { useRouter } from 'vue-router'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useChatUnread } from '../composables/useChatUnread'
-import { isValidPhMobile } from '../utils/validators'
+import { useReviewAlerts } from '../composables/useReviewAlerts'
+import { isValidPhMobile, normalizePhMobile } from '../utils/validators'
 import { getUsers, createStaffUser, updateStaffUser, deleteStaffUser } from '../services/staffService'
 import {
   getUnavailableDates,
@@ -538,9 +546,17 @@ import {
   removeUnavailableDate
 } from '../services/staffassignmentservice'
 
+// Profiles store mobiles as 09171234567 (that's what phone-otp saves), so turn
+// +639171234567 into the same shape and strip spaces/dashes.
+function toLocalMobile(value) {
+  const n = normalizePhMobile(value)
+  return n.startsWith('+63') ? '0' + n.slice(3) : n
+}
+
 const router = useRouter()
 const { isSidebarOpen, isMobileSidebarOpen, sidebarExpanded } = useSidebarState()
 const { chatUnread } = useChatUnread()
+const { reviewPending } = useReviewAlerts()
 const isLogoHovered = ref(false)
 
 function toggleSidebar() {
@@ -573,6 +589,7 @@ const filteredUserList = computed(() => {
   })
 })
 const isLoadingUsers = ref(false)
+const usersError = ref('')
 
 const showAddUserModal = ref(false)
 const isCreating = ref(false)
@@ -634,11 +651,13 @@ onMounted(() => {
 
 async function fetchUsers() {
   isLoadingUsers.value = true
+  usersError.value = ''
   try {
     const result = await getUsers()
     userList.value = result.users
   } catch (error) {
     console.error('Failed to fetch users:', error)
+    usersError.value = error?.message || 'Failed to load staff.'
   } finally {
     isLoadingUsers.value = false
   }
@@ -656,6 +675,19 @@ function closeAddUserModal() {
 
 async function handleCreateUser() {
   modalError.value = ''
+  // `required` lets whitespace-only text through, and a username saved with a
+  // trailing space can never be found again at login, so clean everything first.
+  const username = String(newUser.value.username || '').trim()
+  const email = String(newUser.value.email || '').trim().toLowerCase()
+  const fullName = String(newUser.value.full_name || '').trim()
+  if (!fullName) {
+    modalError.value = 'Full name is required.'
+    return
+  }
+  if (!/^[A-Za-z0-9._-]{3,30}$/.test(username)) {
+    modalError.value = 'Username must be 3-30 characters: letters, numbers, dot, dash or underscore only.'
+    return
+  }
   if (newUser.value.contact_number && !isValidPhMobile(newUser.value.contact_number)) {
     modalError.value = 'Enter a valid mobile number, e.g. 09171234567.'
     return
@@ -664,11 +696,12 @@ async function handleCreateUser() {
 
   try {
     await createStaffUser(
-      newUser.value.username,
-      newUser.value.email,
-      newUser.value.full_name,
+      username,
+      email,
+      fullName,
       newUser.value.role,
-      newUser.value.contact_number,
+      // Store 09171234567, not "0917 123 4567", so login-by-number and SMS match.
+      toLocalMobile(newUser.value.contact_number),
       newUser.value.availability,
       newUser.value.role === 'Staff' ? newUser.value.position : null
     )
@@ -723,9 +756,9 @@ async function handleUpdateUser() {
 
   try {
     await updateStaffUser(editUser.value.id, {
-      full_name: editUser.value.full_name,
+      full_name: String(editUser.value.full_name).trim(),
       role: editUser.value.role,
-      contact_number: editUser.value.contact_number,
+      contact_number: toLocalMobile(editUser.value.contact_number),
       availability: editUser.value.availability,
       position: editUser.value.role === 'Staff' ? editUser.value.position : null
     })

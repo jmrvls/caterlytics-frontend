@@ -314,7 +314,7 @@
                 <li v-for="row in drillDownRows" :key="row.booking_id" class="text-sm flex items-start justify-between gap-3">
                   <div class="min-w-0">
                     <span class="font-semibold text-gray-800 dark:text-gray-100 truncate block">{{ row.client_name }}</span>
-                    <span class="block text-xs text-gray-400">{{ formatDate(row.event_date) }} · {{ row.guest_count }} guests · {{ row.package_name || '—' }}</span>
+                    <span class="block text-xs text-gray-400">{{ formatDateOnly(row.event_date) }} · {{ row.guest_count }} guests · {{ row.package_name || '—' }}</span>
                   </div>
                   <span class="text-xs text-gray-400 whitespace-nowrap">{{ row.booking_status }}</span>
                 </li>
@@ -384,7 +384,7 @@ import autoTable from 'jspdf-autotable'
 import logoUrl from '../Assets/logofinal.png'
 import NotificationBell from '../Components/SuperAdminBell.vue'
 import { logoutUser } from '../services/authService'
-import { localToday } from '../utils/date'
+import { localToday, formatDateOnly } from '../utils/date'
 import { supabase } from '../supabaseClient'
 import { resetNotifications } from '../composables/useNotifications'
 import {
@@ -520,13 +520,18 @@ function statusBadgeClass(status) {
 
 // silent = background refresh: no "Loading…" flash and no wiping the error
 // banner, so the table doesn't blink after every approve/suspend or poll.
+let loadToken = 0
 async function loadData({ silent = false } = {}) {
+  // Only the newest request may update the screen. Otherwise a slow 30s poll that
+  // started BEFORE an Approve/Suspend could finish AFTER it and show the old status.
+  const token = ++loadToken
   if (!silent) {
     isLoading.value = true
     errorMessage.value = ''
   }
   try {
     const [s, b] = await Promise.all([getPlatformStats(), getPlatformBusinesses()])
+    if (token !== loadToken) return
     stats.value = s
     businesses.value = b
     // keep the open Details modal in sync with the fresh row
@@ -535,6 +540,7 @@ async function loadData({ silent = false } = {}) {
       if (fresh) detailsBusiness.value = fresh
     }
   } catch (error) {
+    if (token !== loadToken) return
     // If the session expired, don't just fail quietly forever -- send the
     // user back to login. (getSession() also tries to refresh the token, so
     // this only triggers when the session is really gone.)
@@ -548,7 +554,7 @@ async function loadData({ silent = false } = {}) {
     }
     if (!silent) errorMessage.value = error?.message || 'Failed to load platform data.'
   } finally {
-    if (!silent) isLoading.value = false
+    if (!silent && token === loadToken) isLoading.value = false
   }
 }
 
@@ -556,6 +562,7 @@ async function loadData({ silent = false } = {}) {
 // template and resolves once the user picks Cancel or the action button.
 const confirmState = ref(null)
 function askConfirm(message, danger = true, actionLabel = null) {
+  confirmState.value?.resolve(false) // never leave an earlier prompt's promise hanging
   return new Promise((resolve) => {
     confirmState.value = { message, danger, actionLabel, resolve }
   })
@@ -710,12 +717,18 @@ onMounted(() => {
     router.push('/')
     return
   }
-  const user = JSON.parse(storedUser)
+  let user = {}
+  try {
+    user = JSON.parse(storedUser) || {}
+  } catch {
+    router.push('/')
+    return
+  }
   if (user.role !== 'Super Admin') {
     router.push('/')
     return
   }
-  userName.value = user.full_name
+  userName.value = user.full_name || user.username || 'Super Admin'
   loadData()
   // Pick up newly registered businesses / changes made elsewhere without a
   // manual refresh (the bell already polls every 20s; keep the table in step).
