@@ -111,10 +111,36 @@
           </button>
         </form>
 
-        <!-- Dynamic Registration Anchor Link -->
-        <div class="text-center pt-2">
-          <p class="text-sm text-gray-500 font-medium">
-            New client? <router-link to="/register" class="text-emerald-600 font-bold hover:underline">Create Account</router-link>
+        <!-- Client registration -->
+        <div class="text-center pt-2 space-y-2">
+          <p class="text-sm text-gray-500 font-medium">Booking a catering event?</p>
+          <router-link
+            to="/register"
+            class="block w-full p-3 rounded-xl border-2 border-emerald-600 text-emerald-700 font-bold text-sm hover:bg-emerald-50"
+          >
+            Create a client account
+          </router-link>
+        </div>
+
+        <!-- For caterers: contact to apply -->
+        <div class="text-center pt-5 border-t border-gray-100 space-y-1">
+          <p class="text-xs text-gray-500">
+            <span class="font-bold">For caterers:</span> want to use Caterlytics for your business?
+          </p>
+          <p class="text-xs font-bold">
+            <a
+              href="https://m.me/jmr.vls"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-emerald-600 hover:underline"
+            >Messenger</a>
+            <span class="text-gray-300 mx-1">·</span>
+            <a
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=jomaridorado99@gmail.com&su=Caterlytics%20Application&body=Business%20name%3A%0ALocation%3A%0AFacebook%20page%3A%0AContact%20number%3A"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-emerald-600 hover:underline"
+            >Email</a>
           </p>
         </div>
 
