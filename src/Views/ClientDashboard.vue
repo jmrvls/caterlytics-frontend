@@ -531,14 +531,48 @@
                 </p>
               </div>
 
+              <!-- ============ PROMO CODE + LOYALTY POINTS ============ -->
+              <div v-if="selectedPackage" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Promo code</label>
+                  <div class="flex gap-2 mt-1">
+                    <input v-model="promoInput" @keydown.enter.prevent="applyPromo" maxlength="20" placeholder="Enter code" class="flex-1 min-w-0 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+                    <button type="button" @click="applyPromo" :disabled="!promoInput.trim() || !form.event_date" class="px-4 rounded-xl border border-emerald-600 text-emerald-700 dark:text-emerald-300 text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition">Apply</button>
+                  </div>
+                  <p v-if="quote && quote.promo_code" class="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{{ quote.promo_code }} applied.
+                    <button type="button" @click="removePromo" class="underline ml-1">Remove</button></p>
+                  <p v-else-if="quote && quote.promo_error" class="text-xs text-red-600 dark:text-red-400 mt-1">{{ quote.promo_error }}</p>
+                  <p v-else-if="!form.event_date && promoInput" class="text-xs text-gray-400 dark:text-gray-500 mt-1">Pick an event date, then apply.</p>
+                </div>
+                <div v-if="quote && quote.loyalty_enabled">
+                  <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Loyalty points
+                    <span :class="tierBadgeClass(quote.tier)" class="ml-1 px-1.5 py-0.5 rounded text-[10px] normal-case tracking-normal">{{ quote.tier }}</span></label>
+                  <div class="flex gap-2 mt-1">
+                    <input type="number" v-model.number="pointsInput" min="0" :max="quote.max_redeemable_points" :disabled="!quote.max_redeemable_points" placeholder="0" class="flex-1 min-w-0 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100 disabled:opacity-50" />
+                    <button type="button" @click="pointsInput = quote.max_redeemable_points" :disabled="!quote.max_redeemable_points" class="px-4 rounded-xl border border-emerald-600 text-emerald-700 dark:text-emerald-300 text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 transition">Use max</button>
+                  </div>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">You have {{ quote.points_balance.toLocaleString() }} points (₱{{ formatPrice(quote.peso_per_point) }} each).
+                    <span v-if="quote.loyalty_note" class="text-amber-600 dark:text-amber-400">{{ quote.loyalty_note }}</span></p>
+                </div>
+              </div>
+
               <div class="flex flex-col sm:flex-row sm:items-end gap-3">
                 <div v-if="selectedPackage" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4 text-left flex-1">
                   <p class="text-xs text-gray-500 dark:text-gray-400">
                     ₱{{ formatPrice(selectedPackage.price_per_head) }} × {{ form.guest_count || 0 }} guests = ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0)) }}<template v-if="addonsSubtotal > 0"> + ₱{{ formatPrice(addonsSubtotal) }} add-ons</template>
                   </p>
+                  <template v-if="quote">
+                    <p v-if="Number(quote.season_adjustment) !== 0" class="text-xs mt-1" :class="Number(quote.season_adjustment) > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'">
+                      {{ quote.season_rule_name }}: {{ Number(quote.season_adjustment) > 0 ? '+' : '−' }}₱{{ formatPrice(Math.abs(quote.season_adjustment)) }}
+                    </p>
+                    <p v-if="Number(quote.promo_discount) > 0" class="text-xs mt-1 text-emerald-600 dark:text-emerald-400">Promo {{ quote.promo_code }}: −₱{{ formatPrice(quote.promo_discount) }}</p>
+                    <p v-if="Number(quote.loyalty_discount) > 0" class="text-xs mt-1 text-emerald-600 dark:text-emerald-400">{{ quote.points_used }} points: −₱{{ formatPrice(quote.loyalty_discount) }}</p>
+                  </template>
+                  <p v-else-if="!form.event_date" class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Pick an event date to see seasonal pricing.</p>
                   <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                    Est. Total: ₱{{ formatPrice((selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
+                    Est. Total: ₱{{ formatPrice(quote ? quote.total : (selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
                   </p>
+                  <p v-if="quote && quote.loyalty_enabled && quote.points_to_earn > 0" class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">You'll earn about {{ quote.points_to_earn }} points when this booking is completed.</p>
                 </div>
                 <div class="flex-1">
                   <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
@@ -597,6 +631,15 @@
 
       <!-- ============ MY BOOKINGS TAB ============ -->
       <div v-else-if="activeTab === 'My Bookings'">
+        <div v-if="myRewards.length" class="flex flex-wrap gap-3 mb-4">
+          <div v-for="r in myRewards" :key="r.business_id" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 flex items-center gap-3">
+            <div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ r.business_name }} rewards</p>
+              <p class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ r.points_balance.toLocaleString() }} <span class="text-xs font-medium text-gray-400">points</span></p>
+            </div>
+            <span :class="tierBadgeClass(r.tier)" class="px-2 py-0.5 rounded-full text-xs font-semibold">{{ r.tier }}</span>
+          </div>
+        </div>
         <div
           v-for="change in statusChangeAlerts"
           :key="change.booking.booking_id"
@@ -694,6 +737,13 @@
                     </p>
                   </div>
                 </div>
+              </div>
+
+              <div v-if="b.quoted_total != null && (Number(b.seasonal_adjustment) !== 0 || Number(b.promo_discount) > 0 || Number(b.loyalty_discount) > 0)" class="mt-2.5 text-xs text-gray-500 dark:text-gray-400">
+                <span class="font-semibold text-gray-700 dark:text-gray-200">Quoted ₱{{ formatPrice(b.quoted_total) }}</span>
+                <span v-if="Number(b.seasonal_adjustment) !== 0"> · {{ b.seasonal_rule_name || 'Seasonal' }} {{ Number(b.seasonal_adjustment) > 0 ? '+' : '−' }}₱{{ formatPrice(Math.abs(b.seasonal_adjustment)) }}</span>
+                <span v-if="Number(b.promo_discount) > 0" class="text-emerald-600 dark:text-emerald-400"> · {{ b.promo_code }} −₱{{ formatPrice(b.promo_discount) }}</span>
+                <span v-if="Number(b.loyalty_discount) > 0" class="text-emerald-600 dark:text-emerald-400"> · {{ b.loyalty_points_used }} points −₱{{ formatPrice(b.loyalty_discount) }}</span>
               </div>
 
               <div v-if="b.tbl_payments" class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1">
@@ -843,6 +893,7 @@
               <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-3">
                 Est. Total: ₱{{ formatPrice((selectedEditPackage.price_per_head || 0) * (editForm.guest_count || 0) + editAddonsSubtotal) }}
               </p>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Before seasonal pricing and discounts. They're re-applied when you save.</p>
             </div>
 
             <!-- ============ EXTRA ADD-ONS (edit, ala carte, optional) ============ -->
@@ -975,6 +1026,7 @@ import EventPlanner from '../Components/EventPlanner.vue'
 import ChatInbox from '../Components/ChatInbox.vue'
 import { useChatUnread, resetChatUnread } from '../composables/useChatUnread'
 import { getBusinessAddons, getBookingAddons, setBookingAddons, sumAddons } from '../services/addonService'
+import { quoteBookingPrice, applyBookingPricing, getMyLoyalty, tierBadgeClass } from '../services/pricingService'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -1187,6 +1239,79 @@ const isLoadingAddons = ref(false)
 const addonsSubtotal = computed(() =>
   businessAddons.value.reduce((sum, a) => sum + (Number(addonQuantities.value[a.addon_id]) || 0) * Number(a.price), 0)
 )
+
+// ---- Dynamic pricing: live quote (seasonal + promo + loyalty) ----
+// The server does the maths (quote_booking_price); this just asks it whenever an input changes.
+const promoInput = ref('')
+const appliedPromo = ref('')
+const pointsInput = ref(0)
+const quote = ref(null)
+const myRewards = ref([])
+let quoteTimer = null
+let quoteSeq = 0
+
+async function refreshQuote() {
+  const f = form.value
+  const pkg = selectedPackage.value
+  if (!pkg || !selectedBusinessId.value || !f.event_date || !(Number(f.guest_count) >= 1)) { quote.value = null; return }
+  const seq = ++quoteSeq
+  try {
+    const q = await quoteBookingPrice({
+      businessId: selectedBusinessId.value,
+      packageId: pkg.package_id,
+      eventDate: f.event_date,
+      guests: Number(f.guest_count),
+      addonsTotal: addonsSubtotal.value,
+      promoCode: appliedPromo.value,
+      points: Number(pointsInput.value) || 0,
+    })
+    if (seq !== quoteSeq) return          // a newer request is in flight
+    quote.value = q
+    // The server may have clamped the points; keep the box honest.
+    if ((Number(pointsInput.value) || 0) > q.points_used) pointsInput.value = q.points_used
+  } catch (error) {
+    // Pricing SQL not installed yet, or offline: fall back to the plain estimate.
+    if (seq === quoteSeq) quote.value = null
+    console.error('Price quote failed:', error)
+  }
+}
+function scheduleQuote() {
+  clearTimeout(quoteTimer)
+  quoteTimer = setTimeout(refreshQuote, 300)
+}
+watch(
+  [selectedBusinessId, () => form.value.package_id, () => form.value.event_date, () => form.value.guest_count, addonsSubtotal, appliedPromo, pointsInput],
+  scheduleQuote
+)
+function applyPromo() {
+  appliedPromo.value = promoInput.value.trim().toUpperCase()
+}
+function removePromo() {
+  appliedPromo.value = ''
+  promoInput.value = ''
+}
+function resetPricingInputs() {
+  promoInput.value = ''
+  appliedPromo.value = ''
+  pointsInput.value = 0
+  quote.value = null
+}
+// apply_booking_pricing returns the server's breakdown; map it onto a booking row for display.
+function pricingToBooking(q) {
+  return q ? {
+    base_amount: q.base_amount,
+    seasonal_rule_name: q.season_rule_name,
+    seasonal_adjustment: q.season_adjustment,
+    promo_code: q.promo_code,
+    promo_discount: q.promo_discount,
+    loyalty_points_used: q.points_used,
+    loyalty_discount: q.loyalty_discount,
+    quoted_total: q.total,
+  } : {}
+}
+async function loadMyRewards() {
+  try { myRewards.value = await getMyLoyalty() } catch { myRewards.value = [] }
+}
 
 function setAddonQuantity(addonId, qty) {
   const n = Math.max(0, Math.floor(Number(qty) || 0))
@@ -1763,6 +1888,7 @@ onMounted(() => {
   loadPackages()
   loadMyBookings()
   loadCatalogExtras()
+  loadMyRewards()
 })
 
 // Compares freshly-fetched bookings against what was last seen (localStorage,
@@ -2016,6 +2142,23 @@ async function handleSaveEdit() {
       updated.addons = originalAddons
     }
 
+    // Guests / date / package / add-ons may have changed, so re-price. Keeps the
+    // booking's promo + points where they still fit (non-strict drops what doesn't).
+    try {
+      const q = await applyBookingPricing(updated.booking_id, {
+        promoCode: bookingToEdit.value.promo_code || '',
+        points: Number(bookingToEdit.value.loyalty_points_used) || 0,
+        strict: false,
+      })
+      Object.assign(updated, pricingToBooking(q))
+      if (bookingToEdit.value.promo_code && !q.promo_code) {
+        pageError.value = `Promo ${bookingToEdit.value.promo_code} no longer applies to this booking and was removed.`
+      }
+      loadMyRewards()
+    } catch (priceError) {
+      console.error('Failed to re-price booking:', priceError)
+    }
+
     const target = myBookings.value.find((b) => b.booking_id === updated.booking_id)
     if (target) {
       Object.assign(target, updated)
@@ -2110,7 +2253,26 @@ async function submitBooking() {
       }
     }
 
+    // Lock in the price: seasonal rule, promo code and loyalty points are
+    // re-checked and applied by the server (never trusted from the browser).
+    // A plain booking with no promo/points still gets its seasonal quote saved,
+    // but a hiccup there must not look like a failed booking.
+    const wantsDiscount = !!appliedPromo.value || (Number(pointsInput.value) || 0) > 0
+    try {
+      await applyBookingPricing(newBooking.booking_id, {
+        promoCode: appliedPromo.value,
+        points: Number(pointsInput.value) || 0,
+      })
+    } catch (priceError) {
+      console.error('Failed to apply pricing:', priceError)
+      if (wantsDiscount) {
+        pageError.value = `Booking was submitted, but your discount wasn't applied: ${priceError.message}`
+      }
+    }
+
     successMessage.value = 'Booking request submitted! We will confirm it shortly.'
+    resetPricingInputs()
+    loadMyRewards()
     form.value = { ...form.value, event_date: '', event_time: '', event_location: '', guest_count: null, package_id: '' }
     selectedBusinessId.value = ''
     selectedMenuItems.value = {}
