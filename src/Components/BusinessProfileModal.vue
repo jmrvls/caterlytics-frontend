@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" @click.self="emit('close')">
-    <div class="bg-white dark:bg-gray-800 w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-xl">
+    <div class="bg-white dark:bg-gray-800 w-full sm:max-w-2xl max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-xl">
       <!-- Header -->
       <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-5 py-4 flex items-start justify-between gap-3 z-10">
         <div class="flex items-center gap-3 min-w-0">

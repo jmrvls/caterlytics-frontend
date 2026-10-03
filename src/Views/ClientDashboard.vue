@@ -3,7 +3,7 @@
 
     <!-- TOP NAV -->
     <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
-      <div class="w-full px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between">
+      <div class="w-full px-4 sm:px-6 lg:px-10 py-3 sm:py-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain" />
           <span class="font-bold text-gray-800 dark:text-gray-100">Caterlytics</span>
@@ -43,20 +43,20 @@
       </div>
     </header>
 
-    <main class="w-full px-4 sm:px-6 lg:px-10 py-8">
+    <main class="w-full px-4 sm:px-6 lg:px-10 py-4 sm:py-8">
 
       <!-- TABS -->
-      <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-6 w-fit">
+      <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-4 sm:mb-6 w-full sm:w-fit overflow-x-auto no-scrollbar">
         <button
           v-for="tab in tabs" :key="tab"
           @click="activeTab = tab"
           :class="activeTab === tab ? 'bg-emerald-600 dark:bg-emerald-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'"
-          class="relative px-4 py-2 rounded-lg text-sm font-semibold transition"
+          class="relative flex-1 sm:flex-none whitespace-nowrap px-3 sm:px-4 py-2.5 sm:py-2 rounded-lg text-sm font-semibold transition"
         >
           {{ tab }}
           <span
             v-if="tab === 'Messages' && chatUnread"
-            class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
+            class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow"
           >{{ chatUnread > 99 ? '99+' : chatUnread }}</span>
         </button>
       </div>
@@ -74,7 +74,7 @@
         <h3 class="font-bold text-gray-800 dark:text-gray-100">Choose a Catering Business</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">Tap the caterer you want, then fill in your event details.</p>
 
-        <div v-if="businesses.length" class="flex flex-wrap items-center gap-3 mb-3">
+        <div v-if="businesses.length" class="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
           <label class="text-xs font-semibold text-gray-500 dark:text-gray-400">Sort by</label>
           <select v-model="businessSort" class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
             <option value="name">Name (A–Z)</option>
@@ -158,14 +158,14 @@
       </div>
 
       <!-- ============ STEP 2: CHOOSE A PACKAGE (Shopee-style browse grid) ============ -->
-      <div v-else-if="activeTab === 'Book Catering' && !form.package_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+      <div v-else-if="activeTab === 'Book Catering' && !form.package_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 sm:p-6">
         <button type="button" @click="clearBusiness" class="flex items-center gap-1.5 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 mb-4">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           Back
         </button>
-        <div class="flex items-center justify-between gap-3 mb-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-gray-100 dark:border-gray-700">
           <div class="flex items-center gap-3 min-w-0">
             <img
               v-if="selectedBusiness?.logo_url"
@@ -184,7 +184,7 @@
               </p>
             </div>
           </div>
-          <div class="flex items-center gap-3 flex-shrink-0">
+          <div class="flex items-center gap-4 sm:gap-3 sm:flex-shrink-0">
             <HeartButton small :active="favoriteBusinessIds.has(selectedBusinessId)" @toggle="toggleFavoriteBusiness(selectedBusinessId)" />
             <button type="button" @click="openBusinessProfile(selectedBusinessId)" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline whitespace-nowrap">Profile &amp; reviews</button>
             <button type="button" @click="clearBusiness" class="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:underline whitespace-nowrap">Change</button>
@@ -239,7 +239,7 @@
               <button type="button" @click="priceMode = 'head'" :class="priceMode === 'head' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'" class="px-3 py-1.5">Per head</button>
               <button type="button" @click="priceMode = 'total'" :class="priceMode === 'total' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300'" class="px-3 py-1.5">Total price</button>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <button type="button" @click="pkgFavoritesOnly = !pkgFavoritesOnly" :class="pkgFavoritesOnly ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'" class="text-xs font-semibold">♥ Favorites only</button>
               <button v-if="hasActivePackageFilters" type="button" @click="resetPackageFilters" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Clear filters</button>
               <span class="text-xs text-gray-400 dark:text-gray-500">{{ visiblePackages.length }} of {{ businessPackages.length }}</span>
@@ -399,11 +399,11 @@
                 </div>
               </div>
 
-              <div v-if="showCalendar" class="max-w-[320px] mx-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
+              <div v-if="showCalendar" class="w-full max-w-[320px] mx-auto bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
                 <div class="flex items-center justify-between mb-3">
-                  <button type="button" @click="goToPrevMonth" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">‹</button>
+                  <button type="button" @click="goToPrevMonth" class="w-9 h-9 sm:w-7 sm:h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">‹</button>
                   <p class="text-sm font-bold text-gray-700 dark:text-gray-200">{{ calendarMonthLabel }}</p>
-                  <button type="button" @click="goToNextMonth" class="w-7 h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">›</button>
+                  <button type="button" @click="goToNextMonth" class="w-9 h-9 sm:w-7 sm:h-7 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm font-bold">›</button>
                 </div>
                 <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-gray-400 dark:text-gray-500 mb-1.5">
                   <span v-for="wd in ['S','M','T','W','T','F','S']" :key="wd">{{ wd }}</span>
@@ -416,7 +416,7 @@
                     type="button"
                     :disabled="!day.inMonth || day.isPast || day.isTaken"
                     @click="pickCalendarDate(day)"
-                    class="h-9 w-9 rounded-lg text-xs font-semibold flex items-center justify-center transition mx-auto"
+                    class="h-10 sm:h-9 w-full max-w-[2.75rem] rounded-lg text-xs font-semibold flex items-center justify-center transition mx-auto"
                     :class="!day.inMonth ? 'invisible' :
                       day.isSelected ? 'bg-emerald-600 text-white' :
                       day.isTaken ? 'bg-red-100 dark:bg-red-900/30 text-red-400 line-through cursor-not-allowed' :
@@ -455,9 +455,9 @@
                       <p class="text-xs text-gray-500 dark:text-gray-400">₱{{ formatPrice(a.price) }} · {{ a.unit_label }}<span v-if="a.description"> — {{ a.description }}</span></p>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                      <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) - 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">−</button>
-                      <span class="w-5 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{{ addonQuantities[a.addon_id] || 0 }}</span>
-                      <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) + 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">+</button>
+                      <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) - 1)" class="w-9 h-9 sm:w-7 sm:h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">−</button>
+                      <span class="w-6 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{{ addonQuantities[a.addon_id] || 0 }}</span>
+                      <button type="button" @click="setAddonQuantity(a.addon_id, (addonQuantities[a.addon_id] || 0) + 1)" class="w-9 h-9 sm:w-7 sm:h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">+</button>
                     </div>
                   </div>
                 </div>
@@ -471,8 +471,8 @@
               <div v-else-if="packageMenuCategories.length" class="space-y-4">
                 <p class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Choose Your Menu</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 -mt-2">Pick your dishes, then tap Small, Regular or Large for each one. The price stays per head.</p>
-                <div v-for="cat in packageMenuCategories" :key="cat.category" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-4">
-                  <div class="flex items-center justify-between mb-2">
+                <div v-for="cat in packageMenuCategories" :key="cat.category" class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl p-3 sm:p-4">
+                  <div class="flex items-center justify-between gap-2 mb-2">
                     <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ cat.category }}</p>
                     <span
                       class="text-xs font-bold"
@@ -510,7 +510,7 @@
                         type="button"
                         @click="selectedPortions[item.item_id] = p.value"
                         :class="(selectedPortions[item.item_id] || 'Regular') === p.value ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'"
-                        class="text-[11px] font-semibold px-2 py-0.5 border rounded-full"
+                        class="text-xs sm:text-[11px] font-semibold px-3 sm:px-2 py-1 sm:py-0.5 border rounded-full"
                       >{{ p.label }}</button>
                     </div>
                     </div>
@@ -673,11 +673,11 @@
             </select>
           </div>
           <div class="flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-1 min-w-[9.5rem]">
               <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">From</label>
               <input type="date" v-model="bookingDateFrom" class="p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-1 min-w-[9.5rem]">
               <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">To</label>
               <input type="date" v-model="bookingDateTo" class="p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
@@ -709,7 +709,7 @@
           </button>
         </div>
         <div v-else class="grid gap-4">
-          <div v-for="b in filteredMyBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div v-for="b in filteredMyBookings" :key="b.booking_id" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="min-w-0">
               <p class="font-bold text-gray-800 dark:text-gray-100">{{ b.package_name || 'Custom Booking' }}</p>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 break-words">{{ formatDate(b.event_date) }} at {{ b.event_time }} — <span class="capitalize">{{ b.event_location }}</span></p>
@@ -755,7 +755,7 @@
                 </button>
               </div>
             </div>
-            <div class="flex items-center gap-3 flex-shrink-0">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 sm:flex-shrink-0 pt-3 sm:pt-0 border-t border-gray-100 dark:border-gray-700 sm:border-0">
               <button
                 v-if="['Pending', 'Confirmed'].includes(b.booking_status)"
                 @click="plannerTarget = b"
@@ -794,8 +794,8 @@
       </div>
 
       <!-- ============ CANCEL CONFIRM MODAL ============ -->
-      <div v-if="bookingToCancel" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-6">
+      <div v-if="bookingToCancel" class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm p-5 sm:p-6 rounded-b-none sm:rounded-b-2xl">
           <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">Cancel this booking?</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
             This is for <span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDate(bookingToCancel.event_date) }}</span> at {{ bookingToCancel.event_location }}. This can't be undone once cancelled.
@@ -818,8 +818,8 @@
       </div>
 
       <!-- ============ EDIT BOOKING MODAL ============ -->
-      <div v-if="bookingToEdit" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <div v-if="bookingToEdit" class="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md p-5 sm:p-6 max-h-[92dvh] overflow-y-auto rounded-b-none sm:rounded-b-2xl overscroll-contain">
           <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Edit Booking</h3>
           <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">Only Pending bookings can be edited.</p>
 
@@ -903,9 +903,9 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400">₱{{ formatPrice(a.price) }} · {{ a.unit_label }}</p>
                   </div>
                   <div class="flex items-center gap-2 flex-shrink-0">
-                    <button type="button" @click="setEditAddonQuantity(a.addon_id, (editAddonQuantities[a.addon_id] || 0) - 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">−</button>
-                    <span class="w-5 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{{ editAddonQuantities[a.addon_id] || 0 }}</span>
-                    <button type="button" @click="setEditAddonQuantity(a.addon_id, (editAddonQuantities[a.addon_id] || 0) + 1)" class="w-7 h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">+</button>
+                    <button type="button" @click="setEditAddonQuantity(a.addon_id, (editAddonQuantities[a.addon_id] || 0) - 1)" class="w-9 h-9 sm:w-7 sm:h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">−</button>
+                    <span class="w-6 text-center text-sm font-semibold text-gray-800 dark:text-gray-100">{{ editAddonQuantities[a.addon_id] || 0 }}</span>
+                    <button type="button" @click="setEditAddonQuantity(a.addon_id, (editAddonQuantities[a.addon_id] || 0) + 1)" class="w-9 h-9 sm:w-7 sm:h-7 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center font-bold">+</button>
                   </div>
                 </div>
               </div>
@@ -950,7 +950,7 @@
                       type="button"
                       @click="editSelectedPortions[item.item_id] = p.value"
                       :class="(editSelectedPortions[item.item_id] || 'Regular') === p.value ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600'"
-                      class="text-[11px] font-semibold px-2 py-0.5 border rounded-full"
+                      class="text-xs sm:text-[11px] font-semibold px-3 sm:px-2 py-1 sm:py-0.5 border rounded-full"
                     >{{ p.label }}</button>
                   </div>
                   </div>

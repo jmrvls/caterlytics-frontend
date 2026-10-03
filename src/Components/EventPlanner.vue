@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4" @click.self="$emit('close')">
-    <div class="bg-white dark:bg-gray-800 w-full sm:max-w-4xl h-[92vh] sm:h-[88vh] rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 w-full sm:max-w-4xl h-[92dvh] sm:h-[88dvh] rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col overflow-hidden">
 
       <!-- Header -->
       <div class="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-700">
@@ -250,7 +250,7 @@
 
     <!-- GUEST FORM -->
     <div v-if="showGuestForm" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" @click.self="showGuestForm = false">
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-5">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[90dvh] overflow-y-auto p-5">
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-3">{{ editingGuestId ? 'Edit guest' : 'Add guest' }}</h3>
         <p v-if="formError" class="mb-3 text-sm text-red-600 dark:text-red-400">{{ formError }}</p>
         <div class="space-y-3">

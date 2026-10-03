@@ -5,3 +5,46 @@
   font-family: 'Fraunces', ui-serif, Georgia, serif;
   font-optical-sizing: auto;
 }
+
+/* ---------- Mobile friendliness ---------- */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
+  /* keeps content clear of notches / rounded corners (needs viewport-fit=cover) */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* no double-tap zoom delay on interactive things */
+button, a, [role="button"], select, label {
+  touch-action: manipulation;
+}
+
+/* iOS Safari zooms the page when focusing an input under 16px. Stop that on phones. */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* hide scrollbar but keep scrolling (used by the swipeable tab bar) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* long words / emails / addresses should wrap instead of pushing the page sideways */
+p, h1, h2, h3, span {
+  overflow-wrap: anywhere;
+}

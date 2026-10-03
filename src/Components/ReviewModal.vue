@@ -1,6 +1,6 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="emit('close')">
-    <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl shadow-xl p-6">
+  <div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4" @click.self="emit('close')">
+    <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl rounded-b-none sm:rounded-b-2xl shadow-xl p-5 sm:p-6">
       <h3 class="font-bold text-gray-900 dark:text-gray-100">Rate your experience</h3>
       <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ booking?.package_name || 'Your booking' }}</p>
 

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex overflow-hidden h-[calc(100vh-13rem)] min-h-[460px]"
+    class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex overflow-hidden h-[calc(100dvh-13rem)] min-h-[460px]"
     :class="mode === 'client' ? 'rounded-2xl' : ''"
   >
     <!-- ============ CONVERSATION LIST ============ -->
