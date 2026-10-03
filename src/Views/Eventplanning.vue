@@ -576,9 +576,20 @@ function toggleSidebar() {
 
 // ---------- State ----------
 const tabs = ['Guest List', 'Seating', 'Dietary', 'Kitchen Prep']
-const activeTab = ref('Guest List')
+// Remember the last event + tab so leaving this page and coming back doesn't reset them.
+const SELECTION_KEY = 'caterlytics:planning-selection'
+function readSavedSelection() {
+  try {
+    return JSON.parse(sessionStorage.getItem(SELECTION_KEY)) || {}
+  } catch {
+    return {}
+  }
+}
+const savedSelection = readSavedSelection()
+
+const activeTab = ref(tabs.includes(savedSelection.tab) ? savedSelection.tab : 'Guest List')
 const bookings = ref([])
-const selectedBookingId = ref('')
+const selectedBookingId = ref(savedSelection.bookingId || '')
 const guests = ref([])
 const tables = ref([])
 const isLoadingBookings = ref(true)
@@ -674,6 +685,25 @@ watch(selectedBookingId, () => {
   rsvpFilter.value = 'All'
   loadPlan()
 })
+
+watch([selectedBookingId, activeTab], ([bookingId, tab]) => {
+  try {
+    sessionStorage.setItem(SELECTION_KEY, JSON.stringify({ bookingId, tab }))
+  } catch {
+    /* storage unavailable: just don't remember */
+  }
+})
+
+// After the event list loads, re-open the remembered event (if it is still plannable).
+async function restoreSelection() {
+  if (!selectedBookingId.value) return
+  if (!bookings.value.some((b) => b.booking_id === selectedBookingId.value)) {
+    selectedBookingId.value = '' // event passed, was cancelled, or no longer visible
+    return
+  }
+  await loadPlan()
+  if (activeTab.value === 'Kitchen Prep') loadPrep()
+}
 
 // ---------- Guests ----------
 function openGuestForm(guest = null) {
@@ -960,6 +990,6 @@ onMounted(() => {
   userRole.value = user.role
   userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
-  loadBookings()
+  loadBookings().then(restoreSelection)
 })
 </script>
