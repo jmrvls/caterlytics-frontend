@@ -44,7 +44,8 @@ function toGuestRow(guest) {
     contact_number: cleanPhone(guest.contact_number) || null,
     email: String(guest.email || '').trim() || null,
     rsvp_status: guest.rsvp_status || 'Pending',
-    table_id: guest.table_id || null,
+    // A declined guest must not keep a seat.
+    table_id: guest.rsvp_status === 'Declined' ? null : guest.table_id || null,
     dietary_preferences: (guest.dietary_preferences || []).filter((d) => DIETARY_OPTIONS.includes(d)),
     allergies: String(guest.allergies || '').trim() || null,
     notes: String(guest.notes || '').trim() || null,

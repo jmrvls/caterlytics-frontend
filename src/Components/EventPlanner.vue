@@ -79,7 +79,7 @@
                   <option v-for="r in RSVP_OPTIONS" :key="r" :value="r">{{ r }}</option>
                 </select>
               </div>
-              <div v-if="g.dietary_preferences.length || g.allergies" class="flex flex-wrap gap-1 mt-2">
+              <div v-if="(g.dietary_preferences || []).length || g.allergies" class="flex flex-wrap gap-1 mt-2">
                 <span v-for="d in g.dietary_preferences" :key="d" class="text-[11px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">{{ d }}</span>
                 <span v-if="g.allergies" class="text-[11px] px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300">Allergy: {{ g.allergies }}</span>
               </div>
@@ -120,7 +120,7 @@
                     <div class="flex flex-wrap gap-1">
                       <span v-for="d in g.dietary_preferences" :key="d" class="text-xs px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">{{ d }}</span>
                       <span v-if="g.allergies" class="text-xs px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300">Allergy: {{ g.allergies }}</span>
-                      <span v-if="!g.dietary_preferences.length && !g.allergies" class="text-gray-400">—</span>
+                      <span v-if="!(g.dietary_preferences || []).length && !g.allergies" class="text-gray-400">—</span>
                     </div>
                   </td>
                   <td class="px-3 py-2 whitespace-nowrap text-right">
@@ -177,7 +177,7 @@
                   <ul class="space-y-1">
                     <li v-for="g in seatedAt(t.table_id)" :key="g.guest_id" class="flex items-center justify-between text-sm text-gray-800 dark:text-gray-200">
                       <span class="truncate">{{ g.full_name }}
-                        <span v-if="g.dietary_preferences.length || g.allergies" class="text-xs text-amber-600 dark:text-amber-400" title="Has dietary needs">•</span>
+                        <span v-if="(g.dietary_preferences || []).length || g.allergies" class="text-xs text-amber-600 dark:text-amber-400" title="Has dietary needs">•</span>
                       </span>
                       <button @click="moveGuest(g, null)" class="text-xs text-gray-400 hover:text-red-500">Unseat</button>
                     </li>
@@ -192,7 +192,7 @@
               <ul class="space-y-2">
                 <li v-for="g in unseatedGuests" :key="g.guest_id" class="flex items-center justify-between gap-2 text-sm text-gray-800 dark:text-gray-200">
                   <span class="truncate">{{ g.full_name }}</span>
-                  <select @change="moveGuest(g, $event.target.value || null); $event.target.value = ''" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 py-1 text-xs rounded-lg max-w-[9rem]">
+                  <select @change="seatFromSelect(g, $event)" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-2 py-1 text-xs rounded-lg max-w-[9rem]">
                     <option value="">Seat at…</option>
                     <option v-for="t in tables" :key="t.table_id" :value="t.table_id" :disabled="seatedAt(t.table_id).length >= t.capacity">{{ t.label }}</option>
                   </select>
@@ -501,6 +501,15 @@ async function removeTable(t) {
   } catch (e) {
     pageError.value = e.message
   }
+}
+
+// <select> always gives back a string; map it to the real table_id (number or uuid)
+// so the strict === checks in seatedAt()/tableLabel() match.
+function seatFromSelect(g, event) {
+  const raw = event.target.value
+  event.target.value = ''
+  const table = tables.value.find((t) => String(t.table_id) === raw)
+  moveGuest(g, table ? table.table_id : null)
 }
 
 async function moveGuest(g, tableId) {

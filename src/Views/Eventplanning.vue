@@ -237,7 +237,7 @@
                       <div class="flex flex-wrap gap-1">
                         <span v-for="d in g.dietary_preferences" :key="d" class="text-xs px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">{{ d }}</span>
                         <span v-if="g.allergies" class="text-xs px-1.5 py-0.5 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300">Allergy: {{ g.allergies }}</span>
-                        <span v-if="!g.dietary_preferences.length && !g.allergies" class="text-gray-400">—</span>
+                        <span v-if="!(g.dietary_preferences || []).length && !g.allergies" class="text-gray-400">—</span>
                       </div>
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap text-right">
@@ -285,7 +285,7 @@
                   <ul class="space-y-1">
                     <li v-for="g in seatedAt(t.table_id)" :key="g.guest_id" class="flex items-center justify-between text-sm text-gray-800 dark:text-gray-200">
                       <span class="truncate">{{ g.full_name }}
-                        <span v-if="g.dietary_preferences.length || g.allergies" class="text-xs text-amber-600 dark:text-amber-400">•</span>
+                        <span v-if="(g.dietary_preferences || []).length || g.allergies" class="text-xs text-amber-600 dark:text-amber-400">•</span>
                       </span>
                       <button @click="moveGuest(g, null)" class="text-xs text-gray-400 hover:text-red-500">Unseat</button>
                     </li>
@@ -299,7 +299,7 @@
                 <ul class="space-y-2">
                   <li v-for="g in unseatedGuests" :key="g.guest_id" class="flex items-center justify-between gap-2 text-sm text-gray-800 dark:text-gray-200">
                     <span class="truncate">{{ g.full_name }}</span>
-                    <select @change="moveGuest(g, $event.target.value || null); $event.target.value = ''" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-xs rounded-none max-w-[9rem]">
+                    <select @change="seatFromSelect(g, $event)" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-xs rounded-none max-w-[9rem]">
                       <option value="">Seat at…</option>
                       <option v-for="t in tables" :key="t.table_id" :value="t.table_id" :disabled="seatedAt(t.table_id).length >= t.capacity">{{ t.label }}</option>
                     </select>
@@ -459,9 +459,9 @@
                       <label class="flex items-center gap-2 cursor-pointer text-gray-800 dark:text-gray-200">
                         <input type="checkbox" :checked="isPrepDone(ingKey(t.item_id))" @change="togglePrep(ingKey(t.item_id), $event)" class="w-4 h-4 accent-emerald-600" />
                         <span class="flex-1 min-w-0 truncate" :class="isPrepDone(ingKey(t.item_id)) ? 'line-through opacity-60' : ''">{{ t.name }}</span>
-                        <span class="font-semibold whitespace-nowrap">{{ t.total }} {{ t.unit }}</span>
+                        <span class="font-semibold whitespace-nowrap">{{ formatPrepQty(t.total, t.unit) }}</span>
                       </label>
-                      <p v-if="t.short_by > 0" class="ml-6 text-xs text-red-600 dark:text-red-400">Only {{ t.in_stock }} {{ t.unit }} in stock — short {{ t.short_by }} {{ t.unit }}</p>
+                      <p v-if="t.short_by > 0" class="ml-6 text-xs text-red-600 dark:text-red-400">Only {{ formatPrepQty(t.in_stock, t.unit) }} in stock — short {{ formatPrepQty(t.short_by, t.unit) }}</p>
                     </li>
                     <li v-if="prep.totals.length === 0" class="py-2 text-xs text-gray-400">No ingredients set for this package.</li>
                   </ul>
@@ -649,18 +649,23 @@ async function loadBookings() {
 }
 
 async function loadPlan() {
-  if (!selectedBookingId.value) return
+  const bookingId = selectedBookingId.value
+  if (!bookingId) return
   isLoadingPlan.value = true
   pageError.value = ''
+  // Clear the previous event's data so it can never show under the new event.
+  guests.value = []
+  tables.value = []
   try {
     // Tables first-class so guests can resolve their table label.
-    const [t, g] = await Promise.all([getTables(selectedBookingId.value), getGuests(selectedBookingId.value)])
+    const [t, g] = await Promise.all([getTables(bookingId), getGuests(bookingId)])
+    if (bookingId !== selectedBookingId.value) return // user switched events meanwhile
     tables.value = t
     guests.value = g
   } catch (e) {
-    pageError.value = e.message
+    if (bookingId === selectedBookingId.value) pageError.value = e.message
   } finally {
-    isLoadingPlan.value = false
+    if (bookingId === selectedBookingId.value) isLoadingPlan.value = false
   }
 }
 
@@ -781,6 +786,15 @@ async function removeTable(t) {
   } catch (e) {
     pageError.value = e.message
   }
+}
+
+// <select> always gives back a string; map it to the real table_id (number or uuid)
+// so the strict === checks in seatedAt()/tableLabel() match.
+function seatFromSelect(g, event) {
+  const raw = event.target.value
+  event.target.value = ''
+  const table = tables.value.find((t) => String(t.table_id) === raw)
+  moveGuest(g, table ? table.table_id : null)
 }
 
 async function moveGuest(g, tableId) {

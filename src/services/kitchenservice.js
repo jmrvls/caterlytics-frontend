@@ -71,7 +71,9 @@ export function groupDishesByCategory(dishes) {
   const order = ['Main Course', 'Side Dish', 'Dessert', 'Drinks'];
   const groups = {};
   for (const d of dishes) {
-    (groups[d.category] ||= []).push(d);
+    (groups[d.category || 'Other'] ||= []).push(d);
   }
-  return order.filter((c) => groups[c]).map((c) => ({ category: c, dishes: groups[c] }));
+  // Known categories first, then any other category (e.g. Appetizer) so no dish is hidden.
+  const rest = Object.keys(groups).filter((c) => !order.includes(c));
+  return [...order, ...rest].filter((c) => groups[c]).map((c) => ({ category: c, dishes: groups[c] }));
 }
