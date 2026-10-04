@@ -207,9 +207,9 @@
         </div>
 
         <!-- Bookings — mobile card list (phone-friendly, replaces the table below md) -->
-        <div class="md:hidden space-y-3">
-          <div v-if="isLoading" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
-          <div v-else-if="filteredBookings.length === 0" class="text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
+        <div class="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
+          <div v-if="isLoading" class="col-span-full text-center py-10 text-gray-400 dark:text-gray-500 text-sm">Loading bookings...</div>
+          <div v-else-if="filteredBookings.length === 0" class="col-span-full text-center py-10 text-gray-400 dark:text-gray-500 text-sm">
             {{ !hasActiveFilters ? 'No bookings yet. Tap "New Booking" to create one.' : 'No bookings match your filters.' }}
           </div>
           <div
@@ -289,7 +289,7 @@
             </div>
           </div>
 
-          <div v-if="hasMoreBookings && !isLoading" class="flex justify-center pt-1">
+          <div v-if="hasMoreBookings && !isLoading" class="col-span-full flex justify-center pt-1">
             <button @click="loadMoreBookings" :disabled="isLoadingMore" class="px-5 py-2.5 rounded-none border border-gray-300 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 active:bg-gray-50 dark:active:bg-gray-700 disabled:opacity-50">
               {{ isLoadingMore ? 'Loading...' : `Load More (${bookings.length} of ${totalBookings})` }}
             </button>
@@ -297,44 +297,43 @@
         </div>
 
         <!-- Bookings Table — desktop / tablet -->
-        <div class="hidden md:block bg-white dark:bg-gray-800 rounded-none shadow-sm border border-emerald-600 dark:border-gray-700 overflow-hidden">
+        <div class="hidden xl:block bg-white dark:bg-gray-800 rounded-none shadow-sm border border-emerald-600 dark:border-gray-700 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-gray-50 dark:bg-gray-900 text-emerald-600 dark:text-emerald-400 uppercase text-xs tracking-wide">
                 <tr>
-                  <th class="text-left px-6 py-3 font-semibold">Client</th>
-                  <th class="text-left px-6 py-3 font-semibold">Contact</th>
-                  <th class="text-left px-6 py-3 font-semibold">Event Date</th>
-                  <th class="text-left px-6 py-3 font-semibold">Time</th>
-                  <th class="text-left px-6 py-3 font-semibold">Location</th>
-                  <th class="text-left px-6 py-3 font-semibold">Guests</th>
-                  <th class="text-left px-6 py-3 font-semibold">Package</th>
-                  <th class="text-left px-6 py-3 font-semibold">Staff</th>
-                  <th class="text-left px-6 py-3 font-semibold">Status</th>
-                  <th class="text-right px-6 py-3 font-semibold">Actions</th>
+                  <th class="text-left px-2 2xl:px-4 py-3 font-semibold">Client</th>
+                  <th class="text-left px-2 2xl:px-4 py-3 font-semibold">Event</th>
+                  <th class="text-left px-2 2xl:px-4 py-3 font-semibold">Location</th>
+                  <th class="text-left px-2 2xl:px-4 py-3 font-semibold">Package</th>
+                  <th class="text-left px-2 2xl:px-4 py-3 font-semibold">Staff</th>
+                  <th class="text-left px-2 2xl:px-4 py-3 font-semibold">Status</th>
+                  <th class="text-right px-2 2xl:px-4 py-3 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                 <tr v-if="isLoading">
-                  <td colspan="10" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading bookings...</td>
+                  <td colspan="7" class="text-center py-10 text-gray-400 dark:text-gray-500">Loading bookings...</td>
                 </tr>
                 <tr v-else-if="filteredBookings.length === 0">
-                  <td colspan="10" class="text-center py-10 text-gray-400 dark:text-gray-500">
+                  <td colspan="7" class="text-center py-10 text-gray-400 dark:text-gray-500">
                     {{ !hasActiveFilters ? 'No bookings yet. Click "New Booking" to create one.' : 'No bookings match your filters.' }}
                   </td>
                 </tr>
-                <tr v-for="b in filteredBookings" :key="b.booking_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60">
-                  <td class="px-6 py-3.5 font-medium text-gray-800 dark:text-gray-100 capitalize">{{ b.client_name }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                    <a v-if="b.client_contact_number" :href="'tel:' + b.client_contact_number" class="hover:text-emerald-600 dark:hover:text-emerald-400">{{ b.client_contact_number }}</a>
-                    <span v-else class="text-gray-400 dark:text-gray-500">—</span>
+                <tr v-for="b in filteredBookings" :key="b.booking_id" class="hover:bg-gray-50/60 dark:hover:bg-gray-700/60 align-top">
+                  <td class="px-2 2xl:px-4 py-3.5 whitespace-nowrap">
+                    <div class="font-medium text-gray-800 dark:text-gray-100 capitalize">{{ b.client_name }}</div>
+                    <a v-if="b.client_contact_number" :href="'tel:' + b.client_contact_number" class="text-xs text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400">{{ b.client_contact_number }}</a>
+                    <span v-else class="text-xs text-gray-400 dark:text-gray-500">—</span>
                   </td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatDate(b.event_date) }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ formatTime(b.event_time) }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300 max-w-[12rem] truncate capitalize" :title="b.event_location">{{ b.event_location }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">{{ b.guest_count }}</td>
-                  <td class="px-6 py-3.5 text-gray-600 dark:text-gray-300">
-                    {{ b.package_name || '—' }}
+                  <td class="px-2 2xl:px-4 py-3.5 whitespace-nowrap">
+                    <div class="text-gray-800 dark:text-gray-100">{{ formatDate(b.event_date) }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatTime(b.event_time) }}</div>
+                  </td>
+                  <td class="px-2 2xl:px-4 py-3.5 text-gray-600 dark:text-gray-300 max-w-[8rem] 2xl:max-w-[14rem] truncate capitalize" :title="b.event_location">{{ b.event_location }}</td>
+                  <td class="px-2 2xl:px-4 py-3.5 text-gray-600 dark:text-gray-300">
+                    <div class="whitespace-nowrap">{{ b.package_name || '—' }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ b.guest_count }} guests</div>
                     <div v-if="menuPicksFor(b.booking_id).length" class="mt-1">
                       <button type="button" @click="toggleMenuRow(b.booking_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
                         {{ expandedMenuRows.has(b.booking_id) ? 'Hide menu' : `View menu (${menuPicksFor(b.booking_id).length})` }}
@@ -347,21 +346,21 @@
                       </ul>
                     </div>
                   </td>
-                  <td class="px-6 py-3.5">
-                    <div class="flex flex-wrap gap-1 max-w-[10rem]">
+                  <td class="px-2 2xl:px-4 py-3.5">
+                    <div class="flex flex-wrap gap-1 max-w-[9rem] 2xl:max-w-[12rem]">
                       <span v-if="assignedStaffNames(b.booking_id).length === 0" class="text-xs text-gray-400 dark:text-gray-500">—</span>
-                      <span v-for="name in assignedStaffNames(b.booking_id)" :key="name" class="px-2 py-0.5 rounded-full text-[11px] font-semibold text-gray-900 dark:text-gray-100">
+                      <span v-for="name in assignedStaffNames(b.booking_id)" :key="name" class="px-2 py-0.5 rounded-full text-[11px] font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
                         {{ name }}
                       </span>
                     </div>
                   </td>
-                  <td class="px-6 py-3.5 align-middle">
-                    <span :class="statusBadgeClass(b.booking_status)" class="inline-block align-middle text-xs font-semibold leading-5">
+                  <td class="px-2 2xl:px-4 py-3.5">
+                    <span :class="statusBadgeClass(b.booking_status)" class="inline-block text-xs font-semibold leading-5 whitespace-nowrap">
                       {{ b.booking_status }}
                     </span>
                   </td>
-                  <td class="px-6 py-3.5">
-                    <div class="flex items-center justify-end gap-2">
+                  <td class="px-2 2xl:px-4 py-3">
+                    <div class="flex items-center justify-end gap-1.5">
                       <select
                         :value="b.booking_status"
                         @change="requestStatusChange(b, $event)"
