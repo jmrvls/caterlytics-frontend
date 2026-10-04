@@ -139,7 +139,7 @@
             <p class="text-sm text-gray-500 dark:text-gray-400">Who did what, and when, across your business. Records can't be edited or deleted from the app.</p>
           </div>
           <div class="flex items-center gap-2 sm:gap-3">
-            <button @click="exportCsv" :disabled="!rows.length" class="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-none text-sm font-semibold transition">Export CSV</button>
+            <button @click="exportCsv" :disabled="!rows.length || isExporting" class="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-none text-sm font-semibold transition">{{ isExporting ? 'Exporting…' : 'Export CSV' }}</button>
             <div class="hidden lg:block"><NotificationBell /></div>
           </div>
         </div>
@@ -223,8 +223,8 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-              <tr v-if="isLoading"><td :colspan="5" class="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
-              <tr v-else-if="!rows.length"><td :colspan="5" class="px-4 py-8 text-center text-gray-400">No activity found for these filters.</td></tr>
+              <tr v-if="isLoading"><td :colspan="tab === 'changes' ? 5 : 4" class="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr v-else-if="!rows.length"><td :colspan="tab === 'changes' ? 5 : 4" class="px-4 py-8 text-center text-gray-400">No activity found for these filters.</td></tr>
               <template v-else v-for="r in rows" :key="rowKey(r)">
                 <tr class="text-gray-700 dark:text-gray-200 align-top">
                   <td class="px-4 py-3 whitespace-nowrap text-gray-500 dark:text-gray-400">{{ formatWhen(r.created_at) }}</td>
@@ -264,8 +264,8 @@
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4 text-sm text-gray-500 dark:text-gray-400">
           <span class="text-center sm:text-left">{{ total ? `${offset + 1}–${Math.min(offset + pageSize, total)} of ${total}` : '0 results' }}</span>
           <div class="grid grid-cols-2 sm:flex gap-2">
-            <button @click="prevPage" :disabled="offset === 0" class="min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Previous</button>
-            <button @click="nextPage" :disabled="offset + pageSize >= total" class="min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Next</button>
+            <button @click="prevPage" :disabled="isLoading || offset === 0" class="min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Previous</button>
+            <button @click="nextPage" :disabled="isLoading || offset + pageSize >= total" class="min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Next</button>
           </div>
         </div>
 
@@ -315,7 +315,7 @@ const tab = ref('changes')
 const rows = ref([])
 const total = ref(0)
 const actors = ref([])
-const isLoading = ref(false)
+const isLoading = ref(true) // true from the start so the page never flashes "No activity found" before the first fetch
 const pageError = ref('')
 const expanded = ref(null)
 const pageSize = 25
@@ -340,7 +340,14 @@ function badgeClass(a) {
 const rowKey = (r) => (tab.value === 'changes' ? 'c' + r.audit_id : 'a' + r.log_id)
 const formatWhen = (iso) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 const prettyKey = (k) => k.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase())
-const show = (v) => (v === undefined || v === null || v === '' ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v))
+const ISO_TS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/
+const show = (v) => {
+  if (v === undefined || v === null || v === '') return '—'
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No'
+  if (typeof v === 'object') return JSON.stringify(v)
+  if (typeof v === 'string' && ISO_TS.test(v) && !isNaN(new Date(v))) return formatWhen(v)
+  return String(v)
+}
 const changesOf = (r) => describeChange(r)
 const toggleRow = (id) => { expanded.value = expanded.value === id ? null : id }
 
@@ -353,51 +360,104 @@ function dateRange() {
 }
 
 // ---------- data ----------
+let loadSeq = 0          // only the newest request is allowed to touch the page
+let lastGoodOffset = 0   // page we were on the last time a load succeeded
+
 async function load() {
+  const seq = ++loadSeq
+  const { from, to } = dateRange()
+  if (from && to && from > to) {
+    pageError.value = 'The "From" date is later than the "To" date.'
+    rows.value = []
+    total.value = 0
+    isLoading.value = false
+    return
+  }
   isLoading.value = true
   pageError.value = ''
   expanded.value = null
   try {
-    const { from, to } = dateRange()
     const f = filters.value
     const res = tab.value === 'changes'
       ? await getAuditLog({ limit: pageSize, offset: offset.value, table: f.table, action: f.action, actor: f.actor, from, to })
       : await getActivityLog({ limit: pageSize, offset: offset.value, action: f.action, actor: f.actor, from, to })
+    if (seq !== loadSeq) return   // a newer request replaced this one
     rows.value = res.rows
     total.value = res.total
+    lastGoodOffset = offset.value
   } catch (e) {
+    if (seq !== loadSeq) return
     rows.value = []
     total.value = 0
+    offset.value = lastGoodOffset
     pageError.value = e.message
   } finally {
-    isLoading.value = false
+    if (seq === loadSeq) isLoading.value = false
   }
 }
 
 function applyFilters() { offset.value = 0; load() }
 function clearFilters() { filters.value = { table: '', action: '', actor: '', from: '', to: '' }; applyFilters() }
-function switchTab(key) { if (tab.value !== key) { tab.value = key; clearFilters() } }
-function prevPage() { offset.value = Math.max(0, offset.value - pageSize); load() }
-function nextPage() { offset.value += pageSize; load() }
+function switchTab(key) { if (tab.value !== key) { tab.value = key; rows.value = []; total.value = 0; lastGoodOffset = 0; clearFilters() } }
+function prevPage() { if (isLoading.value) return; offset.value = Math.max(0, offset.value - pageSize); load() }
+function nextPage() { if (isLoading.value) return; offset.value += pageSize; load() }
 
 // ---------- export ----------
-function exportCsv() {
-  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
-  const header = tab.value === 'changes'
-    ? ['When', 'Who', 'Role', 'Action', 'Record', 'Record ID', 'Changes']
-    : ['When', 'Who', 'Role', 'Action', 'Details']
-  const lines = rows.value.map((r) => tab.value === 'changes'
-    ? [formatWhen(r.created_at), r.actor_name, r.actor_role, actionLabel(r.action), TABLE_LABELS[r.table_name] || r.table_name, r.record_id,
-       changesOf(r).map((c) => r.action === 'UPDATE' ? `${c.key}: ${show(c.from)} -> ${show(c.to)}` : `${c.key}: ${show(c.to)}`).join('; ')]
-    : [formatWhen(r.created_at), r.actor_name, r.actor_role, actionLabel(r.action), r.summary || r.entity])
-  const csv = [header, ...lines].map((l) => l.map(esc).join(',')).join('\r\n')
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `audit-log-${tab.value}-${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
-  URL.revokeObjectURL(url)
-  logActivity('EXPORT', 'Audit Logs', `Exported ${rows.value.length} ${tab.value === 'changes' ? 'data-change' : 'activity'} rows`)
+const isExporting = ref(false)
+const EXPORT_CHUNK = 200
+const EXPORT_MAX = 5000
+
+// Pull every row that matches the current filters (not just the visible page).
+async function fetchAllForExport() {
+  const { from, to } = dateRange()
+  const f = filters.value
+  const all = []
+  let off = 0
+  let grand = Infinity
+  while (all.length < Math.min(grand, EXPORT_MAX)) {
+    const res = tab.value === 'changes'
+      ? await getAuditLog({ limit: EXPORT_CHUNK, offset: off, table: f.table, action: f.action, actor: f.actor, from, to })
+      : await getActivityLog({ limit: EXPORT_CHUNK, offset: off, action: f.action, actor: f.actor, from, to })
+    if (!res.rows.length) break
+    all.push(...res.rows)
+    off += res.rows.length
+    grand = res.total
+  }
+  return all.slice(0, EXPORT_MAX)
+}
+
+async function exportCsv() {
+  if (isExporting.value) return
+  isExporting.value = true
+  try {
+    const data = await fetchAllForExport()
+    // Quote everything, and stop Excel from running cells that start with = + - @ as formulas.
+    const esc = (v) => {
+      let t = String(v ?? '')
+      if (/^[=+\-@\t\r]/.test(t)) t = "'" + t
+      return `"${t.replace(/"/g, '""')}"`
+    }
+    const header = tab.value === 'changes'
+      ? ['When', 'Who', 'Role', 'Action', 'Record', 'Record ID', 'Changes']
+      : ['When', 'Who', 'Role', 'Action', 'Details']
+    const lines = data.map((r) => tab.value === 'changes'
+      ? [formatWhen(r.created_at), r.actor_name, r.actor_role, actionLabel(r.action), TABLE_LABELS[r.table_name] || r.table_name, r.record_id,
+         changesOf(r).map((c) => r.action === 'UPDATE' ? `${c.key}: ${show(c.from)} -> ${show(c.to)}` : `${c.key}: ${show(c.to)}`).join('; ')]
+      : [formatWhen(r.created_at), r.actor_name, r.actor_role, actionLabel(r.action), r.summary || r.entity])
+    // BOM so Excel reads the UTF-8 (peso signs, accents) correctly.
+    const csv = '\uFEFF' + [header, ...lines].map((l) => l.map(esc).join(',')).join('\r\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `audit-log-${tab.value}-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    logActivity('EXPORT', 'Audit Logs', `Exported ${data.length} ${tab.value === 'changes' ? 'data-change' : 'activity'} rows`)
+  } catch (e) {
+    pageError.value = e.message || 'Export failed.'
+  } finally {
+    isExporting.value = false
+  }
 }
 
 onMounted(async () => {
@@ -416,7 +476,7 @@ onMounted(async () => {
   userRole.value = user.role
   userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
-  try { actors.value = await getAuditActors() } catch { /* filter just stays empty */ }
+  getAuditActors().then((a) => { actors.value = a }).catch(() => { /* filter just stays empty */ })
   load()
 })
 

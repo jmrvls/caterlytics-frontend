@@ -90,7 +90,7 @@ export async function logActivity(action, entity = 'Auth', summary = null) {
 }
 
 // Turns one change row into a short human-readable list of what changed.
-const SKIP_KEYS = new Set(['created_at', 'updated_at']);
+const SKIP_KEYS = new Set(['created_at', 'updated_at', 'password', 'password_hash']);
 export function describeChange(row) {
   const o = row.old_data || {};
   const n = row.new_data || {};
@@ -102,10 +102,20 @@ export function describeChange(row) {
     .map(k => ({ key: k, from: o[k], to: n[k] }));
 }
 
+// Columns that are noise in a "what was created/deleted" summary.
+const HIDE_KEYS = new Set(['created_at', 'updated_at', 'password', 'password_hash']);
+const isIdKey = (k) => k === 'id' || k.endsWith('_id');
+
 function summarize(obj) {
   const pick = ['booking_status', 'package_name', 'item_name', 'full_name', 'role', 'branch_name',
     'description', 'category', 'amount', 'amount_paid', 'payment_status', 'event_date', 'guest_count', 'quantity',
     'name', 'plate_number', 'vehicle_type', 'status', 'run_date']
     .filter(k => obj[k] !== undefined && obj[k] !== null);
-  return pick.map(k => ({ key: k, from: undefined, to: obj[k] }));
+  if (pick.length) return pick.map(k => ({ key: k, from: undefined, to: obj[k] }));
+  // None of the usual columns exist on this table (promo codes, pricing rules,
+  // reviews, ...): show its own columns instead of an empty "—".
+  return Object.keys(obj)
+    .filter(k => !HIDE_KEYS.has(k) && !isIdKey(k) && obj[k] !== null && obj[k] !== '')
+    .slice(0, 8)
+    .map(k => ({ key: k, from: undefined, to: obj[k] }));
 }
