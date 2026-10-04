@@ -191,8 +191,17 @@ export function buildInsights(summary, items) {
   return out.slice(0, 5);
 }
 
+// A text cell starting with = + - @ (or tab / CR) is run as a formula by Excel
+// and Google Sheets. Prefix it with an apostrophe so it stays plain text.
+// Numbers are left alone so real negative values still export correctly.
+function csvEscape(v) {
+  let str = String(v ?? '');
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(str)) str = `'${str}`;
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
 export function logsToCSV(logs) {
-  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const esc = csvEscape;
   const head = ['Date', 'Item', 'Quantity', 'Unit', 'Reason', 'Unit Cost', 'Cost Lost', 'Note'];
   const rows = (logs || []).map((l) => [
     String(l.waste_date).slice(0, 10), l.item_name, l.quantity, l.unit, l.reason, l.unit_cost, costOf(l).toFixed(2), l.note,
@@ -284,6 +293,11 @@ export function buildReorderPlan(items, logs, movements, { days = 30, coverDays 
           ? `Covers about ${coverDays} days of recent usage.`
           : 'No recent usage recorded, so this is based on your low-stock level.';
         if (highWaste) note += ` ${Math.round(wastePct)}% of this item was wasted, so order for actual use only, no extra buffer.`;
+      } else if (onHand <= 0) {
+        // Out of stock but no usage and no low-stock level to size an order from.
+        // Never hide it: flag it and let the owner decide the quantity.
+        status = 'reorder';
+        note = 'Out of stock. There is no recent usage or low-stock level to work out a quantity, so set the order amount yourself (and set a low-stock level in Inventory).';
       }
     } else if (daysLeft !== null && daysLeft > coverDays * 2 && wastedQty > 0) {
       status = 'hold';
@@ -314,7 +328,7 @@ export function buildReorderPlan(items, logs, movements, { days = 30, coverDays 
 }
 
 export function reorderToCSV(rows) {
-  const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const esc = csvEscape;
   const head = ['Item', 'Status', 'On hand', 'Unit', 'Used', 'Wasted', 'Waste %', 'Days left', 'Suggested order qty', 'Est. cost', 'Note'];
   const label = { reorder: 'Reorder', hold: 'Hold off', reduce: 'Order less' };
   const body = (rows || []).map((r) => [

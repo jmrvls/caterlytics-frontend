@@ -161,6 +161,9 @@
           Waste tracking needs a one-time database setup. Open the Supabase SQL Editor and run <span class="font-mono font-semibold">waste_tracking.sql</span>, then refresh this page.
         </div>
         <div v-if="pageError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-4">{{ pageError }}</div>
+        <div v-if="dataTruncated" class="border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 text-sm p-3 mb-4">
+          There is more data than can be loaded at once, so some older records are left out and the totals may be too low. Pick a shorter range to see exact numbers.
+        </div>
         <div v-if="successMessage" class="text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-4">{{ successMessage }}</div>
 
         <div v-if="isLoading" class="text-center py-16 text-gray-400 dark:text-gray-500 text-sm">Loading waste data...</div>
@@ -178,7 +181,8 @@
               <p v-else :class="summary.changePct > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'" class="text-xl sm:text-2xl font-bold">
                 {{ summary.changePct > 0 ? '+' : '' }}{{ summary.changePct.toFixed(0) }}%
               </p>
-              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Previously {{ formatPeso(summary.prevCost) }}</p>
+              <p v-if="summary.changePct !== null" class="text-xs text-gray-400 dark:text-gray-500 mt-1">Previously {{ formatPeso(summary.prevCost) }}</p>
+              <p v-else class="text-xs text-gray-400 dark:text-gray-500 mt-1">No waste logged in the previous period</p>
             </div>
             <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4">
               <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Waste entries</p>
@@ -244,8 +248,8 @@
                       <td class="px-3 py-2.5 whitespace-nowrap">{{ formatQty(r.onHand, r.unit) }}</td>
                       <td class="px-3 py-2.5 whitespace-nowrap">{{ formatQty(r.used, r.unit) }} / {{ formatQty(r.wasted, r.unit) }} <span class="text-xs text-gray-400">({{ Math.round(r.wastePct) }}%)</span></td>
                       <td class="px-3 py-2.5 whitespace-nowrap">{{ r.daysLeft === null ? '—' : Math.round(r.daysLeft) }}</td>
-                      <td class="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{{ r.status === 'reorder' ? formatQty(r.qty, r.unit) : '—' }}</td>
-                      <td class="px-3 py-2.5 text-right whitespace-nowrap">{{ r.status === 'reorder' ? formatPeso(r.cost) : '—' }}</td>
+                      <td class="px-3 py-2.5 text-right font-semibold whitespace-nowrap">{{ r.status === 'reorder' && r.qty > 0 ? formatQty(r.qty, r.unit) : '—' }}</td>
+                      <td class="px-3 py-2.5 text-right whitespace-nowrap">{{ r.status === 'reorder' && r.qty > 0 ? formatPeso(r.cost) : '—' }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -451,6 +455,8 @@ const items = ref([])
 const logs = ref([])
 const movements = ref([])
 const usageMissing = ref(false)
+const dataTruncated = ref(false)
+let loadSeq = 0 // lets loadAll ignore a slow, outdated response
 const coverDays = ref(14)
 const rangeDays = ref(30)
 const isLoading = ref(false)
@@ -515,26 +521,39 @@ onMounted(() => {
 })
 
 // Loads two periods of logs so the page can compare against the previous one.
+// If the user changes the range (or saves a log) while a load is still running,
+// the older response is thrown away so it can't overwrite the newer one.
 async function loadAll() {
+  const myLoad = ++loadSeq
+  const stale = () => myLoad !== loadSeq
   isLoading.value = true
   pageError.value = ''
   setupMissing.value = false
+  dataTruncated.value = false
   try {
-    const [inv, wasteRows] = await Promise.all([
+    const [inv, wasteRes] = await Promise.all([
       getAllInventory(),
       getWasteLogs(daysAgoISO(rangeDays.value * 2 - 1)),
     ])
+    if (stale()) return
     items.value = inv
-    logs.value = wasteRows
+    logs.value = wasteRes.rows
+    let truncated = wasteRes.truncated
     try {
-      movements.value = await getUsageMovements(daysAgoISO(rangeDays.value - 1))
+      const usageRes = await getUsageMovements(daysAgoISO(rangeDays.value - 1))
+      if (stale()) return
+      movements.value = usageRes.rows
+      truncated = truncated || usageRes.truncated
       usageMissing.value = false
     } catch (e) {
+      if (stale()) return
       movements.value = []
       usageMissing.value = true
       console.error(e)
     }
+    dataTruncated.value = truncated
   } catch (error) {
+    if (stale()) return
     if (error?.code === 'WASTE_NOT_SET_UP') {
       setupMissing.value = true
       try { items.value = await getAllInventory() } catch { /* inventory is optional here */ }
@@ -543,7 +562,7 @@ async function loadAll() {
     }
     console.error(error)
   } finally {
-    isLoading.value = false
+    if (!stale()) isLoading.value = false
   }
 }
 

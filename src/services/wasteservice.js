@@ -24,21 +24,42 @@ function setupError() {
   return err;
 }
 
+// Supabase/PostgREST caps one response (1000 rows by default), so a single
+// .limit(5000) can be cut short without any error. Read page by page instead,
+// and report `truncated` if we hit our own safety cap.
+const PAGE_SIZE = 1000;
+const MAX_PAGES = 20; // up to 20,000 rows
+
+async function fetchAllPages(buildQuery) {
+  const rows = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const from = page * PAGE_SIZE;
+    const { data, error } = await buildQuery().range(from, from + PAGE_SIZE - 1);
+    if (error) return { rows, truncated: false, error };
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE_SIZE) return { rows, truncated: false, error: null };
+  }
+  return { rows, truncated: true, error: null };
+}
+
 // Logs on/after `fromDate` (YYYY-MM-DD). RLS limits this to the caller's business.
+// Returns { rows, truncated }.
 export async function getWasteLogs(fromDate) {
-  const { data, error } = await supabase
-    .from('tbl_waste_logs')
-    .select('waste_id, item_id, item_name, unit, quantity, unit_cost, cost_lost, reason, note, waste_date, created_at')
-    .gte('waste_date', fromDate)
-    .order('waste_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(5000);
+  const { rows, truncated, error } = await fetchAllPages(() =>
+    supabase
+      .from('tbl_waste_logs')
+      .select('waste_id, item_id, item_name, unit, quantity, unit_cost, cost_lost, reason, note, waste_date, created_at')
+      .gte('waste_date', fromDate)
+      .order('waste_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .order('waste_id', { ascending: false }) // tiebreaker so pages never overlap
+  );
 
   if (error) {
     if (isMissingTable(error)) throw setupError();
     throw new Error(error.message || 'Failed to load waste logs.');
   }
-  return data || [];
+  return { rows, truncated };
 }
 
 // Records the waste and (optionally) deducts the stock in one DB transaction.
@@ -66,15 +87,18 @@ export async function logWaste(form, item) {
 // fast each item is really used, so reorder suggestions aren't based on waste alone.
 // Admin / Owner-Manager only (RLS). Waste deductions are skipped here on purpose:
 // they already come from the waste logs.
+// Returns { rows, truncated }.
 export async function getUsageMovements(fromDate) {
   const fromIso = new Date(`${fromDate}T00:00:00`).toISOString();
-  const { data, error } = await supabase
-    .from('tbl_inventory_movements')
-    .select('item_id, delta, reason, created_at')
-    .gte('created_at', fromIso)
-    .like('reason', 'Booking%')
-    .limit(10000);
+  const { rows, truncated, error } = await fetchAllPages(() =>
+    supabase
+      .from('tbl_inventory_movements')
+      .select('movement_id, item_id, delta, reason, created_at')
+      .gte('created_at', fromIso)
+      .like('reason', 'Booking%')
+      .order('movement_id', { ascending: true }) // stable order for paging
+  );
 
   if (error) throw new Error(error.message || 'Failed to load stock usage.');
-  return data || [];
+  return { rows, truncated };
 }
