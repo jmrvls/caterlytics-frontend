@@ -134,12 +134,12 @@
       <div class="max-w-none 2xl:max-w-[1920px] mx-auto">
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-          <div>
+          <div class="min-w-0">
             <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">Audit Logs &amp; Activity</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400">Who did what, and when, across your business. Records can't be edited or deleted from the app.</p>
           </div>
           <div class="flex items-center gap-2 sm:gap-3">
-            <button @click="exportCsv" :disabled="!rows.length" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-none text-sm font-semibold transition">Export CSV</button>
+            <button @click="exportCsv" :disabled="!rows.length" class="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-none text-sm font-semibold transition">Export CSV</button>
             <div class="hidden lg:block"><NotificationBell /></div>
           </div>
         </div>
@@ -149,34 +149,69 @@
           <button @click="pageError = ''" class="font-semibold">Dismiss</button>
         </div>
 
-        <!-- Tabs -->
-        <div class="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+        <!-- Tabs (scroll sideways on very small screens instead of overflowing) -->
+        <div class="flex border-b border-gray-200 dark:border-gray-700 mb-4 overflow-x-auto whitespace-nowrap">
           <button v-for="t in tabs" :key="t.key" @click="switchTab(t.key)"
             :class="tab === t.key ? 'border-emerald-600 text-emerald-700 dark:text-emerald-300 font-semibold' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-            class="px-4 py-2.5 text-sm border-b-2 -mb-px transition">{{ t.label }}</button>
+            class="flex-1 sm:flex-none min-h-[44px] sm:min-h-0 px-4 py-2.5 text-sm border-b-2 -mb-px transition">{{ t.label }}</button>
         </div>
 
-        <!-- Filters -->
+        <!-- Filters: dropdowns full width on phones, the two dates side by side -->
         <div class="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
-          <select v-if="tab === 'changes'" v-model="filters.table" @change="applyFilters" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
+          <select v-if="tab === 'changes'" v-model="filters.table" @change="applyFilters" class="col-span-2 lg:col-span-1 w-full min-h-[44px] sm:min-h-0 px-3 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
             <option value="">All records</option>
             <option v-for="(label, key) in TABLE_LABELS" :key="key" :value="key">{{ label }}</option>
           </select>
-          <select v-model="filters.action" @change="applyFilters" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
+          <select v-model="filters.action" @change="applyFilters" class="col-span-2 lg:col-span-1 w-full min-h-[44px] sm:min-h-0 px-3 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
             <option value="">All actions</option>
             <option v-for="a in actionOptions" :key="a.value" :value="a.value">{{ a.label }}</option>
           </select>
-          <select v-model="filters.actor" @change="applyFilters" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
+          <select v-model="filters.actor" @change="applyFilters" class="col-span-2 lg:col-span-1 w-full min-h-[44px] sm:min-h-0 px-3 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none">
             <option value="">Everyone</option>
             <option v-for="a in actors" :key="a.actor_id" :value="a.actor_id">{{ a.actor_name }}{{ a.actor_role ? ' (' + a.actor_role + ')' : '' }}</option>
           </select>
-          <input type="date" v-model="filters.from" @change="applyFilters" aria-label="From date" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none" />
-          <input type="date" v-model="filters.to" @change="applyFilters" aria-label="To date" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none" />
-          <button @click="clearFilters" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none">Clear filters</button>
+          <label class="block min-w-0">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1 lg:hidden">From</span>
+            <input type="date" v-model="filters.from" @change="applyFilters" aria-label="From date" class="w-full min-h-[44px] sm:min-h-0 px-3 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none" />
+          </label>
+          <label class="block min-w-0">
+            <span class="block text-xs text-gray-500 dark:text-gray-400 mb-1 lg:hidden">To</span>
+            <input type="date" v-model="filters.to" @change="applyFilters" aria-label="To date" class="w-full min-h-[44px] sm:min-h-0 px-3 py-2 text-base sm:text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-none" />
+          </label>
+          <button @click="clearFilters" class="col-span-2 lg:col-span-1 lg:self-end min-h-[44px] sm:min-h-0 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none">Clear filters</button>
         </div>
 
-        <!-- Table -->
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <!-- MOBILE: one card per entry (no sideways scrolling) -->
+        <div class="md:hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+          <p v-if="isLoading" class="px-4 py-8 text-center text-sm text-gray-400">Loading…</p>
+          <p v-else-if="!rows.length" class="px-4 py-8 text-center text-sm text-gray-400">No activity found for these filters.</p>
+          <div v-else v-for="r in rows" :key="rowKey(r)" class="p-4 text-gray-700 dark:text-gray-200">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-semibold text-sm break-words">{{ r.actor_name || 'System' }}<span v-if="r.actor_role" class="font-normal text-xs text-gray-400"> · {{ r.actor_role }}</span></p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ formatWhen(r.created_at) }}</p>
+              </div>
+              <span :class="badgeClass(r.action)" class="inline-block flex-shrink-0 px-2 py-0.5 text-xs font-semibold">{{ actionLabel(r.action) }}</span>
+            </div>
+            <p class="text-sm mt-2 break-words">
+              <template v-if="tab === 'changes'">{{ TABLE_LABELS[r.table_name] || r.table_name }}<span v-if="r.record_id" class="text-gray-400"> #{{ r.record_id }}</span></template>
+              <template v-else>{{ r.summary || r.entity }}</template>
+            </p>
+            <template v-if="tab === 'changes' && changesOf(r).length">
+              <button @click="toggleRow(r.audit_id)" class="mt-2 min-h-[44px] -mb-2 text-emerald-700 dark:text-emerald-300 font-semibold text-sm">{{ expanded === r.audit_id ? 'Hide changes' : 'View changes' }}</button>
+              <ul v-if="expanded === r.audit_id" class="mt-3 space-y-2 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/40 p-3">
+                <li v-for="c in changesOf(r)" :key="c.key" class="break-words">
+                  <span class="font-semibold">{{ prettyKey(c.key) }}:</span>
+                  <template v-if="r.action === 'UPDATE'"> <span class="line-through text-gray-400">{{ show(c.from) }}</span> → <span class="font-medium">{{ show(c.to) }}</span></template>
+                  <template v-else> {{ show(c.to) }}</template>
+                </li>
+              </ul>
+            </template>
+          </div>
+        </div>
+
+        <!-- DESKTOP / TABLET: table -->
+        <div class="hidden md:block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-gray-900/40 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
               <tr>
@@ -226,11 +261,11 @@
         </div>
 
         <!-- Pagination -->
-        <div class="flex items-center justify-between mt-4 text-sm text-gray-500 dark:text-gray-400">
-          <span>{{ total ? `${offset + 1}–${Math.min(offset + pageSize, total)} of ${total}` : '0 results' }}</span>
-          <div class="flex gap-2">
-            <button @click="prevPage" :disabled="offset === 0" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Previous</button>
-            <button @click="nextPage" :disabled="offset + pageSize >= total" class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Next</button>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4 text-sm text-gray-500 dark:text-gray-400">
+          <span class="text-center sm:text-left">{{ total ? `${offset + 1}–${Math.min(offset + pageSize, total)} of ${total}` : '0 results' }}</span>
+          <div class="grid grid-cols-2 sm:flex gap-2">
+            <button @click="prevPage" :disabled="offset === 0" class="min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Previous</button>
+            <button @click="nextPage" :disabled="offset + pageSize >= total" class="min-h-[44px] sm:min-h-0 px-3 py-1.5 border border-gray-300 dark:border-gray-600 disabled:opacity-40 rounded-none">Next</button>
           </div>
         </div>
 
