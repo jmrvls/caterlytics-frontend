@@ -104,7 +104,7 @@ function recomputeUnread() {
 // tbl_business directly -- the poll is the reliable path (works regardless
 // of RLS/Realtime config), the channel just makes it feel instant when it's
 // available. Either path alone is enough for the badge to stay correct.
-async function refreshPendingBusinesses() {
+export async function refreshPendingBusinesses() {
   try {
     const { getPlatformBusinesses } = await import('../services/superAdminService')
     const rows = await getPlatformBusinesses()

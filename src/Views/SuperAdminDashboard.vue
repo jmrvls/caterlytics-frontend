@@ -97,7 +97,7 @@
           <h2 class="font-bold text-gray-900 dark:text-gray-100">Registered Businesses (Tenants)</h2>
           <div class="flex items-center gap-2 flex-wrap">
             <button
-              v-for="f in ['All', 'Pending', 'Active', 'Suspended', 'Rejected', 'Closed']" :key="f"
+              v-for="f in FILTERS" :key="f"
               @click="statusFilter = f"
               :class="statusFilter === f ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
               class="text-xs font-semibold px-3 py-1.5 rounded-none transition"
@@ -162,7 +162,7 @@
                   <span v-if="b.owner_username" class="block text-xs text-gray-400">@{{ b.owner_username }}</span>
                 </td>
                 <td class="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
-                  <span class="block">{{ b.contact_email || b.owner_contact_number || '—' }}</span>
+                  <span class="block">{{ b.contact_email || b.contact_number || b.owner_contact_number || '—' }}</span>
                   <span v-if="b.address" class="block truncate max-w-[180px]">{{ b.address }}</span>
                 </td>
                 <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300">{{ b.staff_count }}</td>
@@ -197,7 +197,7 @@
                       class="text-xs font-bold px-3 py-1.5 rounded-none bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50"
                     >Suspend</button>
                     <button
-                      v-if="b.status === 'Suspended' || b.status === 'Rejected'"
+                      v-if="b.status === 'Suspended' || b.status === 'Rejected' || b.status === 'Closed'"
                       @click="changeStatus(b, 'Active')"
                       :disabled="pendingActionId === b.business_id"
                       class="text-xs font-bold px-3 py-1.5 rounded-none bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 disabled:opacity-50"
@@ -213,7 +213,7 @@
       <p class="text-xs text-gray-400 mt-4">
         A newly self-registered business starts as <span class="font-semibold">Pending</span> and its owner cannot log in
         until you approve it here. Suspending an active business blocks that owner, their staff, and their business admin
-        from logging in until it's reactivated.
+        from logging in until it's reactivated. Rejected and Closed businesses can also be reactivated.
       </p>
     </main>
 
@@ -246,7 +246,7 @@
             </div>
             <div>
               <p class="text-xs text-gray-400 uppercase font-semibold">Contact</p>
-              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.contact_email || detailsBusiness.owner_contact_number || '—' }}</p>
+              <p class="text-gray-700 dark:text-gray-300 mt-1">{{ detailsBusiness.contact_email || detailsBusiness.contact_number || detailsBusiness.owner_contact_number || '—' }}</p>
             </div>
             <div class="col-span-2">
               <p class="text-xs text-gray-400 uppercase font-semibold">Address</p>
@@ -386,7 +386,7 @@ import NotificationBell from '../Components/SuperAdminBell.vue'
 import { logoutUser } from '../services/authService'
 import { localToday, formatDateOnly } from '../utils/date'
 import { supabase } from '../supabaseClient'
-import { resetNotifications } from '../composables/useNotifications'
+import { resetNotifications, refreshPendingBusinesses } from '../composables/useNotifications'
 import {
   getPlatformStats, getPlatformBusinesses, setBusinessStatus, getBusinessStatusAudit,
   getBusinessStaffList, getBusinessPackagesList, getBusinessBookingsList,
@@ -408,11 +408,28 @@ const businessSearch = ref('')
 // filter above (read once at setup) never updated. Watch it.
 watch(() => route.query.filter, (f) => {
   if (FILTERS.includes(f)) statusFilter.value = f
+  else if (f === undefined) statusFilter.value = 'All'
+})
+
+// The reverse direction: when a chip / stat card changes the filter, mirror it
+// into the URL. Without this the URL kept the old ?filter=Pending, so clicking
+// "View Pending Businesses" in the bell after switching chips pushed the SAME
+// location (a no-op) and the table never switched back to Pending.
+watch(statusFilter, (f) => {
+  const current = route.query.filter
+  if (f === 'All') {
+    if (current === undefined) return
+    const { filter, ...rest } = route.query
+    router.replace({ query: rest })
+  } else if (current !== f) {
+    router.replace({ query: { ...route.query, filter: f } })
+  }
 })
 
 const stats = ref({
   total_businesses: 0, pending_businesses: 0, active_businesses: 0,
-  suspended_businesses: 0, total_owners: 0, total_staff: 0, total_clients: 0,
+  suspended_businesses: 0, rejected_businesses: 0, closed_businesses: 0,
+  total_owners: 0, total_staff: 0, total_clients: 0,
 })
 const businesses = ref([])
 
@@ -426,7 +443,7 @@ const filteredBusinesses = computed(() => {
 
   return list.filter(b => [
     b.business_name, b.owner_full_name, b.owner_username,
-    b.contact_email, b.owner_contact_number, b.address,
+    b.contact_email, b.contact_number, b.owner_contact_number, b.address,
   ].some(field => (field || '').toLowerCase().includes(q)))
 })
 
@@ -532,7 +549,8 @@ async function loadData({ silent = false } = {}) {
   try {
     const [s, b] = await Promise.all([getPlatformStats(), getPlatformBusinesses()])
     if (token !== loadToken) return
-    stats.value = s
+    // Spread over the defaults so a missing column never renders "undefined".
+    stats.value = { ...stats.value, ...s }
     businesses.value = b
     // keep the open Details modal in sync with the fresh row
     if (detailsBusiness.value) {
@@ -554,7 +572,10 @@ async function loadData({ silent = false } = {}) {
     }
     if (!silent) errorMessage.value = error?.message || 'Failed to load platform data.'
   } finally {
-    if (!silent && token === loadToken) isLoading.value = false
+    // Any request that is still the newest one clears the spinner -- not only
+    // non-silent ones. Before, a silent poll that overtook the initial load
+    // discarded its result AND left "Loading…" on screen forever.
+    if (token === loadToken) isLoading.value = false
   }
 }
 
@@ -580,7 +601,7 @@ async function changeStatus(business, newStatus) {
   const isReactivate = newStatus === 'Active' && business.status !== 'Pending'
   const confirmMsgs = {
     Active: isReactivate
-      ? `Reactivate "${business.business_name}"? Its owner, staff, and business admin will be able to log in again.`
+      ? `Reactivate "${business.business_name}"${business.status === 'Closed' ? ' (currently Closed)' : ''}? Its owner, staff, and business admin will be able to log in again.`
       : `Approve "${business.business_name}"? Its owner and staff will be able to log in.`,
     Suspended: `Suspend "${business.business_name}"? Its owner, staff, and business admin will be locked out immediately.`,
     Rejected: `Reject "${business.business_name}"'s registration?`,
@@ -596,6 +617,8 @@ async function changeStatus(business, newStatus) {
   try {
     await setBusinessStatus(business.business_id, newStatus)
     await loadData({ silent: true })
+    // Update the bell's red badge right away instead of waiting for its 20s poll.
+    refreshPendingBusinesses()
   } catch (error) {
     errorMessage.value = error?.message || 'Failed to update status.'
   } finally {
@@ -656,6 +679,8 @@ async function exportPDF() {
       ['Pending Approval', String(stats.value.pending_businesses)],
       ['Active Tenants', String(stats.value.active_businesses)],
       ['Suspended', String(stats.value.suspended_businesses)],
+      ['Rejected', String(stats.value.rejected_businesses)],
+      ['Closed', String(stats.value.closed_businesses)],
       ['Owners', String(stats.value.total_owners)],
       ['Staff / Business Admins', String(stats.value.total_staff)],
       ['Clients', String(stats.value.total_clients)],
@@ -694,12 +719,12 @@ async function exportPDF() {
   doc.save(`caterlytics-platform-${statusFilter.value.toLowerCase()}-${dateSlug}.pdf`)
 }
 
-// Previously this only cleared sessionStorage and never ended the Supabase
-// session, so the JWT stayed in localStorage and the route guard (which
-// trusts getSession()) let anyone reopen /super-admin/dashboard after "Log Out".
 let refreshTimer = null
 
+let isLoggingOut = false
 const handleLogout = async () => {
+  if (isLoggingOut) return // double-click guard
+  isLoggingOut = true
   try {
     await logoutUser()
   } catch (error) {
@@ -732,11 +757,23 @@ onMounted(() => {
   loadData()
   // Pick up newly registered businesses / changes made elsewhere without a
   // manual refresh (the bell already polls every 20s; keep the table in step).
-  refreshTimer = setInterval(() => loadData({ silent: true }), 30000)
+  refreshTimer = setInterval(() => {
+    if (!document.hidden) loadData({ silent: true })
+  }, 30000)
+  window.addEventListener('keydown', onKeydown)
 })
+
+function onKeydown(e) {
+  if (e.key !== 'Escape') return
+  if (confirmState.value) resolveConfirm(false)
+  else if (detailsBusiness.value) closeDetails()
+}
 
 onUnmounted(() => {
   if (refreshTimer) clearInterval(refreshTimer)
+  window.removeEventListener('keydown', onKeydown)
+  // never leave an awaiting changeStatus() hanging if we leave the page mid-confirm
+  confirmState.value?.resolve(false)
 })
 </script>
 

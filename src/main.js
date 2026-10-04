@@ -179,6 +179,10 @@ router.beforeEach(async (to) => {
       return '/client/bookings'
     } else if (profile.role === 'Super Admin') {
       return '/super-admin/dashboard'
+    } else if (['Admin', 'Owner/Manager'].includes(profile.role)) {
+      // Used to fall through to '/' (the login page) even though the session
+      // is still valid -- send business admins/owners to their own dashboard.
+      return '/admin/dashboard'
     } else {
       return '/'
     }
