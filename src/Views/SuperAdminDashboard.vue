@@ -2,22 +2,32 @@
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans">
 
     <!-- TOP BAR -->
-    <header class="bg-gray-900 dark:bg-black border-b border-gray-800 sticky top-0 z-30">
-      <div class="max-w-7xl mx-auto px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+    <header class="bg-gray-900 dark:bg-black border-b border-gray-800 sticky top-0 z-30" style="padding-top: env(safe-area-inset-top)">
+      <div class="max-w-7xl mx-auto px-3 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
         <div class="flex items-center gap-3 min-w-0">
           <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
           <div class="min-w-0">
             <p class="font-bold text-white leading-tight truncate">Caterlytics</p>
-            <p class="text-[11px] text-indigo-300 leading-tight tracking-wide uppercase">Super Admin &middot; Platform Console</p>
+            <p class="text-[10px] sm:text-[11px] text-indigo-300 leading-tight tracking-wide uppercase truncate">Super Admin<span class="hidden sm:inline"> &middot; Platform Console</span></p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3 flex-shrink-0">
+        <div class="flex items-center gap-1 sm:gap-3 flex-shrink-0">
           <NotificationBell />
+          <button
+            @click="router.push('/super-admin/audit-log')"
+            title="Platform Audit Log"
+            class="flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 rounded-none text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition"
+          >
+            <svg class="w-5 h-5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span class="hidden sm:inline">Audit Log</span>
+          </button>
           <button
             @click="router.push('/settings')"
             title="Settings"
-            class="p-2 rounded-none text-gray-400 hover:text-white hover:bg-white/10 transition"
+            class="p-2.5 sm:p-2 rounded-none text-gray-400 hover:text-white hover:bg-white/10 transition"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -27,113 +37,114 @@
           <span class="hidden sm:inline text-sm text-gray-400">{{ userName }}</span>
           <button
             @click="handleLogout"
-            class="flex items-center gap-2 px-3 py-2 rounded-none text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition"
+            class="flex items-center gap-2 p-2.5 sm:px-3 sm:py-2 rounded-none text-sm font-semibold text-gray-300 hover:text-white hover:bg-white/10 transition"
+            aria-label="Log Out"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            Log Out
+            <span class="hidden sm:inline">Log Out</span>
           </button>
         </div>
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-3 sm:px-8 py-5 sm:py-8">
 
       <!-- STATS -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-8">
         <button
           @click="statusFilter = 'All'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition hover:border-gray-300 dark:hover:border-gray-600"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-3.5 sm:p-5 transition hover:border-gray-300 dark:hover:border-gray-600"
           :class="statusFilter === 'All' ? 'border-gray-400 dark:border-gray-500 ring-1 ring-gray-200 dark:ring-gray-700' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Businesses</p>
-          <p class="text-3xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ isLoading ? '…' : stats.total_businesses }}</p>
+          <p class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ isLoading ? '…' : stats.total_businesses }}</p>
         </button>
         <button
           @click="statusFilter = 'Pending'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition hover:border-amber-300 dark:hover:border-amber-700"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-3.5 sm:p-5 transition hover:border-amber-300 dark:hover:border-amber-700"
           :class="(statusFilter === 'Pending' || stats.pending_businesses > 0) ? 'border-amber-300 dark:border-amber-700 ring-1 ring-amber-200 dark:ring-amber-800' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Pending Approval</p>
-          <p class="text-3xl font-black text-amber-600 dark:text-amber-400 mt-1">{{ isLoading ? '…' : stats.pending_businesses }}</p>
+          <p class="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400 mt-1">{{ isLoading ? '…' : stats.pending_businesses }}</p>
         </button>
         <button
           @click="statusFilter = 'Active'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition hover:border-emerald-300 dark:hover:border-emerald-700"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-3.5 sm:p-5 transition hover:border-emerald-300 dark:hover:border-emerald-700"
           :class="statusFilter === 'Active' ? 'border-emerald-300 dark:border-emerald-700 ring-1 ring-emerald-200 dark:ring-emerald-800' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Active Tenants</p>
-          <p class="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ isLoading ? '…' : stats.active_businesses }}</p>
+          <p class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ isLoading ? '…' : stats.active_businesses }}</p>
         </button>
         <button
           @click="statusFilter = 'Suspended'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-5 transition hover:border-red-300 dark:hover:border-red-700"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-3.5 sm:p-5 transition hover:border-red-300 dark:hover:border-red-700"
           :class="statusFilter === 'Suspended' ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-800' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Suspended</p>
-          <p class="text-3xl font-black text-red-500 mt-1">{{ isLoading ? '…' : stats.suspended_businesses }}</p>
+          <p class="text-2xl sm:text-3xl font-black text-red-500 mt-1">{{ isLoading ? '…' : stats.suspended_businesses }}</p>
         </button>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-4 text-center">
+      <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-5 sm:mb-8">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-3 sm:p-4 text-center">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isLoading ? '…' : stats.total_owners }}</p>
           <p class="text-xs text-gray-400 mt-0.5">Owners</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-4 text-center">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-3 sm:p-4 text-center">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isLoading ? '…' : stats.total_staff }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Staff / Business Admins</p>
+          <p class="text-xs text-gray-400 mt-0.5">Staff<span class="hidden sm:inline"> / Business Admins</span></p>
         </div>
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-4 text-center">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-3 sm:p-4 text-center">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isLoading ? '…' : stats.total_clients }}</p>
           <p class="text-xs text-gray-400 mt-0.5">Clients</p>
         </div>
       </div>
 
       <!-- MAIN TABS -->
-      <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
+      <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6 overflow-x-auto no-scrollbar">
         <button
           v-for="t in ['Tenants', 'Analytics']" :key="t"
           type="button"
           @click="mainTab = t"
           :class="mainTab === t ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
-          class="px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition"
+          class="px-4 py-3 sm:py-2.5 text-sm font-bold border-b-2 -mb-px transition whitespace-nowrap"
         >{{ t === 'Analytics' ? 'Platform Analytics' : 'Tenants' }}</button>
       </div>
 
       <template v-if="mainTab === 'Tenants'">
       <!-- TENANT LIFECYCLE ALERTS (expiring / expired / inactive subscriptions) -->
-      <div v-if="lifecycleReady" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div v-if="lifecycleReady" class="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
         <button
           type="button"
           @click="toggleLifecycleFilter('Expiring')"
           :class="lifecycleFilter === 'Expiring' ? 'border-amber-400 ring-1 ring-amber-300' : 'border-gray-200 dark:border-gray-700'"
-          class="text-left bg-white dark:bg-gray-800 border p-4 rounded-none transition"
+          class="text-left bg-white dark:bg-gray-800 border p-2.5 sm:p-4 rounded-none transition"
         >
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Expiring in {{ EXPIRY_WARN_DAYS }} days</p>
-          <p class="text-3xl font-black text-amber-500 mt-1">{{ lifecycleCounts.expiring }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Renew before they lapse</p>
+          <p class="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide leading-tight">Expiring in {{ EXPIRY_WARN_DAYS }} days</p>
+          <p class="text-2xl sm:text-3xl font-black text-amber-500 mt-1">{{ lifecycleCounts.expiring }}</p>
+          <p class="hidden sm:block text-xs text-gray-400 mt-0.5">Renew before they lapse</p>
         </button>
         <button
           type="button"
           @click="toggleLifecycleFilter('Expired')"
           :class="lifecycleFilter === 'Expired' ? 'border-red-300 ring-1 ring-red-200' : 'border-gray-200 dark:border-gray-700'"
-          class="text-left bg-white dark:bg-gray-800 border p-4 rounded-none transition"
+          class="text-left bg-white dark:bg-gray-800 border p-2.5 sm:p-4 rounded-none transition"
         >
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Expired</p>
-          <p class="text-3xl font-black text-red-500 mt-1">{{ lifecycleCounts.expired }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Subscription already ended</p>
+          <p class="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide leading-tight">Expired</p>
+          <p class="text-2xl sm:text-3xl font-black text-red-500 mt-1">{{ lifecycleCounts.expired }}</p>
+          <p class="hidden sm:block text-xs text-gray-400 mt-0.5">Subscription already ended</p>
         </button>
         <button
           type="button"
           @click="toggleLifecycleFilter('Inactive')"
           :class="lifecycleFilter === 'Inactive' ? 'border-gray-500 ring-1 ring-gray-300' : 'border-gray-200 dark:border-gray-700'"
-          class="text-left bg-white dark:bg-gray-800 border p-4 rounded-none transition"
+          class="text-left bg-white dark:bg-gray-800 border p-2.5 sm:p-4 rounded-none transition"
         >
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Inactive ({{ INACTIVE_DAYS }}+ days)</p>
-          <p class="text-3xl font-black text-gray-600 dark:text-gray-300 mt-1">{{ lifecycleCounts.inactive }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Active businesses with no bookings</p>
+          <p class="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide leading-tight">Inactive ({{ INACTIVE_DAYS }}+ days)</p>
+          <p class="text-2xl sm:text-3xl font-black text-gray-600 dark:text-gray-300 mt-1">{{ lifecycleCounts.inactive }}</p>
+          <p class="hidden sm:block text-xs text-gray-400 mt-0.5">Active businesses with no bookings</p>
         </button>
       </div>
       <p v-if="lifecycleFilter" class="text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -143,20 +154,20 @@
 
       <!-- BUSINESSES -->
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
-        <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-b border-gray-100 dark:border-gray-700">
           <h2 class="font-bold text-gray-900 dark:text-gray-100">Registered Businesses (Tenants)</h2>
-          <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
             <button
               v-for="f in FILTERS" :key="f"
               @click="statusFilter = f"
               :class="statusFilter === f ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
-              class="text-xs font-semibold px-3 py-1.5 rounded-none transition"
+              class="shrink-0 text-xs font-semibold px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-none transition"
             >
               {{ f }}
             </button>
             <button
               @click="exportPDF"
-              class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-none bg-emerald-600 text-white hover:bg-emerald-700 transition"
+              class="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-none bg-emerald-600 text-white hover:bg-emerald-700 transition"
             >
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -167,15 +178,15 @@
         </div>
 
         <!-- SEARCH -->
-        <div class="p-4 border-b border-gray-100 dark:border-gray-700">
-          <div class="relative max-w-sm">
+        <div class="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-700">
+          <div class="relative sm:max-w-sm">
             <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               type="text"
               v-model="businessSearch"
-              placeholder="Search by business, owner, email, or number..."
+              placeholder="Search business, owner, email…"
               class="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -189,7 +200,7 @@
           No businesses match this filter{{ businessSearch ? ' / search' : '' }}.
         </div>
 
-        <div v-else class="overflow-x-auto">
+        <div v-else class="hidden md:block overflow-x-auto">
           <table class="w-full text-sm block md:table">
             <thead class="hidden md:table-header-group bg-gray-50 dark:bg-gray-900/40 text-left text-xs uppercase tracking-wide text-gray-400">
               <tr>
@@ -275,6 +286,88 @@
             </tbody>
           </table>
         </div>
+
+        <!-- MOBILE: one card per tenant -->
+        <ul v-if="!isLoading && filteredBusinesses.length" class="md:hidden divide-y divide-gray-100 dark:divide-gray-700">
+          <li v-for="b in filteredBusinesses" :key="'m-' + b.business_id" class="p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="font-bold text-gray-900 dark:text-gray-100 leading-snug">{{ b.business_name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {{ b.owner_full_name || '—' }}<span v-if="b.owner_username"> &middot; @{{ b.owner_username }}</span>
+                </p>
+              </div>
+              <span class="shrink-0 inline-block px-2 py-1 rounded-none text-xs font-bold whitespace-nowrap" :class="statusBadgeClass(b.status)">{{ b.status }}</span>
+            </div>
+
+            <p class="text-xs text-gray-400 mt-1.5 break-words">
+              {{ b.contact_email || b.contact_number || b.owner_contact_number || '—' }}
+            </p>
+            <p v-if="b.address" class="text-xs text-gray-400 break-words">{{ b.address }}</p>
+            <p class="text-[11px] text-gray-400 mt-0.5">Registered {{ formatDate(b.created_at) }}</p>
+
+            <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+              <div class="bg-gray-50 dark:bg-gray-900/40 py-2">
+                <p class="text-base font-bold text-gray-800 dark:text-gray-100">{{ b.staff_count }}</p>
+                <p class="text-[10px] uppercase tracking-wide text-gray-400">Staff</p>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-900/40 py-2">
+                <p class="text-base font-bold text-gray-800 dark:text-gray-100">{{ b.packages_count }}</p>
+                <p class="text-[10px] uppercase tracking-wide text-gray-400">Packages</p>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-900/40 py-2">
+                <p class="text-base font-bold text-gray-800 dark:text-gray-100">{{ b.bookings_count }}</p>
+                <p class="text-[10px] uppercase tracking-wide text-gray-400">Bookings</p>
+              </div>
+            </div>
+
+            <div v-if="lifecycleReady" class="mt-3 text-xs flex flex-wrap items-center gap-x-2 gap-y-1">
+              <template v-if="b.subscription_expires_at">
+                <span class="text-gray-400">Subscription:</span>
+                <span class="text-gray-600 dark:text-gray-300">{{ formatDateOnly(b.subscription_expires_at) }}</span>
+                <span class="inline-block px-2 py-0.5 rounded-none font-bold whitespace-nowrap" :class="expiryBadgeClass(b)">{{ expiryLabel(b) }}</span>
+              </template>
+              <span v-else class="text-gray-400">Subscription: no expiry set</span>
+              <span v-if="isInactive(b)" class="w-full text-gray-500 dark:text-gray-400">Inactive {{ b.days_inactive }} days</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-3">
+              <button
+                @click="openDetails(b)"
+                class="min-h-[44px] text-sm font-bold px-3 rounded-none bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 active:bg-gray-200 dark:active:bg-gray-600"
+              >Details</button>
+              <button
+                v-if="lifecycleReady && ['Active', 'Suspended', 'Closed'].includes(b.status)"
+                @click="openRenew(b)"
+                class="min-h-[44px] text-sm font-bold px-3 rounded-none bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 active:bg-amber-100 dark:active:bg-amber-900/50"
+              >Renew</button>
+              <button
+                v-if="b.status === 'Pending'"
+                @click="changeStatus(b, 'Active')"
+                :disabled="pendingActionId === b.business_id"
+                class="min-h-[44px] text-sm font-bold px-3 rounded-none bg-emerald-600 text-white active:bg-emerald-700 disabled:opacity-50"
+              >Approve</button>
+              <button
+                v-if="b.status === 'Pending'"
+                @click="changeStatus(b, 'Rejected')"
+                :disabled="pendingActionId === b.business_id"
+                class="min-h-[44px] text-sm font-bold px-3 rounded-none bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 active:bg-gray-200 dark:active:bg-gray-600 disabled:opacity-50"
+              >Reject</button>
+              <button
+                v-if="b.status === 'Active'"
+                @click="changeStatus(b, 'Suspended')"
+                :disabled="pendingActionId === b.business_id"
+                class="min-h-[44px] text-sm font-bold px-3 rounded-none bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 active:bg-red-100 dark:active:bg-red-900/50 disabled:opacity-50"
+              >Suspend</button>
+              <button
+                v-if="b.status === 'Suspended' || b.status === 'Rejected' || b.status === 'Closed'"
+                @click="changeStatus(b, 'Active')"
+                :disabled="pendingActionId === b.business_id"
+                class="min-h-[44px] text-sm font-bold px-3 rounded-none bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 active:bg-emerald-100 dark:active:bg-emerald-900/50 disabled:opacity-50"
+              >Reactivate</button>
+            </div>
+          </li>
+        </ul>
       </div>
 
       <p class="text-xs text-gray-400 mt-4">
@@ -286,18 +379,18 @@
 
       <!-- ============ PLATFORM ANALYTICS ============ -->
       <div v-else>
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h2 class="font-bold text-gray-900 dark:text-gray-100">Multi-Tenant Analytics</h2>
             <p class="text-xs text-gray-400">Bookings and collected revenue per catering business. Months follow the event date.</p>
           </div>
-          <div class="flex gap-1">
+          <div class="flex gap-1 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0">
             <button
               v-for="r in ANALYTICS_RANGES" :key="r.key"
               type="button"
               @click="analyticsRange = r.key"
               :class="analyticsRange === r.key ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
-              class="text-xs font-semibold px-3 py-1.5 rounded-none transition whitespace-nowrap"
+              class="shrink-0 text-xs font-semibold px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-none transition whitespace-nowrap"
             >{{ r.label }}</button>
           </div>
         </div>
@@ -307,23 +400,23 @@
 
         <template v-else>
           <!-- KPI cards -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
               <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total bookings</p>
-              <p class="text-3xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ analyticsTotals.bookings }}</p>
+              <p class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ analyticsTotals.bookings }}</p>
               <p class="text-xs text-gray-400 mt-0.5">{{ analyticsTotals.completed }} completed · {{ analyticsTotals.cancelled }} cancelled</p>
             </div>
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
               <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Revenue collected</p>
-              <p class="text-3xl font-black text-emerald-600 mt-1">{{ peso(analyticsTotals.revenue) }}</p>
+              <p class="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">{{ peso(analyticsTotals.revenue) }}</p>
               <p class="text-xs text-gray-400 mt-0.5">{{ analyticsTotals.guests.toLocaleString('en-PH') }} guests served</p>
             </div>
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
               <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Peak month</p>
-              <p class="text-3xl font-black text-amber-500 mt-1">{{ peakMonth ? peakMonth.label : '—' }}</p>
+              <p class="text-2xl sm:text-3xl font-black text-amber-500 mt-1">{{ peakMonth ? peakMonth.label : '—' }}</p>
               <p class="text-xs text-gray-400 mt-0.5">{{ peakMonth ? `${peakMonth.bookings} bookings · ${peso(peakMonth.revenue)}` : 'No bookings in this range' }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
               <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Top tenant</p>
               <p class="text-lg font-black text-gray-900 dark:text-gray-100 mt-2 truncate">{{ topTenant ? topTenant.business_name : '—' }}</p>
               <p class="text-xs text-gray-400 mt-0.5">{{ topTenant ? `${peso(topTenant.revenue)} · ${topTenant.bookings} bookings` : 'No data yet' }}</p>
@@ -331,7 +424,7 @@
           </div>
 
           <!-- Monthly trend -->
-          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 mb-6">
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 sm:p-4 mb-4 sm:mb-6">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
               <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm">Platform trend by month</h3>
               <div class="flex gap-1">
@@ -340,7 +433,7 @@
                   type="button"
                   @click="trendMetric = m.k"
                   :class="trendMetric === m.k ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
-                  class="text-xs font-semibold px-3 py-1 rounded-none"
+                  class="text-xs font-semibold px-3.5 py-2 sm:px-3 sm:py-1 rounded-none"
                 >{{ m.l }}</button>
               </div>
             </div>
@@ -364,7 +457,7 @@
 
           <!-- Tenant comparison -->
           <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div class="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-gray-100 dark:border-gray-700">
+            <div class="flex flex-wrap items-center justify-between gap-2 p-3 sm:p-4 border-b border-gray-100 dark:border-gray-700">
               <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm">Tenant comparison</h3>
               <div class="flex items-center gap-2">
                 <label class="text-xs text-gray-400">Sort by</label>
@@ -391,16 +484,17 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                   <tr v-for="(t, i) in tenantStats" :key="t.business_id" class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                    <td class="px-4 py-3 text-gray-400 text-xs">{{ i + 1 }}</td>
-                    <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">
+                    <td class="pl-3 pr-1 sm:px-4 py-3 text-gray-400 text-xs">{{ i + 1 }}</td>
+                    <td class="px-2 sm:px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">
                       {{ t.business_name }}
                       <span v-if="t.status !== 'Active'" class="ml-1 text-[10px] font-bold px-1.5 py-0.5" :class="statusBadgeClass(t.status)">{{ t.status }}</span>
+                      <span class="sm:hidden block text-[11px] font-normal text-gray-400">{{ t.completed }} done &middot; {{ t.cancelled }} cancelled</span>
                     </td>
                     <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300">{{ t.bookings }}</td>
                     <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ t.completed }}</td>
                     <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ t.cancelled }}</td>
                     <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ t.guests.toLocaleString('en-PH') }}</td>
-                    <td class="px-4 py-3 min-w-[160px]">
+                    <td class="px-3 sm:px-4 py-3 min-w-[130px] sm:min-w-[160px]">
                       <span class="font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">{{ peso(t.revenue) }}</span>
                       <div class="h-1.5 bg-gray-100 dark:bg-gray-700 mt-1">
                         <div class="h-1.5 bg-emerald-500" :style="{ width: revenueShare(t) + '%' }"></div>
@@ -421,12 +515,12 @@
     </main>
 
     <!-- BUSINESS DETAILS / AUDIT TRAIL MODAL -->
-    <div v-if="detailsBusiness" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div v-if="detailsBusiness" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
       <div @click="closeDetails" class="absolute inset-0 bg-black/50"></div>
-      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full max-w-lg max-h-[85vh] overflow-y-auto">
-        <div class="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full sm:max-w-lg max-h-[90vh] sm:max-h-[85vh] overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
+        <div class="sticky top-0 z-10 bg-white dark:bg-gray-800 flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
           <h3 class="font-bold text-gray-900 dark:text-gray-100">{{ detailsBusiness.business_name }}</h3>
-          <button @click="closeDetails" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">&times;</button>
+          <button @click="closeDetails" aria-label="Close" class="w-10 h-10 -mr-2 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none">&times;</button>
         </div>
 
         <div class="p-4 space-y-4">
@@ -554,9 +648,9 @@
     </div>
 
     <!-- RENEW SUBSCRIPTION MODAL -->
-    <div v-if="renewState" class="fixed inset-0 z-[55] flex items-center justify-center p-4">
+    <div v-if="renewState" class="fixed inset-0 z-[55] flex items-end sm:items-center justify-center sm:p-4">
       <div class="absolute inset-0 bg-black/50" @click="closeRenew"></div>
-      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full max-w-sm p-5">
+      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full sm:max-w-sm p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-h-[90vh] overflow-y-auto">
         <h3 class="font-bold text-gray-900 dark:text-gray-100">Renew subscription</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ renewState.business.business_name }}</p>
         <p class="text-xs text-gray-400 mt-1">
@@ -570,7 +664,7 @@
             type="button"
             @click="renewState.months = m"
             :class="renewState.months === m ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
-            class="flex-1 text-xs font-bold py-2 rounded-none"
+            class="flex-1 text-xs font-bold py-3 sm:py-2 rounded-none"
           >{{ m }} mo</button>
         </div>
         <p class="text-[11px] text-gray-400 mt-2">Counted from the current expiry (or today if it already lapsed).</p>
@@ -589,33 +683,33 @@
         <div class="flex justify-end gap-2 mt-5">
           <button
             @click="closeRenew"
-            class="px-4 py-2 rounded-none text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            class="flex-1 sm:flex-none px-4 py-3 sm:py-2 rounded-none text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
           >Cancel</button>
           <button
             @click="submitRenew"
             :disabled="renewState.saving"
-            class="px-4 py-2 rounded-none text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition"
+            class="flex-1 sm:flex-none px-4 py-3 sm:py-2 rounded-none text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition"
           >{{ renewState.saving ? 'Saving…' : (renewState.exactDate ? 'Set date' : 'Renew') }}</button>
         </div>
       </div>
     </div>
 
     <!-- CONFIRM ACTION MODAL (replaces the native browser confirm() popup) -->
-    <div v-if="confirmState" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div v-if="confirmState" class="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4">
       <div class="absolute inset-0 bg-black/50"></div>
-      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full max-w-sm p-5">
+      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full sm:max-w-sm p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] max-h-[90vh] overflow-y-auto">
         <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-2">Please confirm</h3>
         <p class="text-sm text-gray-600 dark:text-gray-300 mb-5">{{ confirmState.message }}</p>
         <div class="flex justify-end gap-2">
           <button
             @click="resolveConfirm(false)"
-            class="px-4 py-2 rounded-none text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+            class="flex-1 sm:flex-none px-4 py-3 sm:py-2 rounded-none text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
           >
             Cancel
           </button>
           <button
             @click="resolveConfirm(true)"
-            class="px-4 py-2 rounded-none text-sm font-bold text-white transition"
+            class="flex-1 sm:flex-none px-4 py-3 sm:py-2 rounded-none text-sm font-bold text-white transition"
             :class="confirmState.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'"
           >
             {{ confirmState.actionLabel || (confirmState.danger ? 'Yes, proceed' : 'Approve') }}

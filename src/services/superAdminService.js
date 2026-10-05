@@ -125,3 +125,27 @@ export async function getTenantAnalytics(fromDate, toDate) {
     revenue: Number(r.revenue) || 0,
   }));
 }
+
+// ---------- Platform-wide audit log ----------
+// Every tenant's data changes + sign-ins/exports in one feed. Requires
+// platform_audit_log.sql. Gated server-side to Super Admin (the RPC raises
+// for anyone else), same as the rest of this file.
+export async function getPlatformAuditLog({
+  limit = 25, offset = 0, source = null, business = null, action = null,
+  table = null, search = null, from = null, to = null,
+} = {}) {
+  const { data, error } = await supabase.rpc('get_platform_audit_log', {
+    p_limit: limit,
+    p_offset: offset,
+    p_source: source || null,
+    p_business: business || null,
+    p_action: action || null,
+    p_table: table || null,
+    p_search: search?.trim() || null,
+    p_from: from || null,
+    p_to: to || null,
+  });
+  if (error) throw new Error(error.message || 'Failed to load the platform audit log.');
+  const rows = data || [];
+  return { rows, total: rows.length ? Number(rows[0].total_count) : 0 };
+}

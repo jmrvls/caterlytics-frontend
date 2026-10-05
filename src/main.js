@@ -43,6 +43,7 @@ import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
 import RegisterBusinessView from './Views/Registerbusinessview.vue'
 import SuperAdminDashboard from './Views/SuperAdminDashboard.vue'
+import PlatformAuditLog from './Views/PlatformAuditLog.vue'
 import NotFoundView from './Views/Notfoundview.vue'
 
 // Routes
@@ -55,6 +56,7 @@ const routes = [
   // the whole system. Distinct from the business-scoped 'Admin' role above,
   // which only ever sees its own single business.
   { path: '/super-admin/dashboard', component: SuperAdminDashboard, meta: { requiresAuth: true, roles: ['Super Admin'] } },
+  { path: '/super-admin/audit-log', component: PlatformAuditLog, meta: { requiresAuth: true, roles: ['Super Admin'] } },
   { path: '/admin/dashboard', component: AdminDashboard, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
   { path: '/admin/bookings', component: BookingManagement, meta: { requiresAuth: true, roles: ['Admin', 'Owner/Manager'] } },
   { path: '/admin/planning', component: EventPlanning, meta: { requiresAuth: true, roles: ['Admin', 'Staff', 'Owner/Manager'] } },
