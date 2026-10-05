@@ -43,7 +43,7 @@ import ClientDashboard from './Views/ClientDashboard.vue'
 import SettingsView from './Views/SettingsView.vue'
 import RegisterBusinessView from './Views/Registerbusinessview.vue'
 import SuperAdminDashboard from './Views/SuperAdminDashboard.vue'
-import PlatformAuditLog from './Views/PlatformAuditLog.vue'
+import PlatformAuditLog from './Views/Platformauditlog.vue'
 import NotFoundView from './Views/Notfoundview.vue'
 
 // Routes
