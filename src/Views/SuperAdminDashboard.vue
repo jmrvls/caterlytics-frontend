@@ -3,7 +3,7 @@
 
     <!-- TOP BAR -->
     <header class="bg-gray-900 dark:bg-black border-b border-gray-800 sticky top-0 z-30" style="padding-top: env(safe-area-inset-top)">
-      <div class="max-w-7xl mx-auto px-3 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+      <div class="w-full px-3 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
         <div class="flex items-center gap-3 min-w-0">
           <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
           <div class="min-w-0">
@@ -49,13 +49,13 @@
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-3 sm:px-8 py-5 sm:py-8">
+    <main class="w-full px-3 sm:px-6 lg:px-8 py-6 sm:py-12">
 
       <!-- STATS -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-8">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-10">
         <button
           @click="statusFilter = 'All'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-3.5 sm:p-5 transition hover:border-gray-300 dark:hover:border-gray-600"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-4 sm:p-7 transition hover:border-gray-300 dark:hover:border-gray-600"
           :class="statusFilter === 'All' ? 'border-gray-400 dark:border-gray-500 ring-1 ring-gray-200 dark:ring-gray-700' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total Businesses</p>
@@ -63,7 +63,7 @@
         </button>
         <button
           @click="statusFilter = 'Pending'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-3.5 sm:p-5 transition hover:border-amber-300 dark:hover:border-amber-700"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-4 sm:p-7 transition hover:border-amber-300 dark:hover:border-amber-700"
           :class="(statusFilter === 'Pending' || stats.pending_businesses > 0) ? 'border-amber-300 dark:border-amber-700 ring-1 ring-amber-200 dark:ring-amber-800' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Pending Approval</p>
@@ -71,7 +71,7 @@
         </button>
         <button
           @click="statusFilter = 'Active'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-3.5 sm:p-5 transition hover:border-emerald-300 dark:hover:border-emerald-700"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-4 sm:p-7 transition hover:border-emerald-300 dark:hover:border-emerald-700"
           :class="statusFilter === 'Active' ? 'border-emerald-300 dark:border-emerald-700 ring-1 ring-emerald-200 dark:ring-emerald-800' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Active Tenants</p>
@@ -79,7 +79,7 @@
         </button>
         <button
           @click="statusFilter = 'Suspended'"
-          class="text-left bg-white dark:bg-gray-800 border rounded-none p-3.5 sm:p-5 transition hover:border-red-300 dark:hover:border-red-700"
+          class="text-left bg-white dark:bg-gray-800 border rounded-none p-4 sm:p-7 transition hover:border-red-300 dark:hover:border-red-700"
           :class="statusFilter === 'Suspended' ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-800' : 'border-gray-200 dark:border-gray-700'"
         >
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Suspended</p>
@@ -87,64 +87,64 @@
         </button>
       </div>
 
-      <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-5 sm:mb-8">
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-3 sm:p-4 text-center">
+      <div class="grid grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-10">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-4 sm:p-6 text-center">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isLoading ? '…' : stats.total_owners }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Owners</p>
+          <p class="text-xs text-gray-400 mt-1.5">Owners</p>
         </div>
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-3 sm:p-4 text-center">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-4 sm:p-6 text-center">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isLoading ? '…' : stats.total_staff }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Staff<span class="hidden sm:inline"> / Business Admins</span></p>
+          <p class="text-xs text-gray-400 mt-1.5">Staff<span class="hidden sm:inline"> / Business Admins</span></p>
         </div>
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-3 sm:p-4 text-center">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-4 sm:p-6 text-center">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isLoading ? '…' : stats.total_clients }}</p>
-          <p class="text-xs text-gray-400 mt-0.5">Clients</p>
+          <p class="text-xs text-gray-400 mt-1.5">Clients</p>
         </div>
       </div>
 
       <!-- MAIN TABS -->
-      <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4 sm:mb-6 overflow-x-auto no-scrollbar">
+      <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 sm:mb-10 overflow-x-auto no-scrollbar">
         <button
           v-for="t in ['Tenants', 'Analytics']" :key="t"
           type="button"
           @click="mainTab = t"
           :class="mainTab === t ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
-          class="px-4 py-3 sm:py-2.5 text-sm font-bold border-b-2 -mb-px transition whitespace-nowrap"
+          class="px-5 py-3 sm:py-3.5 text-sm font-bold border-b-2 -mb-px transition whitespace-nowrap"
         >{{ t === 'Analytics' ? 'Platform Analytics' : 'Tenants' }}</button>
       </div>
 
       <template v-if="mainTab === 'Tenants'">
       <!-- TENANT LIFECYCLE ALERTS (expiring / expired / inactive subscriptions) -->
-      <div v-if="lifecycleReady" class="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+      <div v-if="lifecycleReady" class="grid grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-10">
         <button
           type="button"
           @click="toggleLifecycleFilter('Expiring')"
           :class="lifecycleFilter === 'Expiring' ? 'border-amber-400 ring-1 ring-amber-300' : 'border-gray-200 dark:border-gray-700'"
-          class="text-left bg-white dark:bg-gray-800 border p-2.5 sm:p-4 rounded-none transition"
+          class="text-left bg-white dark:bg-gray-800 border p-3 sm:p-6 rounded-none transition"
         >
           <p class="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide leading-tight">Expiring in {{ EXPIRY_WARN_DAYS }} days</p>
           <p class="text-2xl sm:text-3xl font-black text-amber-500 mt-1">{{ lifecycleCounts.expiring }}</p>
-          <p class="hidden sm:block text-xs text-gray-400 mt-0.5">Renew before they lapse</p>
+          <p class="hidden sm:block text-xs text-gray-400 mt-1.5">Renew before they lapse</p>
         </button>
         <button
           type="button"
           @click="toggleLifecycleFilter('Expired')"
           :class="lifecycleFilter === 'Expired' ? 'border-red-300 ring-1 ring-red-200' : 'border-gray-200 dark:border-gray-700'"
-          class="text-left bg-white dark:bg-gray-800 border p-2.5 sm:p-4 rounded-none transition"
+          class="text-left bg-white dark:bg-gray-800 border p-3 sm:p-6 rounded-none transition"
         >
           <p class="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide leading-tight">Expired</p>
           <p class="text-2xl sm:text-3xl font-black text-red-500 mt-1">{{ lifecycleCounts.expired }}</p>
-          <p class="hidden sm:block text-xs text-gray-400 mt-0.5">Subscription already ended</p>
+          <p class="hidden sm:block text-xs text-gray-400 mt-1.5">Subscription already ended</p>
         </button>
         <button
           type="button"
           @click="toggleLifecycleFilter('Inactive')"
           :class="lifecycleFilter === 'Inactive' ? 'border-gray-500 ring-1 ring-gray-300' : 'border-gray-200 dark:border-gray-700'"
-          class="text-left bg-white dark:bg-gray-800 border p-2.5 sm:p-4 rounded-none transition"
+          class="text-left bg-white dark:bg-gray-800 border p-3 sm:p-6 rounded-none transition"
         >
           <p class="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wide leading-tight">Inactive ({{ INACTIVE_DAYS }}+ days)</p>
           <p class="text-2xl sm:text-3xl font-black text-gray-600 dark:text-gray-300 mt-1">{{ lifecycleCounts.inactive }}</p>
-          <p class="hidden sm:block text-xs text-gray-400 mt-0.5">Active businesses with no bookings</p>
+          <p class="hidden sm:block text-xs text-gray-400 mt-1.5">Active businesses with no bookings</p>
         </button>
       </div>
       <p v-if="lifecycleFilter" class="text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -154,7 +154,7 @@
 
       <!-- BUSINESSES -->
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
-        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 p-3 sm:p-4 border-b border-gray-100 dark:border-gray-700">
+        <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700">
           <h2 class="font-bold text-gray-900 dark:text-gray-100">Registered Businesses (Tenants)</h2>
           <div class="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap sm:overflow-visible">
             <button
@@ -178,7 +178,7 @@
         </div>
 
         <!-- SEARCH -->
-        <div class="p-3 sm:p-4 border-b border-gray-100 dark:border-gray-700">
+        <div class="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700">
           <div class="relative sm:max-w-sm">
             <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -204,40 +204,40 @@
           <table class="w-full text-sm block md:table">
             <thead class="hidden md:table-header-group bg-gray-50 dark:bg-gray-900/40 text-left text-xs uppercase tracking-wide text-gray-400">
               <tr>
-                <th class="px-4 py-3 font-semibold">Business</th>
-                <th class="px-4 py-3 font-semibold">Owner</th>
-                <th class="px-4 py-3 font-semibold hidden xl:table-cell">Contact</th>
-                <th class="px-4 py-3 font-semibold text-center hidden lg:table-cell">Staff</th>
-                <th class="px-4 py-3 font-semibold text-center hidden lg:table-cell">Packages</th>
-                <th class="px-4 py-3 font-semibold text-center">Bookings</th>
-                <th class="px-4 py-3 font-semibold hidden xl:table-cell">Registered</th>
-                <th class="px-4 py-3 font-semibold">Status</th>
-                <th v-if="lifecycleReady" class="px-4 py-3 font-semibold whitespace-nowrap">Subscription</th>
-                <th class="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
+                <th class="px-4 md:px-6 py-4 font-semibold">Business</th>
+                <th class="px-4 md:px-6 py-4 font-semibold">Owner</th>
+                <th class="px-4 md:px-6 py-4 font-semibold hidden 2xl:table-cell">Contact</th>
+                <th class="px-4 md:px-6 py-4 font-semibold text-center hidden lg:table-cell">Staff</th>
+                <th class="px-4 md:px-6 py-4 font-semibold text-center hidden lg:table-cell">Packages</th>
+                <th class="px-4 md:px-6 py-4 font-semibold text-center">Bookings</th>
+                <th class="px-4 md:px-6 py-4 font-semibold hidden 2xl:table-cell">Registered</th>
+                <th class="px-4 md:px-6 py-4 font-semibold">Status</th>
+                <th v-if="lifecycleReady" class="px-4 md:px-6 py-4 font-semibold whitespace-nowrap">Subscription</th>
+                <th class="px-4 md:px-6 py-4 font-semibold text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody class="block md:table-row-group divide-y divide-gray-100 dark:divide-gray-700">
               <tr v-for="b in filteredBusinesses" :key="b.business_id" class="block md:table-row px-1 py-3 md:p-0 hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                <td data-label="Business" class="block md:table-cell px-4 py-1 md:py-3 font-semibold text-gray-800 dark:text-gray-100 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
+                <td data-label="Business" class="block md:table-cell px-4 md:px-6 py-1 md:py-5 font-semibold text-gray-800 dark:text-gray-100 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
                   {{ b.business_name }}
-                  <span class="hidden md:block xl:hidden text-xs font-normal text-gray-400 truncate max-w-[200px]">{{ b.contact_email || b.contact_number || b.owner_contact_number || '' }}</span>
+                  <span class="hidden md:block 2xl:hidden text-xs font-normal text-gray-400 truncate max-w-[220px]">{{ b.contact_email || b.contact_number || b.owner_contact_number || '' }}</span>
                 </td>
-                <td data-label="Owner" class="block md:table-cell px-4 py-1 md:py-3 text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
+                <td data-label="Owner" class="block md:table-cell px-4 md:px-6 py-1 md:py-5 text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
                   {{ b.owner_full_name || '—' }}
                   <span v-if="b.owner_username" class="block text-xs text-gray-400">@{{ b.owner_username }}</span>
                 </td>
-                <td data-label="Contact" class="block md:hidden xl:table-cell px-4 py-1 md:py-3 text-gray-500 dark:text-gray-400 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
+                <td data-label="Contact" class="block md:hidden 2xl:table-cell px-4 md:px-6 py-1 md:py-5 text-gray-500 dark:text-gray-400 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
                   <span class="block">{{ b.contact_email || b.contact_number || b.owner_contact_number || '—' }}</span>
                   <span v-if="b.address" class="block truncate max-w-[180px]">{{ b.address }}</span>
                 </td>
-                <td data-label="Staff" class="block md:hidden lg:table-cell px-4 py-1 md:py-3 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.staff_count }}</td>
-                <td data-label="Packages" class="block md:hidden lg:table-cell px-4 py-1 md:py-3 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.packages_count }}</td>
-                <td data-label="Bookings" class="block md:table-cell px-4 py-1 md:py-3 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.bookings_count }}</td>
-                <td data-label="Registered" class="block md:hidden xl:table-cell px-4 py-1 md:py-3 text-gray-500 dark:text-gray-400 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ formatDate(b.created_at) }}</td>
-                <td data-label="Status" class="block md:table-cell px-4 py-1 md:py-3 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
+                <td data-label="Staff" class="block md:hidden lg:table-cell px-4 md:px-6 py-1 md:py-5 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.staff_count }}</td>
+                <td data-label="Packages" class="block md:hidden lg:table-cell px-4 md:px-6 py-1 md:py-5 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.packages_count }}</td>
+                <td data-label="Bookings" class="block md:table-cell px-4 md:px-6 py-1 md:py-5 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.bookings_count }}</td>
+                <td data-label="Registered" class="block md:hidden 2xl:table-cell px-4 md:px-6 py-1 md:py-5 text-gray-500 dark:text-gray-400 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ formatDate(b.created_at) }}</td>
+                <td data-label="Status" class="block md:table-cell px-4 md:px-6 py-1 md:py-5 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
                   <span class="inline-block px-2 py-1 rounded-none text-xs font-bold whitespace-nowrap" :class="statusBadgeClass(b.status)">{{ b.status }}</span>
                 </td>
-                <td v-if="lifecycleReady" data-label="Subscription" class="block md:table-cell px-4 py-1 md:py-3 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
+                <td v-if="lifecycleReady" data-label="Subscription" class="block md:table-cell px-4 md:px-6 py-1 md:py-5 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
                   <template v-if="b.subscription_expires_at">
                     <span class="block text-gray-600 dark:text-gray-300">{{ formatDateOnly(b.subscription_expires_at) }}</span>
                     <span class="inline-block mt-1 px-2 py-0.5 rounded-none font-bold whitespace-nowrap" :class="expiryBadgeClass(b)">{{ expiryLabel(b) }}</span>
@@ -245,8 +245,8 @@
                   <span v-else class="text-gray-400">No expiry set</span>
                   <span v-if="isInactive(b)" class="block mt-1 text-gray-500 dark:text-gray-400">Inactive {{ b.days_inactive }} days</span>
                 </td>
-                <td class="block md:table-cell px-4 py-2 md:py-3">
-                  <div class="flex items-center md:justify-end gap-2 flex-wrap md:min-w-[150px]">
+                <td class="block md:table-cell px-4 md:px-6 py-2 md:py-5">
+                  <div class="flex items-center md:justify-end gap-2 flex-wrap md:min-w-[190px]">
                     <button
                       @click="openDetails(b)"
                       class="whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-none bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
