@@ -146,7 +146,10 @@
                 <StarRating :model-value="b.avg_rating || 0" />
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ b.review_count ? `${b.avg_rating?.toFixed(1)} (${b.review_count})` : 'No reviews yet' }}</span>
               </div>
-              <button type="button" @click.stop="openBusinessProfile(b.business_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">View profile</button>
+              <div class="flex items-center gap-3">
+                <button type="button" @click.stop="messageBusiness(b.business_id)" class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline">Message</button>
+                <button type="button" @click.stop="openBusinessProfile(b.business_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">View profile</button>
+              </div>
             </div>
             <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
               <span class="text-xs text-gray-500 dark:text-gray-400">{{ b.package_count }} package{{ b.package_count === 1 ? '' : 's' }}</span>
@@ -186,6 +189,7 @@
           </div>
           <div class="flex items-center gap-4 sm:gap-3 sm:flex-shrink-0">
             <HeartButton small :active="favoriteBusinessIds.has(selectedBusinessId)" @toggle="toggleFavoriteBusiness(selectedBusinessId)" />
+            <button type="button" @click="messageBusiness(selectedBusinessId)" class="text-sm font-semibold text-sky-600 dark:text-sky-400 hover:underline whitespace-nowrap">Message</button>
             <button type="button" @click="openBusinessProfile(selectedBusinessId)" class="text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:underline whitespace-nowrap">Profile &amp; reviews</button>
             <button type="button" @click="clearBusiness" class="text-sm font-semibold text-gray-500 dark:text-gray-400 hover:underline whitespace-nowrap">Change</button>
           </div>
@@ -340,7 +344,10 @@
                     <StarRating :model-value="selectedBusiness.avg_rating || 0" />
                     <span class="text-xs text-gray-500 dark:text-gray-400">{{ selectedBusiness.review_count ? `${selectedBusiness.avg_rating?.toFixed(1)} (${selectedBusiness.review_count})` : 'No reviews yet' }}</span>
                   </div>
-                  <button type="button" @click="openBusinessProfile(selectedBusiness.business_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Profile &amp; reviews</button>
+                  <div class="flex items-center gap-3">
+                    <button type="button" @click="messageBusiness(selectedBusiness.business_id)" class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline">Message</button>
+                    <button type="button" @click="openBusinessProfile(selectedBusiness.business_id)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">Profile &amp; reviews</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -762,6 +769,13 @@
                 class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 hover:underline"
               >
                 Plan Event
+              </button>
+              <button
+                v-if="bookingBusinessId(b)"
+                @click="messageBusiness(bookingBusinessId(b))"
+                class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline"
+              >
+                Message
               </button>
               <button
                 v-if="b.booking_status === 'Pending'"
@@ -1542,10 +1556,15 @@ const profileBusinessId = ref('')
 // Chat: set when the client taps "Message" on a business profile.
 const chatStartBusinessId = ref(null)
 watch(activeTab, (t) => { if (t !== 'Messages') chatStartBusinessId.value = null })
-function messageBusiness() {
-  chatStartBusinessId.value = profileBusinessId.value || null
+// id is passed from the cards / booking form / My Bookings; the profile modal
+// emits no id, so fall back to the business whose profile is open.
+function messageBusiness(id) {
+  chatStartBusinessId.value = (typeof id === 'string' && id) || profileBusinessId.value || null
   showProfile.value = false
   activeTab.value = 'Messages'
+}
+function bookingBusinessId(booking) {
+  return booking.business_id || packages.value.find((p) => p.package_id === booking.package_id)?.business_id || ''
 }
 const profileData = ref(null)
 const profileReviews = ref([])
