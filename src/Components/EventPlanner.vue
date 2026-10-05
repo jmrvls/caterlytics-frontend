@@ -402,7 +402,9 @@ async function saveGuest() {
   isSaving.value = true
   try {
     if (editingGuestId.value) {
-      const saved = await updateGuest(editingGuestId.value, guestForm.value)
+      // Keep the guest's CURRENT seat: the form holds a copy from when it was opened.
+      const current = guests.value.find((g) => g.guest_id === editingGuestId.value)
+      const saved = await updateGuest(editingGuestId.value, { ...guestForm.value, table_id: current ? current.table_id : null })
       guests.value = guests.value.map((g) => (g.guest_id === saved.guest_id ? saved : g))
     } else {
       const saved = await addGuest(props.booking.booking_id, guestForm.value)

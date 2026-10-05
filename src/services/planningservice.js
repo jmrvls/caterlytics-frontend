@@ -18,6 +18,15 @@ export const DIETARY_OPTIONS = [
 
 export const RSVP_OPTIONS = ['Pending', 'Attending', 'Declined'];
 
+// Row-level security hides rows from a user who may not edit this plan (e.g.
+// Staff, who can view but not change it). Supabase then reports success with
+// 0 rows changed, so every write below checks that a row was really affected.
+const NO_ACCESS_MSG = "You don't have permission to change this event's plan.";
+function writeError(error, fallback) {
+  if (error?.code === '42501' || error?.code === 'PGRST116') return new Error(NO_ACCESS_MSG);
+  return new Error(error?.message || fallback);
+}
+
 function cleanPhone(value) {
   return String(value || '').replace(/[\s-]/g, '');
 }
@@ -87,7 +96,7 @@ export async function addGuest(bookingId, guest) {
     .select()
     .single();
 
-  if (error) throw new Error(error.message || 'Failed to add guest.');
+  if (error) throw writeError(error, 'Failed to add guest.');
   return data;
 }
 
@@ -100,13 +109,18 @@ export async function updateGuest(guestId, guest) {
     .select()
     .single();
 
-  if (error) throw new Error(error.message || 'Failed to update guest.');
+  if (error) throw writeError(error, 'Failed to update guest.');
   return data;
 }
 
 export async function deleteGuest(guestId) {
-  const { error } = await supabase.from('tbl_event_guests').delete().eq('guest_id', guestId);
+  const { data, error } = await supabase
+    .from('tbl_event_guests')
+    .delete()
+    .eq('guest_id', guestId)
+    .select('guest_id');
   if (error) throw new Error('Failed to remove guest.');
+  if (!data || data.length === 0) throw new Error(NO_ACCESS_MSG);
 }
 
 // Bulk add from pasted text: one guest per line. Format: "Name" or
@@ -114,22 +128,37 @@ export async function deleteGuest(guestId) {
 export async function importGuests(bookingId, rawText) {
   const rows = String(rawText || '')
     .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [name, phone] = line.split(',').map((s) => s.trim());
-      return { full_name: name, contact_number: phone || '' };
+    .map((line, i) => ({ line: line.trim(), n: i + 1 }))
+    .filter((x) => x.line)
+    .map(({ line, n }) => {
+      // Only the LAST comma part counts as a mobile number, and only if it
+      // looks like one. So "Dela Cruz, Juan" stays one name instead of
+      // treating "Juan" as a phone number.
+      const parts = line.split(',').map((x) => x.trim());
+      const last = parts[parts.length - 1];
+      const hasPhone = parts.length > 1 && /^\+?[\d\s-]+$/.test(last);
+      return {
+        full_name: (hasPhone ? parts.slice(0, -1) : parts).join(', '),
+        contact_number: hasPhone ? last : '',
+        _line: n
+      };
     });
 
   if (rows.length === 0) throw new Error('Nothing to import.');
-  rows.forEach(validateGuest);
+  rows.forEach((r) => {
+    try {
+      validateGuest(r);
+    } catch (e) {
+      throw new Error(`Line ${r._line}: ${e.message}`);
+    }
+  });
 
   const { data, error } = await supabase
     .from('tbl_event_guests')
     .insert(rows.map((r) => ({ booking_id: bookingId, ...toGuestRow(r) })))
     .select();
 
-  if (error) throw new Error(error.message || 'Failed to import guests.');
+  if (error) throw writeError(error, 'Failed to import guests.');
   return data || [];
 }
 
@@ -159,7 +188,7 @@ export async function addTable(bookingId, label, capacity) {
 
   if (error) {
     if (error.code === '23505') throw new Error('A table with that name already exists.');
-    throw new Error(error.message || 'Failed to add table.');
+    throw writeError(error, 'Failed to add table.');
   }
   return data;
 }
@@ -170,21 +199,28 @@ export async function updateTable(tableId, label, capacity) {
   if (!Number.isInteger(cap) || cap < 1 || cap > 50) {
     throw new Error('Capacity must be a whole number from 1 to 50.');
   }
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('tbl_event_tables')
     .update({ label: String(label).trim(), capacity: cap })
-    .eq('table_id', tableId);
+    .eq('table_id', tableId)
+    .select('table_id');
 
   if (error) {
     if (error.code === '23505') throw new Error('A table with that name already exists.');
     throw new Error('Failed to update table.');
   }
+  if (!data || data.length === 0) throw new Error(NO_ACCESS_MSG);
 }
 
 // Guests seated here become unassigned (FK is ON DELETE SET NULL).
 export async function deleteTable(tableId) {
-  const { error } = await supabase.from('tbl_event_tables').delete().eq('table_id', tableId);
+  const { data, error } = await supabase
+    .from('tbl_event_tables')
+    .delete()
+    .eq('table_id', tableId)
+    .select('table_id');
   if (error) throw new Error('Failed to delete table.');
+  if (!data || data.length === 0) throw new Error(NO_ACCESS_MSG);
 }
 
 // tableId = null unseats the guest. Capacity is enforced here (counts only
@@ -206,12 +242,14 @@ export async function seatGuest(guestId, tableId) {
     }
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('tbl_event_guests')
     .update({ table_id: tableId || null })
-    .eq('guest_id', guestId);
+    .eq('guest_id', guestId)
+    .select('guest_id');
 
-  if (error) throw new Error(error.message || 'Failed to seat guest.');
+  if (error) throw writeError(error, 'Failed to seat guest.');
+  if (!data || data.length === 0) throw new Error(NO_ACCESS_MSG);
 }
 
 // ---------- Pure helpers (no DB) ----------

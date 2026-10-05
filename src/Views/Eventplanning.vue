@@ -188,6 +188,10 @@
             The guest list ({{ activeGuests.length }}) is more than the {{ selectedBooking.guest_count }} guests booked. Update the booking so the per-head cost and stock match.
           </p>
 
+          <p v-if="!canEdit" class="mb-4 text-sm text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 px-3 py-2 print:hidden">
+            View only. Staff can see the guest list, seating and dietary needs, but only the Admin / Owner can change them.
+          </p>
+
           <!-- Tabs -->
           <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-5 print:hidden">
             <button v-for="t in tabs" :key="t" @click="activeTab = t"
@@ -207,7 +211,7 @@
                   <option v-for="r in RSVP_OPTIONS" :key="r" :value="r">{{ r }}</option>
                 </select>
               </div>
-              <div class="flex gap-2">
+              <div v-if="canEdit" class="flex gap-2">
                 <button @click="showImport = true" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none">Paste list</button>
                 <button @click="openGuestForm()" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-none">Add guest</button>
               </div>
@@ -227,13 +231,13 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                   <tr v-if="filteredGuests.length === 0">
-                    <td colspan="6" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">No guests yet.</td>
+                    <td colspan="6" class="px-3 py-6 text-center text-gray-500 dark:text-gray-400">{{ guests.length ? 'No guests match.' : 'No guests yet.' }}</td>
                   </tr>
                   <tr v-for="g in filteredGuests" :key="g.guest_id" class="text-gray-800 dark:text-gray-200">
                     <td class="px-3 py-2 font-medium">{{ g.full_name }}</td>
                     <td class="px-3 py-2 text-gray-500 dark:text-gray-400">{{ g.contact_number || g.email || '—' }}</td>
                     <td class="px-3 py-2">
-                      <select :value="g.rsvp_status" @change="changeRsvp(g, $event.target.value)" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-xs rounded-none">
+                      <select :value="g.rsvp_status" :disabled="!canEdit" @change="changeRsvp(g, $event.target.value)" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-xs rounded-none">
                         <option v-for="r in RSVP_OPTIONS" :key="r" :value="r">{{ r }}</option>
                       </select>
                     </td>
@@ -246,8 +250,8 @@
                       </div>
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap text-right">
-                      <button @click="openGuestForm(g)" class="text-xs text-emerald-700 dark:text-emerald-300 hover:underline mr-3">Edit</button>
-                      <button @click="removeGuest(g)" class="text-xs text-red-600 dark:text-red-400 hover:underline">Remove</button>
+                      <button v-if="canEdit" @click="openGuestForm(g)" class="text-xs text-emerald-700 dark:text-emerald-300 hover:underline mr-3">Edit</button>
+                      <button v-if="canEdit" @click="removeGuest(g)" class="text-xs text-red-600 dark:text-red-400 hover:underline">Remove</button>
                     </td>
                   </tr>
                 </tbody>
@@ -257,7 +261,7 @@
 
           <!-- ============ SEATING ============ -->
           <section v-else-if="activeTab === 'Seating'">
-            <div class="flex flex-wrap gap-2 items-end mb-4">
+            <div v-if="canEdit" class="flex flex-wrap gap-2 items-end mb-4">
               <div>
                 <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Table name</label>
                 <input v-model="newTableLabel" type="text" placeholder="e.g. Table 1 / Head Table" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm rounded-none" />
@@ -267,7 +271,7 @@
                 <input v-model.number="newTableCapacity" type="number" min="1" max="50" class="w-24 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm rounded-none" />
               </div>
               <button @click="createTable" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-none">Add table</button>
-              <button @click="autoFillTables" :disabled="tables.length === 0 || unseatedGuests.length === 0" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none disabled:opacity-40">Auto-seat the rest</button>
+              <button @click="autoFillTables" :disabled="tables.length === 0 || unseatedGuests.length === 0 || isAutoSeating" class="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-none disabled:opacity-40">{{ isAutoSeating ? 'Seating…' : 'Auto-seat the rest' }}</button>
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -276,7 +280,7 @@
                 <div v-for="t in tables" :key="t.table_id" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
                   <div class="flex items-center justify-between gap-2 mb-1">
                     <p class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ t.label }}</p>
-                    <div class="flex gap-3 text-xs">
+                    <div v-if="canEdit" class="flex gap-3 text-xs">
                       <button @click="editTable(t)" class="text-emerald-700 dark:text-emerald-300 hover:underline">Edit</button>
                       <button @click="removeTable(t)" class="text-red-600 dark:text-red-400 hover:underline">Delete</button>
                     </div>
@@ -292,7 +296,7 @@
                       <span class="truncate">{{ g.full_name }}
                         <span v-if="(g.dietary_preferences || []).length || g.allergies" class="text-xs text-amber-600 dark:text-amber-400">•</span>
                       </span>
-                      <button @click="moveGuest(g, null)" class="text-xs text-gray-400 hover:text-red-500">Unseat</button>
+                      <button v-if="canEdit" @click="moveGuest(g, null)" class="text-xs text-gray-400 hover:text-red-500">Unseat</button>
                     </li>
                     <li v-if="seatedAt(t.table_id).length === 0" class="text-xs text-gray-400">Empty</li>
                   </ul>
@@ -304,7 +308,7 @@
                 <ul class="space-y-2">
                   <li v-for="g in unseatedGuests" :key="g.guest_id" class="flex items-center justify-between gap-2 text-sm text-gray-800 dark:text-gray-200">
                     <span class="truncate">{{ g.full_name }}</span>
-                    <select @change="seatFromSelect(g, $event)" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-xs rounded-none max-w-[9rem]">
+                    <select v-if="canEdit" @change="seatFromSelect(g, $event)" class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-xs rounded-none max-w-[9rem]">
                       <option value="">Seat at…</option>
                       <option v-for="t in tables" :key="t.table_id" :value="t.table_id" :disabled="seatedAt(t.table_id).length >= t.capacity">{{ t.label }}</option>
                     </select>
@@ -602,6 +606,7 @@ const tables = ref([])
 const isLoadingBookings = ref(true)
 const isLoadingPlan = ref(false)
 const isSaving = ref(false)
+const isAutoSeating = ref(false)
 const pageError = ref('')
 const formError = ref('')
 
@@ -627,6 +632,8 @@ const blankGuest = () => ({
 const guestForm = ref(blankGuest())
 
 // ---------- Derived ----------
+// Staff can view the plan but the database only lets Admin / Owner edit it.
+const canEdit = computed(() => userRole.value !== 'Staff')
 const selectedBooking = computed(() => bookings.value.find((b) => b.booking_id === selectedBookingId.value) || null)
 const activeGuests = computed(() => guests.value.filter((g) => g.rsvp_status !== 'Declined'))
 const unseatedGuests = computed(() => activeGuests.value.filter((g) => !g.table_id))
@@ -727,7 +734,9 @@ async function saveGuest() {
   isSaving.value = true
   try {
     if (editingGuestId.value) {
-      const saved = await updateGuest(editingGuestId.value, guestForm.value)
+      // Keep the guest's CURRENT seat: the form holds a copy from when it was opened.
+      const current = guests.value.find((g) => g.guest_id === editingGuestId.value)
+      const saved = await updateGuest(editingGuestId.value, { ...guestForm.value, table_id: current ? current.table_id : null })
       guests.value = guests.value.map((g) => (g.guest_id === saved.guest_id ? saved : g))
     } else {
       const saved = await addGuest(selectedBookingId.value, guestForm.value)
@@ -846,15 +855,21 @@ async function moveGuest(g, tableId) {
 
 // Fills tables in order; keeps the order guests were already sorted in.
 async function autoFillTables() {
+  if (isAutoSeating.value) return
   pageError.value = ''
-  for (const g of [...unseatedGuests.value]) {
-    const target = tables.value.find((t) => seatedAt(t.table_id).length < t.capacity)
-    if (!target) {
-      pageError.value = 'Not enough seats for everyone. Add another table.'
-      break
+  isAutoSeating.value = true
+  try {
+    for (const g of [...unseatedGuests.value]) {
+      const target = tables.value.find((t) => seatedAt(t.table_id).length < t.capacity)
+      if (!target) {
+        pageError.value = 'Not enough seats for everyone. Add another table.'
+        break
+      }
+      await moveGuest(g, target.table_id)
+      if (pageError.value) break
     }
-    await moveGuest(g, target.table_id)
-    if (pageError.value) break
+  } finally {
+    isAutoSeating.value = false
   }
 }
 
