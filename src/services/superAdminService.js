@@ -70,3 +70,58 @@ export async function getBusinessBookingsList(businessId) {
   if (error) throw new Error(error.message || 'Failed to load bookings list.');
   return data || [];
 }
+
+// ---------- Tenant lifecycle (subscription expiry, renewal, inactivity) ----------
+// Requires tenant_lifecycle.sql. Returns null (instead of throwing) when that
+// script has not been run yet, so the rest of the dashboard keeps working.
+export async function getTenantLifecycle() {
+  const { data, error } = await supabase.rpc('get_tenant_lifecycle');
+  if (error) {
+    console.error('Tenant lifecycle not available:', error.message);
+    return null;
+  }
+  return data || [];
+}
+
+// Adds N months to the subscription (counted from today or the current
+// expiry, whichever is later). Returns the new expiry date (YYYY-MM-DD).
+export async function renewBusinessSubscription(businessId, months = 1) {
+  const { data, error } = await supabase.rpc('renew_business_subscription', {
+    p_business_id: businessId,
+    p_months: months,
+  });
+  if (error) throw new Error(error.message || 'Failed to renew the subscription.');
+  return data;
+}
+
+// Sets an exact expiry date (or clears it with null).
+export async function setBusinessExpiry(businessId, date) {
+  const { error } = await supabase.rpc('set_business_expiry', {
+    p_business_id: businessId,
+    p_date: date || null,
+  });
+  if (error) throw new Error(error.message || 'Failed to set the expiry date.');
+}
+
+// ---------- Multi-tenant analytics ----------
+// One row per (month, business): { month, business_id, bookings, completed,
+// cancelled, guests, revenue }. Requires tenant_analytics.sql. Returns null
+// (instead of throwing) when that script has not been run yet.
+export async function getTenantAnalytics(fromDate, toDate) {
+  const { data, error } = await supabase.rpc('get_tenant_analytics_monthly', {
+    p_from: fromDate,
+    p_to: toDate,
+  });
+  if (error) {
+    console.error('Tenant analytics not available:', error.message);
+    return null;
+  }
+  return (data || []).map((r) => ({
+    ...r,
+    bookings: Number(r.bookings) || 0,
+    completed: Number(r.completed) || 0,
+    cancelled: Number(r.cancelled) || 0,
+    guests: Number(r.guests) || 0,
+    revenue: Number(r.revenue) || 0,
+  }));
+}

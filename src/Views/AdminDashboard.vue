@@ -140,6 +140,25 @@
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-none 2xl:max-w-[1920px] mx-auto">
 
+        <!-- Subscription reminder (Owner / Admin only): shown 30 days before expiry and after it lapses -->
+        <div
+          v-if="userRole !== 'Staff' && subscription && subscription.days_left <= 30"
+          class="flex items-start gap-3 p-4 mb-6 rounded-xl border text-sm"
+          :class="subscription.days_left < 0
+            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
+            : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'"
+        >
+          <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <p>
+            <span v-if="subscription.days_left < 0" class="font-bold">Your subscription expired on {{ subscription.expires_at }}.</span>
+            <span v-else-if="subscription.days_left === 0" class="font-bold">Your subscription expires today.</span>
+            <span v-else class="font-bold">Your subscription expires in {{ subscription.days_left }} day{{ subscription.days_left === 1 ? '' : 's' }} ({{ subscription.expires_at }}).</span>
+            Please settle your renewal payment so the Super Admin can renew it and your access isn't interrupted.
+          </p>
+        </div>
+
         <h1 v-if="activeSection !== 'Dashboard'" class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">{{ sectionLabel }}</h1>
 
         <!-- ============ DASHBOARD SECTION (STAFF) ============ -->
@@ -468,7 +487,7 @@ import { getAllInventory } from '../services/inventoryService'
 import { isLowStock } from '../utils/inventory'
 import { getAllPayments } from '../services/paymentService'
 import { getUsers } from '../services/staffService'
-import { getMyBusiness, getMyBusinessNotifications, markBusinessNotificationRead } from '../services/businessservice'
+import { getMyBusiness, getMyBusinessNotifications, markBusinessNotificationRead, getMySubscription } from '../services/businessservice'
 import {
   getMyAssignedBookings,
   getUnavailableDates,
@@ -499,6 +518,7 @@ function toggleSidebar() {
 const userName = ref('User')
 const firstName = computed(() => (userName.value || 'User').trim().split(' ')[0])
 const userRole = ref('Admin')
+const subscription = ref(null) // { expires_at, days_left } for the Owner/Admin banner
 const userInitial = ref('U')
 const userAvatarUrl = ref('')
 const currentUserId = ref('')
@@ -679,6 +699,9 @@ onMounted(() => {
     .catch((error) => console.error('Failed to load business name:', error))
 
   if (user.role !== 'Staff') {
+    getMySubscription()
+      .then((sub) => { subscription.value = sub })
+      .catch((error) => console.error('Failed to load subscription:', error))
     getMyBusinessNotifications()
       .then((rows) => { unreadBusinessNotifications.value = rows.filter(n => !n.is_read) })
       .catch((error) => console.error('Failed to load business notifications:', error))

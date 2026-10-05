@@ -102,3 +102,16 @@ export async function markBusinessNotificationRead(notificationId) {
   });
   if (error) throw new Error(error.message || 'Failed to mark notification as read.');
 }
+
+// The caller's own business subscription (for the "expiring soon" banner).
+// Returns null if tenant_lifecycle.sql hasn't been run or no expiry is set.
+export async function getMySubscription() {
+  const { data, error } = await supabase.rpc('get_my_subscription');
+  if (error) {
+    console.error('Failed to load subscription:', error.message);
+    return null;
+  }
+  const row = data?.[0];
+  if (!row || row.subscription_expires_at == null) return null;
+  return { expires_at: row.subscription_expires_at, days_left: Number(row.days_left) };
+}

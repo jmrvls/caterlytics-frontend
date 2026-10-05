@@ -76,7 +76,7 @@
         </button>
       </div>
 
-      <div class="grid grid-cols-3 gap-4 mb-8">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none p-4 text-center">
           <p class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ isLoading ? '…' : stats.total_owners }}</p>
           <p class="text-xs text-gray-400 mt-0.5">Owners</p>
@@ -90,6 +90,56 @@
           <p class="text-xs text-gray-400 mt-0.5">Clients</p>
         </div>
       </div>
+
+      <!-- MAIN TABS -->
+      <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6">
+        <button
+          v-for="t in ['Tenants', 'Analytics']" :key="t"
+          type="button"
+          @click="mainTab = t"
+          :class="mainTab === t ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
+          class="px-4 py-2.5 text-sm font-bold border-b-2 -mb-px transition"
+        >{{ t === 'Analytics' ? 'Platform Analytics' : 'Tenants' }}</button>
+      </div>
+
+      <template v-if="mainTab === 'Tenants'">
+      <!-- TENANT LIFECYCLE ALERTS (expiring / expired / inactive subscriptions) -->
+      <div v-if="lifecycleReady" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <button
+          type="button"
+          @click="toggleLifecycleFilter('Expiring')"
+          :class="lifecycleFilter === 'Expiring' ? 'border-amber-400 ring-1 ring-amber-300' : 'border-gray-200 dark:border-gray-700'"
+          class="text-left bg-white dark:bg-gray-800 border p-4 rounded-none transition"
+        >
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Expiring in {{ EXPIRY_WARN_DAYS }} days</p>
+          <p class="text-3xl font-black text-amber-500 mt-1">{{ lifecycleCounts.expiring }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">Renew before they lapse</p>
+        </button>
+        <button
+          type="button"
+          @click="toggleLifecycleFilter('Expired')"
+          :class="lifecycleFilter === 'Expired' ? 'border-red-300 ring-1 ring-red-200' : 'border-gray-200 dark:border-gray-700'"
+          class="text-left bg-white dark:bg-gray-800 border p-4 rounded-none transition"
+        >
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Expired</p>
+          <p class="text-3xl font-black text-red-500 mt-1">{{ lifecycleCounts.expired }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">Subscription already ended</p>
+        </button>
+        <button
+          type="button"
+          @click="toggleLifecycleFilter('Inactive')"
+          :class="lifecycleFilter === 'Inactive' ? 'border-gray-500 ring-1 ring-gray-300' : 'border-gray-200 dark:border-gray-700'"
+          class="text-left bg-white dark:bg-gray-800 border p-4 rounded-none transition"
+        >
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Inactive ({{ INACTIVE_DAYS }}+ days)</p>
+          <p class="text-3xl font-black text-gray-600 dark:text-gray-300 mt-1">{{ lifecycleCounts.inactive }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">Active businesses with no bookings</p>
+        </button>
+      </div>
+      <p v-if="lifecycleFilter" class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+        Showing: <span class="font-semibold">{{ lifecycleFilter }}</span> —
+        <button type="button" @click="lifecycleFilter = ''" class="underline font-semibold">clear</button>
+      </p>
 
       <!-- BUSINESSES -->
       <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
@@ -140,67 +190,84 @@
         </div>
 
         <div v-else class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-900/40 text-left text-xs uppercase tracking-wide text-gray-400">
+          <table class="w-full text-sm block md:table">
+            <thead class="hidden md:table-header-group bg-gray-50 dark:bg-gray-900/40 text-left text-xs uppercase tracking-wide text-gray-400">
               <tr>
                 <th class="px-4 py-3 font-semibold">Business</th>
                 <th class="px-4 py-3 font-semibold">Owner</th>
-                <th class="px-4 py-3 font-semibold">Contact</th>
-                <th class="px-4 py-3 font-semibold text-center">Staff</th>
-                <th class="px-4 py-3 font-semibold text-center">Packages</th>
+                <th class="px-4 py-3 font-semibold hidden xl:table-cell">Contact</th>
+                <th class="px-4 py-3 font-semibold text-center hidden lg:table-cell">Staff</th>
+                <th class="px-4 py-3 font-semibold text-center hidden lg:table-cell">Packages</th>
                 <th class="px-4 py-3 font-semibold text-center">Bookings</th>
-                <th class="px-4 py-3 font-semibold">Registered</th>
+                <th class="px-4 py-3 font-semibold hidden xl:table-cell">Registered</th>
                 <th class="px-4 py-3 font-semibold">Status</th>
-                <th class="px-4 py-3 font-semibold text-right">Actions</th>
+                <th v-if="lifecycleReady" class="px-4 py-3 font-semibold whitespace-nowrap">Subscription</th>
+                <th class="px-4 py-3 font-semibold text-right whitespace-nowrap">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-              <tr v-for="b in filteredBusinesses" :key="b.business_id" class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">{{ b.business_name }}</td>
-                <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
+            <tbody class="block md:table-row-group divide-y divide-gray-100 dark:divide-gray-700">
+              <tr v-for="b in filteredBusinesses" :key="b.business_id" class="block md:table-row px-1 py-3 md:p-0 hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                <td data-label="Business" class="block md:table-cell px-4 py-1 md:py-3 font-semibold text-gray-800 dark:text-gray-100 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
+                  {{ b.business_name }}
+                  <span class="hidden md:block xl:hidden text-xs font-normal text-gray-400 truncate max-w-[200px]">{{ b.contact_email || b.contact_number || b.owner_contact_number || '' }}</span>
+                </td>
+                <td data-label="Owner" class="block md:table-cell px-4 py-1 md:py-3 text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
                   {{ b.owner_full_name || '—' }}
                   <span v-if="b.owner_username" class="block text-xs text-gray-400">@{{ b.owner_username }}</span>
                 </td>
-                <td class="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                <td data-label="Contact" class="block md:hidden xl:table-cell px-4 py-1 md:py-3 text-gray-500 dark:text-gray-400 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
                   <span class="block">{{ b.contact_email || b.contact_number || b.owner_contact_number || '—' }}</span>
                   <span v-if="b.address" class="block truncate max-w-[180px]">{{ b.address }}</span>
                 </td>
-                <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300">{{ b.staff_count }}</td>
-                <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300">{{ b.packages_count }}</td>
-                <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300">{{ b.bookings_count }}</td>
-                <td class="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{{ formatDate(b.created_at) }}</td>
-                <td class="px-4 py-3">
-                  <span class="inline-block px-2 py-1 rounded-none text-xs font-bold" :class="statusBadgeClass(b.status)">{{ b.status }}</span>
+                <td data-label="Staff" class="block md:hidden lg:table-cell px-4 py-1 md:py-3 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.staff_count }}</td>
+                <td data-label="Packages" class="block md:hidden lg:table-cell px-4 py-1 md:py-3 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.packages_count }}</td>
+                <td data-label="Bookings" class="block md:table-cell px-4 py-1 md:py-3 md:text-center text-gray-600 dark:text-gray-300 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ b.bookings_count }}</td>
+                <td data-label="Registered" class="block md:hidden xl:table-cell px-4 py-1 md:py-3 text-gray-500 dark:text-gray-400 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">{{ formatDate(b.created_at) }}</td>
+                <td data-label="Status" class="block md:table-cell px-4 py-1 md:py-3 before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
+                  <span class="inline-block px-2 py-1 rounded-none text-xs font-bold whitespace-nowrap" :class="statusBadgeClass(b.status)">{{ b.status }}</span>
                 </td>
-                <td class="px-4 py-3">
-                  <div class="flex items-center justify-end gap-2 flex-wrap">
+                <td v-if="lifecycleReady" data-label="Subscription" class="block md:table-cell px-4 py-1 md:py-3 text-xs before:content-[attr(data-label)] before:block before:text-[10px] before:font-semibold before:uppercase before:tracking-wide before:text-gray-400 before:mb-0.5 md:before:hidden">
+                  <template v-if="b.subscription_expires_at">
+                    <span class="block text-gray-600 dark:text-gray-300">{{ formatDateOnly(b.subscription_expires_at) }}</span>
+                    <span class="inline-block mt-1 px-2 py-0.5 rounded-none font-bold whitespace-nowrap" :class="expiryBadgeClass(b)">{{ expiryLabel(b) }}</span>
+                  </template>
+                  <span v-else class="text-gray-400">No expiry set</span>
+                  <span v-if="isInactive(b)" class="block mt-1 text-gray-500 dark:text-gray-400">Inactive {{ b.days_inactive }} days</span>
+                </td>
+                <td class="block md:table-cell px-4 py-2 md:py-3">
+                  <div class="flex items-center md:justify-end gap-2 flex-wrap md:min-w-[150px]">
                     <button
                       @click="openDetails(b)"
-                      class="text-xs font-bold px-3 py-1.5 rounded-none bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                      class="whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-none bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
                     >Details</button>
+                    <button
+                      v-if="lifecycleReady && ['Active', 'Suspended', 'Closed'].includes(b.status)"
+                      @click="openRenew(b)"
+                      class="whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-none bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+                    >Renew</button>
                     <button
                       v-if="b.status === 'Pending'"
                       @click="changeStatus(b, 'Active')"
                       :disabled="pendingActionId === b.business_id"
-                      class="text-xs font-bold px-3 py-1.5 rounded-none bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                      class="whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-none bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
                     >Approve</button>
                     <button
                       v-if="b.status === 'Pending'"
                       @click="changeStatus(b, 'Rejected')"
                       :disabled="pendingActionId === b.business_id"
-                      class="text-xs font-bold px-3 py-1.5 rounded-none bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
+                      class="whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-none bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50"
                     >Reject</button>
                     <button
                       v-if="b.status === 'Active'"
                       @click="changeStatus(b, 'Suspended')"
                       :disabled="pendingActionId === b.business_id"
-                      class="text-xs font-bold px-3 py-1.5 rounded-none bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50"
+                      class="whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-none bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 disabled:opacity-50"
                     >Suspend</button>
                     <button
                       v-if="b.status === 'Suspended' || b.status === 'Rejected' || b.status === 'Closed'"
                       @click="changeStatus(b, 'Active')"
                       :disabled="pendingActionId === b.business_id"
-                      class="text-xs font-bold px-3 py-1.5 rounded-none bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 disabled:opacity-50"
+                      class="whitespace-nowrap text-xs font-bold px-3 py-1.5 rounded-none bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 disabled:opacity-50"
                     >Reactivate</button>
                   </div>
                 </td>
@@ -215,6 +282,142 @@
         until you approve it here. Suspending an active business blocks that owner, their staff, and their business admin
         from logging in until it's reactivated. Rejected and Closed businesses can also be reactivated.
       </p>
+      </template>
+
+      <!-- ============ PLATFORM ANALYTICS ============ -->
+      <div v-else>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="font-bold text-gray-900 dark:text-gray-100">Multi-Tenant Analytics</h2>
+            <p class="text-xs text-gray-400">Bookings and collected revenue per catering business. Months follow the event date.</p>
+          </div>
+          <div class="flex gap-1">
+            <button
+              v-for="r in ANALYTICS_RANGES" :key="r.key"
+              type="button"
+              @click="analyticsRange = r.key"
+              :class="analyticsRange === r.key ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
+              class="text-xs font-semibold px-3 py-1.5 rounded-none transition whitespace-nowrap"
+            >{{ r.label }}</button>
+          </div>
+        </div>
+
+        <div v-if="analyticsError" class="p-4 mb-4 text-sm text-red-600 bg-red-50 dark:bg-red-900/20">{{ analyticsError }}</div>
+        <div v-else-if="analyticsLoading && !analyticsLoaded" class="p-8 text-center text-gray-400 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">Loading analytics…</div>
+
+        <template v-else>
+          <!-- KPI cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total bookings</p>
+              <p class="text-3xl font-black text-gray-900 dark:text-gray-100 mt-1">{{ analyticsTotals.bookings }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ analyticsTotals.completed }} completed · {{ analyticsTotals.cancelled }} cancelled</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Revenue collected</p>
+              <p class="text-3xl font-black text-emerald-600 mt-1">{{ peso(analyticsTotals.revenue) }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ analyticsTotals.guests.toLocaleString('en-PH') }} guests served</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Peak month</p>
+              <p class="text-3xl font-black text-amber-500 mt-1">{{ peakMonth ? peakMonth.label : '—' }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ peakMonth ? `${peakMonth.bookings} bookings · ${peso(peakMonth.revenue)}` : 'No bookings in this range' }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4">
+              <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Top tenant</p>
+              <p class="text-lg font-black text-gray-900 dark:text-gray-100 mt-2 truncate">{{ topTenant ? topTenant.business_name : '—' }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ topTenant ? `${peso(topTenant.revenue)} · ${topTenant.bookings} bookings` : 'No data yet' }}</p>
+            </div>
+          </div>
+
+          <!-- Monthly trend -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm">Platform trend by month</h3>
+              <div class="flex gap-1">
+                <button
+                  v-for="m in [{ k: 'bookings', l: 'Bookings' }, { k: 'revenue', l: 'Revenue' }]" :key="m.k"
+                  type="button"
+                  @click="trendMetric = m.k"
+                  :class="trendMetric === m.k ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+                  class="text-xs font-semibold px-3 py-1 rounded-none"
+                >{{ m.l }}</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <div class="flex items-end gap-2 h-44 min-w-max px-1">
+                <div v-for="m in monthlyTrend" :key="m.key" class="flex flex-col items-center justify-end h-full w-10 sm:w-12" :title="`${m.label}: ${m.bookings} bookings, ${peso(m.revenue)}`">
+                  <span class="text-[10px] text-gray-500 dark:text-gray-400 mb-1 whitespace-nowrap">{{ trendMetric === 'bookings' ? m.bookings : peso(m.revenue, true) }}</span>
+                  <div
+                    class="w-full rounded-none transition-all"
+                    :class="peakMonth && peakMonth.key === m.key ? 'bg-amber-400' : (trendMetric === 'bookings' ? 'bg-emerald-500' : 'bg-sky-500')"
+                    :style="{ height: barHeight(m) }"
+                  ></div>
+                </div>
+              </div>
+              <div class="flex gap-2 min-w-max px-1 mt-1">
+                <span v-for="m in monthlyTrend" :key="m.key" class="w-10 sm:w-12 text-center text-[10px] text-gray-400 whitespace-nowrap">{{ m.label }}</span>
+              </div>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-3">The highlighted bar is the platform's busiest month in this range.</p>
+          </div>
+
+          <!-- Tenant comparison -->
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-2 p-4 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="font-bold text-gray-900 dark:text-gray-100 text-sm">Tenant comparison</h3>
+              <div class="flex items-center gap-2">
+                <label class="text-xs text-gray-400">Sort by</label>
+                <select v-model="tenantSort" class="px-2 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-xs text-gray-900 dark:text-gray-100">
+                  <option value="revenue">Revenue</option>
+                  <option value="bookings">Bookings</option>
+                  <option value="completed">Completed</option>
+                  <option value="guests">Guests</option>
+                </select>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-900/40 text-left text-xs uppercase tracking-wide text-gray-400">
+                  <tr>
+                    <th class="px-4 py-3 font-semibold">#</th>
+                    <th class="px-4 py-3 font-semibold">Business</th>
+                    <th class="px-4 py-3 font-semibold text-center">Bookings</th>
+                    <th class="px-4 py-3 font-semibold text-center hidden sm:table-cell">Completed</th>
+                    <th class="px-4 py-3 font-semibold text-center hidden sm:table-cell">Cancelled</th>
+                    <th class="px-4 py-3 font-semibold text-center hidden md:table-cell">Guests</th>
+                    <th class="px-4 py-3 font-semibold">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                  <tr v-for="(t, i) in tenantStats" :key="t.business_id" class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                    <td class="px-4 py-3 text-gray-400 text-xs">{{ i + 1 }}</td>
+                    <td class="px-4 py-3 font-semibold text-gray-800 dark:text-gray-100">
+                      {{ t.business_name }}
+                      <span v-if="t.status !== 'Active'" class="ml-1 text-[10px] font-bold px-1.5 py-0.5" :class="statusBadgeClass(t.status)">{{ t.status }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300">{{ t.bookings }}</td>
+                    <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ t.completed }}</td>
+                    <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ t.cancelled }}</td>
+                    <td class="px-4 py-3 text-center text-gray-600 dark:text-gray-300 hidden md:table-cell">{{ t.guests.toLocaleString('en-PH') }}</td>
+                    <td class="px-4 py-3 min-w-[160px]">
+                      <span class="font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">{{ peso(t.revenue) }}</span>
+                      <div class="h-1.5 bg-gray-100 dark:bg-gray-700 mt-1">
+                        <div class="h-1.5 bg-emerald-500" :style="{ width: revenueShare(t) + '%' }"></div>
+                      </div>
+                      <span class="text-[10px] text-gray-400">{{ revenueShare(t, true) }}% of platform revenue</span>
+                    </td>
+                  </tr>
+                  <tr v-if="tenantStats.length === 0">
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-400 text-sm">No businesses yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-3">Revenue counts payments actually recorded (amount paid), not unpaid balances. Cancelled bookings are included in the booking count.</p>
+        </template>
+      </div>
     </main>
 
     <!-- BUSINESS DETAILS / AUDIT TRAIL MODAL -->
@@ -350,6 +553,53 @@
       </div>
     </div>
 
+    <!-- RENEW SUBSCRIPTION MODAL -->
+    <div v-if="renewState" class="fixed inset-0 z-[55] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50" @click="closeRenew"></div>
+      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none w-full max-w-sm p-5">
+        <h3 class="font-bold text-gray-900 dark:text-gray-100">Renew subscription</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ renewState.business.business_name }}</p>
+        <p class="text-xs text-gray-400 mt-1">
+          Current expiry:
+          {{ renewState.business.subscription_expires_at ? formatDateOnly(renewState.business.subscription_expires_at) : 'not set' }}
+        </p>
+
+        <div class="flex gap-2 mt-4">
+          <button
+            v-for="m in [1, 3, 6, 12]" :key="m"
+            type="button"
+            @click="renewState.months = m"
+            :class="renewState.months === m ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'"
+            class="flex-1 text-xs font-bold py-2 rounded-none"
+          >{{ m }} mo</button>
+        </div>
+        <p class="text-[11px] text-gray-400 mt-2">Counted from the current expiry (or today if it already lapsed).</p>
+
+        <div class="mt-4">
+          <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Or set an exact expiry date</label>
+          <input
+            type="date"
+            v-model="renewState.exactDate"
+            class="w-full p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <p v-if="renewState.error" class="text-xs text-red-600 mt-3">{{ renewState.error }}</p>
+
+        <div class="flex justify-end gap-2 mt-5">
+          <button
+            @click="closeRenew"
+            class="px-4 py-2 rounded-none text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+          >Cancel</button>
+          <button
+            @click="submitRenew"
+            :disabled="renewState.saving"
+            class="px-4 py-2 rounded-none text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition"
+          >{{ renewState.saving ? 'Saving…' : (renewState.exactDate ? 'Set date' : 'Renew') }}</button>
+        </div>
+      </div>
+    </div>
+
     <!-- CONFIRM ACTION MODAL (replaces the native browser confirm() popup) -->
     <div v-if="confirmState" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div class="absolute inset-0 bg-black/50"></div>
@@ -390,6 +640,7 @@ import { resetNotifications, refreshPendingBusinesses } from '../composables/use
 import {
   getPlatformStats, getPlatformBusinesses, setBusinessStatus, getBusinessStatusAudit,
   getBusinessStaffList, getBusinessPackagesList, getBusinessBookingsList,
+  getTenantLifecycle, renewBusinessSubscription, setBusinessExpiry, getTenantAnalytics,
 } from '../services/superAdminService'
 
 const FILTERS = ['All', 'Pending', 'Active', 'Suspended', 'Rejected', 'Closed']
@@ -433,10 +684,209 @@ const stats = ref({
 })
 const businesses = ref([])
 
+// ---------- Platform analytics (bookings + revenue per tenant, peak months) ----------
+const mainTab = ref('Tenants') // 'Tenants' | 'Analytics'
+const ANALYTICS_RANGES = [
+  { key: '6M', label: 'Last 6 months' },
+  { key: '12M', label: 'Last 12 months' },
+  { key: 'YTD', label: 'This year' },
+  { key: 'ALL', label: 'All time' },
+]
+const analyticsRange = ref('12M')
+const analyticsRows = ref([])
+const analyticsLoading = ref(false)
+const analyticsLoaded = ref(false)
+const analyticsError = ref('')
+const trendMetric = ref('bookings') // 'bookings' | 'revenue'
+const tenantSort = ref('revenue')
+
+function ymd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+function rangeDates(key) {
+  const now = new Date()
+  const to = ymd(now)
+  if (key === '6M') return { from: ymd(new Date(now.getFullYear(), now.getMonth() - 5, 1)), to }
+  if (key === 'YTD') return { from: ymd(new Date(now.getFullYear(), 0, 1)), to }
+  if (key === 'ALL') return { from: '2000-01-01', to }
+  return { from: ymd(new Date(now.getFullYear(), now.getMonth() - 11, 1)), to } // 12M
+}
+
+let analyticsToken = 0
+async function loadAnalytics() {
+  const token = ++analyticsToken
+  analyticsLoading.value = true
+  analyticsError.value = ''
+  try {
+    const { from, to } = rangeDates(analyticsRange.value)
+    const rows = await getTenantAnalytics(from, to)
+    if (token !== analyticsToken) return
+    if (rows === null) {
+      analyticsError.value = 'Analytics is not set up yet. Run tenant_analytics.sql in the Supabase SQL Editor.'
+      return
+    }
+    analyticsRows.value = rows
+    analyticsLoaded.value = true
+  } catch (error) {
+    if (token === analyticsToken) analyticsError.value = error?.message || 'Failed to load analytics.'
+  } finally {
+    if (token === analyticsToken) analyticsLoading.value = false
+  }
+}
+watch(mainTab, (t) => { if (t === 'Analytics') loadAnalytics() })
+watch(analyticsRange, () => { if (mainTab.value === 'Analytics') loadAnalytics() })
+
+function peso(n, short = false) {
+  const v = Number(n) || 0
+  if (short && Math.abs(v) >= 1000) return `₱${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`
+  return `₱${v.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`
+}
+
+// Per-tenant totals. Every registered business is listed, even with no bookings.
+const tenantStats = computed(() => {
+  const byId = new Map()
+  for (const b of businesses.value) {
+    byId.set(b.business_id, { business_id: b.business_id, business_name: b.business_name, status: b.status, bookings: 0, completed: 0, cancelled: 0, guests: 0, revenue: 0 })
+  }
+  for (const r of analyticsRows.value) {
+    const t = byId.get(r.business_id)
+    if (!t) continue
+    t.bookings += r.bookings; t.completed += r.completed; t.cancelled += r.cancelled
+    t.guests += r.guests; t.revenue += r.revenue
+  }
+  const key = tenantSort.value
+  return [...byId.values()].sort((a, b) => b[key] - a[key] || b.bookings - a.bookings || a.business_name.localeCompare(b.business_name))
+})
+
+const analyticsTotals = computed(() => tenantStats.value.reduce(
+  (acc, t) => ({
+    bookings: acc.bookings + t.bookings, completed: acc.completed + t.completed,
+    cancelled: acc.cancelled + t.cancelled, guests: acc.guests + t.guests, revenue: acc.revenue + t.revenue,
+  }),
+  { bookings: 0, completed: 0, cancelled: 0, guests: 0, revenue: 0 },
+))
+
+const topTenant = computed(() => {
+  const t = [...tenantStats.value].sort((a, b) => b.revenue - a.revenue || b.bookings - a.bookings)[0]
+  return t && (t.bookings > 0 || t.revenue > 0) ? t : null
+})
+
+function revenueShare(t, rounded = false) {
+  const total = analyticsTotals.value.revenue
+  if (!total) return 0
+  const pct = (t.revenue / total) * 100
+  return rounded ? Math.round(pct) : Math.max(pct, t.revenue > 0 ? 2 : 0)
+}
+
+// Platform totals per month, with empty months filled in so the chart has no gaps.
+const monthlyTrend = computed(() => {
+  const map = new Map()
+  for (const r of analyticsRows.value) {
+    const key = String(r.month).slice(0, 7)
+    const m = map.get(key) || { key, bookings: 0, revenue: 0 }
+    m.bookings += r.bookings; m.revenue += r.revenue
+    map.set(key, m)
+  }
+  const now = new Date()
+  const endKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  let startKey
+  if (analyticsRange.value === 'ALL') startKey = [...map.keys()].sort()[0] || endKey
+  else startKey = rangeDates(analyticsRange.value).from.slice(0, 7)
+
+  const out = []
+  let [y, mo] = startKey.split('-').map(Number)
+  const [ey, emo] = endKey.split('-').map(Number)
+  while (y < ey || (y === ey && mo <= emo)) {
+    const key = `${y}-${String(mo).padStart(2, '0')}`
+    const m = map.get(key) || { key, bookings: 0, revenue: 0 }
+    out.push({ ...m, label: new Date(y, mo - 1, 1).toLocaleDateString('en-PH', { month: 'short', year: '2-digit' }) })
+    mo++; if (mo > 12) { mo = 1; y++ }
+    if (out.length > 120) break
+  }
+  return out
+})
+
+const peakMonth = computed(() => {
+  let best = null
+  for (const m of monthlyTrend.value) {
+    if (m.bookings > 0 && (!best || m.bookings > best.bookings || (m.bookings === best.bookings && m.revenue > best.revenue))) best = m
+  }
+  return best
+})
+
+function barHeight(m) {
+  const k = trendMetric.value
+  const max = Math.max(...monthlyTrend.value.map((x) => x[k]), 0)
+  if (!max) return '2px'
+  return `${Math.max((m[k] / max) * 100, m[k] > 0 ? 4 : 0)}%`
+}
+
+// ---------- Tenant lifecycle (subscription expiry / inactivity) ----------
+const EXPIRY_WARN_DAYS = 30   // "expiring soon" window
+const INACTIVE_DAYS = 60      // no booking activity for this long = inactive
+const lifecycleReady = ref(false) // false until tenant_lifecycle.sql has been run
+const lifecycleFilter = ref('')   // '' | 'Expiring' | 'Expired' | 'Inactive'
+
+function isLiveTenant(b) { return b.status === 'Active' || b.status === 'Suspended' }
+function isExpiring(b) {
+  return isLiveTenant(b) && b.days_left != null && b.days_left >= 0 && b.days_left <= EXPIRY_WARN_DAYS
+}
+function isExpired(b) { return isLiveTenant(b) && b.days_left != null && b.days_left < 0 }
+function isInactive(b) { return b.status === 'Active' && Number(b.days_inactive) >= INACTIVE_DAYS }
+
+const lifecycleCounts = computed(() => ({
+  expiring: businesses.value.filter(isExpiring).length,
+  expired: businesses.value.filter(isExpired).length,
+  inactive: businesses.value.filter(isInactive).length,
+}))
+
+function toggleLifecycleFilter(kind) {
+  lifecycleFilter.value = lifecycleFilter.value === kind ? '' : kind
+  if (lifecycleFilter.value) statusFilter.value = 'All'
+}
+
+function expiryLabel(b) {
+  if (b.days_left == null) return ''
+  if (b.days_left < 0) return `Expired ${Math.abs(b.days_left)}d ago`
+  if (b.days_left === 0) return 'Expires today'
+  return `${b.days_left}d left`
+}
+function expiryBadgeClass(b) {
+  if (b.days_left < 0) return 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300'
+  if (b.days_left <= EXPIRY_WARN_DAYS) return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+  return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+}
+
+// Renew / set-expiry modal
+const renewState = ref(null)
+function openRenew(business) {
+  renewState.value = { business, months: 1, exactDate: '', saving: false, error: '' }
+}
+function closeRenew() { renewState.value = null }
+async function submitRenew() {
+  const st = renewState.value
+  if (!st || st.saving) return
+  st.saving = true
+  st.error = ''
+  try {
+    if (st.exactDate) await setBusinessExpiry(st.business.business_id, st.exactDate)
+    else await renewBusinessSubscription(st.business.business_id, st.months)
+    renewState.value = null
+    await loadData({ silent: true })
+  } catch (error) {
+    st.error = error?.message || 'Failed to renew.'
+    st.saving = false
+  }
+}
+
 const filteredBusinesses = computed(() => {
   let list = statusFilter.value === 'All'
     ? businesses.value
     : businesses.value.filter(b => b.status === statusFilter.value)
+
+  if (lifecycleFilter.value === 'Expiring') list = list.filter(isExpiring)
+  else if (lifecycleFilter.value === 'Expired') list = list.filter(isExpired)
+  else if (lifecycleFilter.value === 'Inactive') list = list.filter(isInactive)
 
   const q = businessSearch.value.trim().toLowerCase()
   if (!q) return list
@@ -547,14 +997,22 @@ async function loadData({ silent = false } = {}) {
     errorMessage.value = ''
   }
   try {
-    const [s, b] = await Promise.all([getPlatformStats(), getPlatformBusinesses()])
+    const [s, b, lifecycle] = await Promise.all([getPlatformStats(), getPlatformBusinesses(), getTenantLifecycle()])
     if (token !== loadToken) return
     // Spread over the defaults so a missing column never renders "undefined".
     stats.value = { ...stats.value, ...s }
-    businesses.value = b
+    // Merge subscription/inactivity info (null = tenant_lifecycle.sql not run yet).
+    lifecycleReady.value = lifecycle !== null
+    const lifeById = new Map((lifecycle || []).map((row) => [row.business_id, row]))
+    businesses.value = b.map((row) => {
+      const life = lifeById.get(row.business_id)
+      return life
+        ? { ...row, subscription_expires_at: life.subscription_expires_at, days_left: life.days_left, days_inactive: life.days_inactive, last_activity_at: life.last_activity_at }
+        : row
+    })
     // keep the open Details modal in sync with the fresh row
     if (detailsBusiness.value) {
-      const fresh = b.find((x) => x.business_id === detailsBusiness.value.business_id)
+      const fresh = businesses.value.find((x) => x.business_id === detailsBusiness.value.business_id)
       if (fresh) detailsBusiness.value = fresh
     }
   } catch (error) {
