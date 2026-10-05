@@ -205,7 +205,7 @@
             <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 sm:p-5">
               <h2 class="font-semibold text-gray-800 dark:text-gray-100 mb-3">By package</h2>
               <ul v-if="packageStats.length" class="divide-y divide-gray-100 dark:divide-gray-700 max-h-56 overflow-y-auto">
-                <li v-for="p in packageStats" :key="p.name" class="flex items-center justify-between gap-3 py-2 text-sm">
+                <li v-for="p in packageStats" :key="p.key" class="flex items-center justify-between gap-3 py-2 text-sm">
                   <span class="truncate text-gray-700 dark:text-gray-200">{{ p.name }}</span>
                   <span class="flex items-center gap-2 flex-shrink-0">
                     <StarRating :model-value="p.average" />
@@ -228,6 +228,10 @@
               <option value="">All packages</option>
               <option v-for="p in packageOptions" :key="p" :value="p">{{ p }}</option>
             </select>
+            <select v-if="branchOptions.length" v-model="branchFilter" class="px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="">All branches</option>
+              <option v-for="b in branchOptions" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
             <select v-model="statusFilter" class="px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="">All reviews</option>
               <option value="needs">Needs reply</option>
@@ -246,7 +250,7 @@
             No reviews match these filters.
           </div>
           <ul v-else class="space-y-3">
-            <li v-for="r in filteredReviews" :key="r.review_id" class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 sm:p-5">
+            <li v-for="r in visibleReviews" :key="r.review_id" class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 sm:p-5">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-3 min-w-0">
                   <div class="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold text-sm flex-shrink-0">
@@ -263,7 +267,11 @@
                 </div>
               </div>
 
-              <p v-if="r.package_name" class="mt-3 text-xs font-semibold text-gray-500 dark:text-gray-400">Package: <span class="text-gray-700 dark:text-gray-200">{{ r.package_name }}</span></p>
+              <p v-if="r.package_name || r.branch_name" class="mt-3 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                <template v-if="r.package_name">Package: <span class="text-gray-700 dark:text-gray-200">{{ r.package_name }}</span></template>
+                <template v-if="r.package_name && r.branch_name"> · </template>
+                <template v-if="r.branch_name">Branch: <span class="text-gray-700 dark:text-gray-200">{{ r.branch_name }}</span></template>
+              </p>
               <p v-if="r.comment" class="mt-2 text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line break-words">{{ r.comment }}</p>
               <p v-else class="mt-2 text-sm italic text-gray-400 dark:text-gray-500">No written comment.</p>
 
@@ -302,6 +310,11 @@
               </div>
             </li>
           </ul>
+          <div v-if="filteredReviews.length > visibleReviews.length" class="mt-4 text-center">
+            <button type="button" @click="visibleCount += PAGE_SIZE" class="px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+              Show more ({{ filteredReviews.length - visibleReviews.length }} remaining)
+            </button>
+          </div>
         </template>
 
       </div>
@@ -313,7 +326,7 @@
 import { logoutUser } from '../services/authService'
 import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import StarRating from '../Components/StarRating.vue'
 import { useSidebarState } from '../composables/useSidebarState'
@@ -348,6 +361,7 @@ const successMessage = ref('')
 const searchQuery = ref('')
 const ratingFilter = ref('')
 const packageFilter = ref('')
+const branchFilter = ref('')
 const statusFilter = ref('')
 const sortBy = ref('newest')
 
@@ -363,17 +377,27 @@ const packageOptions = computed(() =>
   [...new Set(reviews.value.map((r) => r.package_name).filter(Boolean))].sort((a, b) => a.localeCompare(b))
 )
 
+const branchOptions = computed(() => {
+  const map = new Map()
+  for (const r of reviews.value) {
+    if (r.branch_id && r.branch_name) map.set(r.branch_id, r.branch_name)
+  }
+  return [...map.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+})
+
 const packageStats = computed(() => {
   const map = new Map()
   for (const r of reviews.value) {
     if (!r.package_name) continue
-    const e = map.get(r.package_name) || { name: r.package_name, sum: 0, count: 0 }
+    // group by package id (two packages can share a name); fall back to name
+    const key = r.package_id || r.package_name
+    const e = map.get(key) || { key, name: r.package_name, sum: 0, count: 0 }
     e.sum += r.rating
     e.count += 1
-    map.set(r.package_name, e)
+    map.set(key, e)
   }
   return [...map.values()]
-    .map((e) => ({ name: e.name, count: e.count, average: e.sum / e.count }))
+    .map((e) => ({ key: e.key, name: e.name, count: e.count, average: e.sum / e.count }))
     .sort((a, b) => b.average - a.average || b.count - a.count)
 })
 
@@ -382,6 +406,7 @@ const filteredReviews = computed(() => {
   const list = reviews.value.filter((r) => {
     if (ratingFilter.value && r.rating !== Number(ratingFilter.value)) return false
     if (packageFilter.value && r.package_name !== packageFilter.value) return false
+    if (branchFilter.value && r.branch_id !== branchFilter.value) return false
     if (statusFilter.value === 'needs' && r.owner_reply) return false
     if (statusFilter.value === 'replied' && !r.owner_reply) return false
     if (!q) return true
@@ -395,6 +420,14 @@ const filteredReviews = computed(() => {
     highest: (a, b) => b.rating - a.rating || byDate(a, b)
   }
   return [...list].sort(sorters[sortBy.value] || byDate)
+})
+
+// pagination: show 10 at a time, reset whenever the filters change
+const PAGE_SIZE = 10
+const visibleCount = ref(PAGE_SIZE)
+const visibleReviews = computed(() => filteredReviews.value.slice(0, visibleCount.value))
+watch([searchQuery, ratingFilter, packageFilter, branchFilter, statusFilter, sortBy], () => {
+  visibleCount.value = PAGE_SIZE
 })
 
 onMounted(() => {
