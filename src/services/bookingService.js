@@ -262,7 +262,7 @@ export async function updateMyBooking(id, updates) {
 
   const { data: currentBooking, error: fetchError } = await supabase
     .from('tbl_bookings')
-    .select('booking_status, created_by, event_date')
+    .select('booking_status, created_by, event_date, quoted_total, promo_code, loyalty_points_used')
     .eq('booking_id', id)
     .single();
 
@@ -319,6 +319,30 @@ export async function updateMyBooking(id, updates) {
       throw new Error('Someone else just booked that date. Please choose another date.');
     }
     throw error;
+  }
+
+  // The guest count, date or package just changed, so the price the client was
+  // quoted earlier is out of date. Clients can't write price columns directly
+  // (a database trigger resets them), so ask the server to re-price the booking
+  // with the same promo code / loyalty points it already had. p_strict=false
+  // means a promo that no longer applies (e.g. different caterer) is dropped
+  // instead of blocking the edit.
+  if (currentBooking.quoted_total !== null && currentBooking.quoted_total !== undefined) {
+    const { error: repriceError } = await supabase.rpc('apply_booking_pricing', {
+      p_booking_id: id,
+      p_promo_code: currentBooking.promo_code || null,
+      p_points: currentBooking.loyalty_points_used || 0,
+      p_strict: false,
+    });
+    if (repriceError) {
+      throw new Error('Your booking was saved, but the price could not be updated. Please contact the caterer.');
+    }
+    const { data: repriced } = await supabase
+      .from('tbl_bookings')
+      .select('*')
+      .eq('booking_id', id)
+      .single();
+    if (repriced) return repriced;
   }
   return data;
 }

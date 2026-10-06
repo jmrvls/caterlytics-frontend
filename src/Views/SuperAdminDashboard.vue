@@ -105,12 +105,12 @@
       <!-- MAIN TABS -->
       <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 sm:mb-10 overflow-x-auto no-scrollbar">
         <button
-          v-for="t in ['Tenants', 'Analytics']" :key="t"
+          v-for="t in ['Tenants', 'Analytics', 'Communication']" :key="t"
           type="button"
           @click="mainTab = t"
           :class="mainTab === t ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
           class="px-5 py-3 sm:py-3.5 text-sm font-bold border-b-2 -mb-px transition whitespace-nowrap"
-        >{{ t === 'Analytics' ? 'Platform Analytics' : 'Tenants' }}</button>
+        >{{ t === 'Analytics' ? 'Platform Analytics' : t === 'Communication' ? 'Communication Hub' : 'Tenants' }}</button>
       </div>
 
       <template v-if="mainTab === 'Tenants'">
@@ -378,7 +378,7 @@
       </template>
 
       <!-- ============ PLATFORM ANALYTICS ============ -->
-      <div v-else>
+      <div v-else-if="mainTab === 'Analytics'">
         <div class="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h2 class="font-bold text-gray-900 dark:text-gray-100">Multi-Tenant Analytics</h2>
@@ -512,6 +512,9 @@
           <p class="text-xs text-gray-400 mt-3">Revenue counts payments actually recorded (amount paid), not unpaid balances. Cancelled bookings are included in the booking count.</p>
         </template>
       </div>
+
+      <!-- ============ COMMUNICATION HUB ============ -->
+      <AnnouncementsPanel v-else-if="mainTab === 'Communication'" />
     </main>
 
     <!-- BUSINESS DETAILS / AUDIT TRAIL MODAL -->
@@ -727,6 +730,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import logoUrl from '../Assets/logofinal.png'
 import NotificationBell from '../Components/SuperAdminBell.vue'
+import AnnouncementsPanel from '../Components/AnnouncementsPanel.vue'
 import { logoutUser } from '../services/authService'
 import { localToday, formatDateOnly } from '../utils/date'
 import { supabase } from '../supabaseClient'
@@ -779,7 +783,7 @@ const stats = ref({
 const businesses = ref([])
 
 // ---------- Platform analytics (bookings + revenue per tenant, peak months) ----------
-const mainTab = ref('Tenants') // 'Tenants' | 'Analytics'
+const mainTab = ref('Tenants') // 'Tenants' | 'Analytics' | 'Communication'
 const ANALYTICS_RANGES = [
   { key: '6M', label: 'Last 6 months' },
   { key: '12M', label: 'Last 12 months' },
@@ -1096,8 +1100,12 @@ async function loadData({ silent = false } = {}) {
     // Spread over the defaults so a missing column never renders "undefined".
     stats.value = { ...stats.value, ...s }
     // Merge subscription/inactivity info (null = tenant_lifecycle.sql not run yet).
-    lifecycleReady.value = lifecycle !== null
-    const lifeById = new Map((lifecycle || []).map((row) => [row.business_id, row]))
+    // getTenantLifecycle() returns null on ANY error. If the script was already
+    // working, treat null as a hiccup and keep the last good data instead of
+    // hiding the Subscription column and alert cards until the next poll.
+    const keepOld = lifecycle === null && lifecycleReady.value
+    if (!keepOld) lifecycleReady.value = lifecycle !== null
+    const lifeById = new Map((keepOld ? businesses.value : (lifecycle || [])).map((row) => [row.business_id, row]))
     businesses.value = b.map((row) => {
       const life = lifeById.get(row.business_id)
       return life
@@ -1217,7 +1225,7 @@ async function exportPDF() {
   doc.setFont(undefined, 'normal')
   doc.setTextColor(100)
   doc.text('Platform Console — Super Admin Report', textX, 25)
-  doc.text(`Filter: ${statusFilter.value}${businessSearch.value ? `  •  Search: "${businessSearch.value}"` : ''}`, 14, 34)
+  doc.text(`Filter: ${statusFilter.value}${lifecycleFilter.value ? `  •  ${lifecycleFilter.value}` : ''}${businessSearch.value ? `  •  Search: "${businessSearch.value}"` : ''}`, 14, 34)
   doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 14, 39)
 
   doc.setDrawColor(220)
@@ -1243,7 +1251,7 @@ async function exportPDF() {
 
   autoTable(doc, {
     startY: (doc.lastAutoTable?.finalY ?? 100) + 10,
-    head: [['Business', 'Owner', 'Contact', 'Staff', 'Packages', 'Bookings', 'Registered', 'Status']],
+    head: [['Business', 'Owner', 'Contact', 'Staff', 'Packages', 'Bookings', 'Registered', 'Status', ...(lifecycleReady.value ? ['Subscription'] : [])]],
     body: filteredBusinesses.value.map((b) => [
       b.business_name,
       b.owner_full_name || '—',
@@ -1253,6 +1261,7 @@ async function exportPDF() {
       String(b.bookings_count),
       formatDate(b.created_at),
       b.status,
+      ...(lifecycleReady.value ? [b.subscription_expires_at ? formatDateOnly(b.subscription_expires_at) : 'No expiry set'] : []),
     ]),
     theme: 'grid',
     headStyles: { fillColor: [5, 150, 105] },
@@ -1318,6 +1327,7 @@ onMounted(() => {
 function onKeydown(e) {
   if (e.key !== 'Escape') return
   if (confirmState.value) resolveConfirm(false)
+  else if (renewState.value) closeRenew()
   else if (detailsBusiness.value) closeDetails()
 }
 

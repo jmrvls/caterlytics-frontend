@@ -139,6 +139,7 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 p-4 sm:p-8 pt-20 lg:pt-8 overflow-x-hidden w-full min-w-0">
       <div class="max-w-none 2xl:max-w-[1920px] mx-auto">
+        <AnnouncementBanner />
 
         <!-- Subscription reminder (Owner / Admin only): shown 30 days before expiry and after it lapses -->
         <div
@@ -479,6 +480,7 @@ import logoUrl from '../Assets/logofinal.png'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NotificationBell from '../Components/NotificationBell.vue'
+import AnnouncementBanner from '../Components/AnnouncementBanner.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useChatUnread } from '../composables/useChatUnread'
 import { useReviewAlerts } from '../composables/useReviewAlerts'
