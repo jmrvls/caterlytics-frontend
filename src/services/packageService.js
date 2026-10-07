@@ -10,10 +10,32 @@ export async function getAllPackages() {
   return data || [];
 }
 
+// '' / undefined / null -> null, otherwise a whole number (or NaN if invalid).
+function guestLimit(v) {
+  if (v === '' || v === undefined || v === null) return null;
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 1 ? n : NaN;
+}
+
 function validatePackage(packageData) {
   if (!String(packageData.package_name || '').trim()) throw new Error('Package name is required.');
   const price = Number(packageData.price_per_head);
   if (!Number.isFinite(price) || price <= 0) throw new Error('Price per head must be greater than 0.');
+
+  const min = guestLimit(packageData.min_guests);
+  const max = guestLimit(packageData.max_guests);
+  if (Number.isNaN(min)) throw new Error('Minimum guests must be a whole number of 1 or more.');
+  if (Number.isNaN(max)) throw new Error('Maximum guests must be a whole number of 1 or more.');
+  if (min != null && max != null && min > max) throw new Error('Minimum guests cannot be more than maximum guests.');
+}
+
+// The optional columns shared by create and update.
+function packageExtras(packageData) {
+  return {
+    package_type: String(packageData.package_type || '').trim() || null,
+    min_guests: guestLimit(packageData.min_guests),
+    max_guests: guestLimit(packageData.max_guests),
+  };
 }
 
 export async function createPackage(packageData) {
@@ -24,6 +46,7 @@ export async function createPackage(packageData) {
       package_name: String(packageData.package_name).trim(),
       description: packageData.description,
       price_per_head: packageData.price_per_head,
+      ...packageExtras(packageData),
     })
     .select()
     .single();
@@ -40,6 +63,7 @@ export async function updatePackage(id, packageData) {
       package_name: packageData.package_name,
       description: packageData.description,
       price_per_head: packageData.price_per_head,
+      ...packageExtras(packageData),
     })
     .eq('package_id', id)
     .select()
@@ -150,12 +174,12 @@ export async function setPackageIngredients(packageId, ingredients) {
   return data || [];
 }
 
-// ---------- Menu Categories (Main Course / Side Dish / Dessert / Drinks) ----------
+// ---------- Menu Categories (Main Course / Side Dish / Soup / Dessert / Drinks) ----------
 // This is the "main module": each package is composed of menu items grouped
 // by category, and the client can only pick up to N items per category
 // (e.g. Package 1 = choose 2 Main Course, Package 2 = choose 3).
 
-export const MENU_CATEGORIES = ['Main Course', 'Side Dish', 'Dessert', 'Drinks'];
+export const MENU_CATEGORIES = ['Main Course', 'Side Dish', 'Soup', 'Dessert', 'Drinks'];
 
 // Full catalog of menu items this business offers, across all packages.
 export async function getAllMenuItems() {

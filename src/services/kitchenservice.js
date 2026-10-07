@@ -68,7 +68,7 @@ export function formatPrepQty(value, unit) {
 
 // Group the dish list by menu category, in the order the kitchen cooks them.
 export function groupDishesByCategory(dishes) {
-  const order = ['Main Course', 'Side Dish', 'Dessert', 'Drinks'];
+  const order = ['Main Course', 'Side Dish', 'Soup', 'Dessert', 'Drinks'];
   const groups = {};
   for (const d of dishes) {
     (groups[d.category || 'Other'] ||= []).push(d);

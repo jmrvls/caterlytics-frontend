@@ -414,6 +414,20 @@
             <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Price per Head (₱)</label>
             <input type="number" min="0" step="0.01" v-model.number="form.price_per_head" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" required />
           </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Min Guests (optional)</label>
+              <input type="number" min="1" step="1" v-model.number="form.min_guests" placeholder="e.g. 100" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+            </div>
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Max Guests (optional)</label>
+              <input type="number" min="1" step="1" v-model.number="form.max_guests" placeholder="e.g. 25" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Package Type (optional)</label>
+            <input type="text" maxlength="40" v-model="form.package_type" placeholder="e.g. Catered, All-In, Wedding" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+          </div>
 
           <div class="flex gap-3 pt-2">
             <button type="button" @click="closeFormModal" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-none font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -657,7 +671,10 @@ function emptyMenuForm() {
 const emptyForm = () => ({
   package_name: '',
   description: '',
-  price_per_head: null
+  price_per_head: null,
+  min_guests: null,
+  max_guests: null,
+  package_type: ''
 })
 const form = ref(emptyForm())
 
@@ -856,7 +873,10 @@ function openEditModal(pkg) {
   form.value = {
     package_name: pkg.package_name,
     description: pkg.description || '',
-    price_per_head: pkg.price_per_head
+    price_per_head: pkg.price_per_head,
+    min_guests: pkg.min_guests ?? null,
+    max_guests: pkg.max_guests ?? null,
+    package_type: pkg.package_type || ''
   }
   modalError.value = ''
   selectedImageFile.value = null
