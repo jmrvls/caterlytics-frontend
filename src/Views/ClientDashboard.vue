@@ -45,8 +45,8 @@
 
     <main class="w-full px-4 sm:px-6 lg:px-10 py-4 sm:py-8">
 
-      <!-- TABS -->
-      <div class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-4 sm:mb-6 w-full sm:w-fit overflow-x-auto no-scrollbar">
+      <!-- TABS (hidden while a caterer is open in Book Catering) -->
+      <div v-if="!(activeTab === 'Book Catering' && selectedBusinessId)" class="flex gap-1 bg-white dark:bg-gray-800 p-1 rounded-xl border border-gray-100 dark:border-gray-700 mb-4 sm:mb-6 w-full sm:w-fit overflow-x-auto no-scrollbar">
         <button
           v-for="tab in tabs" :key="tab"
           @click="activeTab = tab"

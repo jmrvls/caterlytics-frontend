@@ -150,6 +150,7 @@ const sending = ref(false)
 const error = ref('')
 const setupMissing = ref(false)
 const scrollEl = ref(null)
+let disposed = false
 
 const active = computed(() => conversations.value.find((c) => c.conversation_id === activeId.value) || null)
 const totalUnread = computed(() => conversations.value.reduce((n, c) => n + c.unread, 0))
@@ -194,6 +195,15 @@ function scrollToBottom() {
   })
 }
 
+// FIX: don't yank the user to the bottom while they're reading older messages.
+function isNearBottom() {
+  const el = scrollEl.value
+  if (!el) return true
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 120
+}
+
+const isVisible = () => typeof document === 'undefined' || document.visibilityState === 'visible'
+
 function handleError(e, fallback) {
   if (e?.code === 'CHAT_NOT_SET_UP') {
     setupMissing.value = true
@@ -202,15 +212,33 @@ function handleError(e, fallback) {
   error.value = e?.message || fallback
 }
 
-async function loadList() {
-  listLoading.value = true
+// FIX: background refreshes (poll / realtime) must not leave a permanent red
+// error after one network blip. Only the first load / user actions show errors.
+function handleBackgroundError(e) {
+  if (e?.code === 'CHAT_NOT_SET_UP') {
+    setupMissing.value = true
+    return
+  }
+  console.warn('[chat] background refresh failed:', e)
+}
+
+async function loadList(silent = false) {
+  if (!silent) listLoading.value = true
   try {
-    conversations.value = await listConversations()
+    const list = await listConversations()
+    // FIX: a list refresh that races with markConversationRead used to bring the
+    // "unread" badge back on the conversation that is already open on screen.
+    if (activeId.value && isVisible()) {
+      const a = list.find((c) => c.conversation_id === activeId.value)
+      if (a) a.unread = 0
+    }
+    conversations.value = list
     setupMissing.value = false
   } catch (e) {
-    handleError(e, 'Failed to load conversations.')
+    if (silent) handleBackgroundError(e)
+    else handleError(e, 'Failed to load conversations.')
   } finally {
-    listLoading.value = false
+    if (!silent) listLoading.value = false
   }
 }
 
@@ -219,21 +247,41 @@ function setLocalUnread(id, n) {
   if (c) c.unread = n
 }
 
+async function markActiveRead() {
+  const id = activeId.value
+  if (!id) return
+  try {
+    await markConversationRead(id)
+    setLocalUnread(id, 0)
+  } catch (e) {
+    handleBackgroundError(e)
+  }
+}
+
 async function openConversation(id) {
   activeId.value = id
   messages.value = []
   error.value = ''
   threadLoading.value = true
   try {
-    messages.value = await getMessages(id, 0)
+    const loaded = await getMessages(id, 0)
+    // FIX: check BEFORE assigning. Before, a slow response from the previous
+    // conversation could overwrite the thread of the one you just opened.
     if (activeId.value !== id) return
+    messages.value = loaded
     scrollToBottom()
     await markConversationRead(id)
     setLocalUnread(id, 0)
   } catch (e) {
-    handleError(e, 'Failed to load messages.')
+    if (activeId.value === id) handleError(e, 'Failed to load messages.')
   } finally {
-    threadLoading.value = false
+    // FIX: only the conversation that is still open may clear the loading flag.
+    if (activeId.value === id) {
+      threadLoading.value = false
+      // FIX: anything that arrived while we were loading was skipped by
+      // fetchNew (it bails during loading) -- pick it up now, not 15s later.
+      fetchNew()
+    }
   }
 }
 
@@ -253,14 +301,15 @@ async function fetchNew() {
     const seen = new Set(messages.value.map((m) => m.message_id))
     const add = fresh.filter((m) => !seen.has(m.message_id))
     if (!add.length) return
+    const stick = isNearBottom() || add.some((m) => m.sender_role === myRole.value)
     messages.value = [...messages.value, ...add]
-    scrollToBottom()
-    if (add.some((m) => m.sender_role !== myRole.value)) {
-      await markConversationRead(id)
-      setLocalUnread(id, 0)
+    if (stick) scrollToBottom()
+    // FIX: only mark as read if the tab is actually being looked at.
+    if (isVisible() && add.some((m) => m.sender_role !== myRole.value)) {
+      await markActiveRead()
     }
   } catch (e) {
-    handleError(e, 'Failed to refresh messages.')
+    handleBackgroundError(e)
   }
 }
 
@@ -273,7 +322,7 @@ async function send() {
     await sendMessage(activeId.value, text)
     draft.value = ''
     await fetchNew()
-    loadList()
+    scheduleList()
   } catch (e) {
     handleError(e, 'Failed to send the message.')
   } finally {
@@ -296,27 +345,39 @@ let unsubscribe = null
 let pollTimer = null
 let listTimer = null
 
-function onRealtimeMessage(row) {
-  if (row?.conversation_id === activeId.value) fetchNew()
-  loadList()
+// FIX: one debounced list refresh. Realtime fires for BOTH tables per message,
+// which used to trigger two or three identical requests every time.
+function scheduleList() {
+  clearTimeout(listTimer)
+  listTimer = setTimeout(() => loadList(true), 300)
 }
 
-function onConversationChange() {
-  // Debounce: a single message touches both tables.
-  clearTimeout(listTimer)
-  listTimer = setTimeout(loadList, 300)
+function onRealtimeMessage(row) {
+  if (row?.conversation_id === activeId.value) fetchNew()
+  scheduleList()
+}
+
+function onVisible() {
+  if (!isVisible()) return
+  loadList(true)
+  fetchNew()
+  markActiveRead()
 }
 
 onMounted(async () => {
   await loadList()
-  if (setupMissing.value) return
+  // FIX: if the user left this tab while we were still loading, don't create a
+  // Realtime channel / interval that nobody will ever clean up.
+  if (disposed || setupMissing.value) return
   if (props.startBusinessId) await startFromBusiness(props.startBusinessId)
+  if (disposed) return
 
-  unsubscribe = subscribeToChat({ onMessage: onRealtimeMessage, onConversationChange })
+  unsubscribe = subscribeToChat({ onMessage: onRealtimeMessage, onConversationChange: scheduleList })
+  document.addEventListener('visibilitychange', onVisible)
   // Safety net in case Realtime isn't enabled/connected: refresh every 15s while the tab is visible.
   pollTimer = setInterval(() => {
-    if (document.visibilityState !== 'visible') return
-    loadList()
+    if (!isVisible()) return
+    loadList(true)
     fetchNew()
   }, 15000)
 })
@@ -326,8 +387,10 @@ watch(() => props.startBusinessId, (id) => {
 })
 
 onBeforeUnmount(() => {
+  disposed = true
   if (unsubscribe) unsubscribe()
   clearInterval(pollTimer)
   clearTimeout(listTimer)
+  document.removeEventListener('visibilitychange', onVisible)
 })
 </script>
