@@ -179,6 +179,10 @@ async function handleSendOtp() {
     errorMessage.value = `Too many code requests. Please try again in ${formatWait(sendWait)}.`
     return
   }
+  if (!/^(09\d{9}|\+?639\d{9})$/.test(contact_number.value.replace(/[\s-]/g, ''))) {
+    errorMessage.value = 'Enter a valid Philippine mobile number, e.g. 0917 123 4567.'
+    return
+  }
   recordHit(SEND_KEY, SEND_WINDOW)
 
   isLoading.value = true

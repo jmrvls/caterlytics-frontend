@@ -240,8 +240,8 @@ const handleRegister = async () => {
     return
   }
 
-  if (!/^[+]?[\d\s-]{7,}$/.test(form.value.contact_number.trim())) {
-    errorMessage.value = 'Please enter a valid contact number.'
+  if (!/^(09\d{9}|\+?639\d{9})$/.test(form.value.contact_number.replace(/[\s-]/g, ''))) {
+    errorMessage.value = 'Enter a valid Philippine mobile number, e.g. 0917 123 4567.'
     return
   }
 

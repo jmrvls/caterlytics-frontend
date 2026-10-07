@@ -278,6 +278,16 @@
                 </svg>
               </button>
               <button
+                v-if="b.booking_status === 'Confirmed'"
+                @click="handleResendSms(b)"
+                class="w-11 h-11 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 active:bg-emerald-50 dark:active:bg-emerald-900/30 active:text-emerald-600"
+                title="Resend confirmation SMS"
+              >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </button>
+              <button
                 @click="confirmDelete(b)"
                 class="w-11 h-11 flex items-center justify-center rounded-none text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 active:bg-red-50 dark:active:bg-red-900/30 active:text-red-600"
                 title="Delete booking"
@@ -374,6 +384,11 @@
                       <button @click="openAssignModal(b)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30" title="Assign staff">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2.13a4 4 0 10-4-4 4 4 0 004 4z" />
+                        </svg>
+                      </button>
+                      <button v-if="b.booking_status === 'Confirmed'" @click="handleResendSms(b)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30" title="Resend confirmation SMS">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                         </svg>
                       </button>
                       <button @click="confirmDelete(b)" class="p-1.5 rounded-none text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30" title="Delete booking">
@@ -631,7 +646,7 @@ import {
   getSelectionsForBookings
 } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, getAllMenuItems } from '../services/packageService'
-import { sendBookingConfirmationSms } from '../services/smsService'
+import { sendBookingConfirmationSms, resendBookingConfirmationSms } from '../services/smsService'
 import {
   getAssignableStaff,
   getAssignedStaff,
@@ -1132,6 +1147,16 @@ function confirmRevert() {
   handleStatusChange(booking, newStatus)
 }
 
+async function handleResendSms(booking) {
+  pageError.value = ''
+  const res = await resendBookingConfirmationSms(booking.booking_id)
+  if (res && res.sent) {
+    showStockNotice(`Confirmation SMS sent to ${booking.client_name || 'the client'}.`)
+  } else {
+    pageError.value = `SMS not sent: ${res?.message || 'unknown error.'}`
+  }
+}
+
 async function handleStatusChange(booking, newStatus) {
   const previousStatus = booking.booking_status
   pageError.value = '' // drop any stale error from a previous attempt
@@ -1143,7 +1168,12 @@ async function handleStatusChange(booking, newStatus) {
   try {
     await updateBookingStatus(booking.booking_id, newStatus)
     if (newStatus === 'Confirmed') {
-      sendBookingConfirmationSms(booking.booking_id) // no await: SMS must never block the UI
+      // no await: SMS must never block the UI, but tell the admin if it didn't go out
+      sendBookingConfirmationSms(booking.booking_id).then((res) => {
+        if (res && res.sent === false && res.reason !== 'already_sent') {
+          pageError.value = `Booking confirmed, but the SMS was not sent: ${res.message || 'unknown error.'}`
+        }
+      })
       const deducted = await getBookingStockCount(booking.booking_id)
       showStockNotice(
         deducted

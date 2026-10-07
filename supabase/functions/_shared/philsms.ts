@@ -28,6 +28,8 @@ export async function sendSms(recipient: string, message: string) {
       Accept: 'application/json',
     },
     body: JSON.stringify({ recipient, sender_id: senderId, type: 'plain', message }),
+    // Never hang forever if PhilSMS is slow; the caller releases its claim on error.
+    signal: AbortSignal.timeout(15000),
   });
 
   const text = await res.text();
