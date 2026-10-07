@@ -136,6 +136,10 @@ async function callPhoneOtp(body) {
   const { data, error } = await supabase.functions.invoke('phone-otp', { body });
   if (error) {
     let message = 'Something went wrong. Please try again.';
+    // HTTP status of the function's reply (undefined when the request never
+    // reached it, e.g. network down). Callers use it to tell a rejected
+    // input (400/409/429, no SMS sent) from a real failure.
+    const status = error.context?.status;
     try {
       // The function replies with { error: '...' } on failures.
       const payload = await error.context.json();
@@ -143,7 +147,9 @@ async function callPhoneOtp(body) {
     } catch {
       // No readable body (e.g. network down) -- keep the default message.
     }
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = status;
+    throw err;
   }
   return data;
 }

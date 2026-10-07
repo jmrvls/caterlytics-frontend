@@ -1017,6 +1017,7 @@ import logoUrl from '../Assets/logofinal.png'
 import { toTitleCase } from '../utils/textFormat'
 import { supabase } from '../supabaseClient'
 import { logoutUser } from '../services/authService'
+import { getMyProfile } from '../services/profileService'
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { PORTIONS, getSelectionsForBookings, createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
@@ -1895,8 +1896,13 @@ onMounted(() => {
   userName.value = displayName
   userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
-  form.value.client_email = user.email || ''
+  // Clients register with a phone number, so their login email is only an
+  // internal placeholder (username@gmail.com). Never save that as the booking's
+  // contact email -- it is not theirs and the caterer would see a fake address.
+  const internalEmail = user.username ? `${String(user.username).toLowerCase()}@gmail.com` : ''
+  form.value.client_email = user.email && user.email.toLowerCase() !== internalEmail ? user.email : ''
   currentUserId = user.user_id || user.id || user.email || ''
+  loadMyContactNumber()
 
   loadPackages()
   loadMyBookings()
@@ -1948,11 +1954,26 @@ function dismissStatusAlert(bookingId) {
   statusChangeAlerts.value = statusChangeAlerts.value.filter((c) => c.booking.booking_id !== bookingId)
 }
 
+// The number the client registered with, so the caterer can reach them from
+// the booking (it used to be left empty on every booking).
+let myContactNumber = ''
+async function loadMyContactNumber() {
+  try {
+    const profile = await getMyProfile(currentUserId)
+    const n = String(profile?.contact_number || '').replace(/[\s-]/g, '')
+    // Same format createBooking() accepts; anything else is skipped so it can't block a booking.
+    myContactNumber = /^(09\d{9}|\+639\d{9})$/.test(n) ? n : ''
+  } catch (error) {
+    console.error('Failed to load contact number:', error)
+  }
+}
+
 async function loadPackages() {
   try {
     packages.value = await getAllPackages()
   } catch (error) {
     console.error(error)
+    pageError.value = 'Failed to load catering packages. Please refresh the page.'
   }
 }
 
@@ -2230,6 +2251,7 @@ async function submitBooking() {
     const newBooking = await createBooking({
       client_name: userName.value,
       client_email: form.value.client_email,
+      client_contact_number: myContactNumber,
       event_date: form.value.event_date,
       event_time: form.value.event_time,
       event_location: form.value.event_location,

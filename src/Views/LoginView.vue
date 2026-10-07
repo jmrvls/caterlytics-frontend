@@ -66,7 +66,7 @@
 
           <!-- Account Identity Field -->
           <div class="space-y-1.5">
-            <input type="text" v-model="form.username" placeholder="Username or Number" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+            <input type="text" v-model="form.username" placeholder="Username or Number" autocomplete="username" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
           </div>
 
           <!-- Account Security Field with Show/Hide Toggle -->
@@ -75,6 +75,7 @@
               <input
                 :type="showPassword ? 'text' : 'password'"
                 v-model="form.password"
+                autocomplete="current-password"
                 placeholder="Password"
                 class="w-full p-3.5 pr-12 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                 required

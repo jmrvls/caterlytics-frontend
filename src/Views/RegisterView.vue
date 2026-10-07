@@ -49,23 +49,25 @@
             <input type="text" name="website" v-model="honeypot" tabindex="-1" autocomplete="off" />
           </div>
 
-            <div v-if="errorMessage" class="text-red-600 text-sm font-medium">
-              {{ errorMessage }}
+            <div v-if="errorMessage" role="alert" class="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <svg class="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+              <span>{{ errorMessage }}</span>
             </div>
 
             <div class="space-y-1.5">
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Full Name</label>
-              <input type="text" v-model="form.full_name" placeholder="Enter your full name" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+              <input type="text" v-model="form.full_name" placeholder="Enter your full name" maxlength="100" autocomplete="name" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
             </div>
 
             <div class="space-y-1.5">
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Username</label>
-              <input type="text" v-model="form.username" placeholder="Choose a username" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+              <input type="text" v-model="form.username" placeholder="Choose a username" maxlength="30" autocomplete="username" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+              <p class="text-xs text-gray-400">3-30 characters. Letters, numbers, dot (.), dash (-) or underscore (_). No spaces; a dot can't be first, last or doubled.</p>
             </div>
 
             <div class="space-y-1.5">
               <label class="text-xs font-bold uppercase tracking-wider text-gray-500">Contact Number</label>
-              <input type="tel" v-model="form.contact_number" placeholder="e.g. 0917 123 4567" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
+              <input type="tel" v-model="form.contact_number" placeholder="e.g. 0917 123 4567" autocomplete="tel" class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" required />
             </div>
 
             <div class="space-y-1.5">
@@ -74,6 +76,7 @@
                 <input
                   :type="showPassword ? 'text' : 'password'"
                   v-model="form.password"
+                  autocomplete="new-password"
                   placeholder="••••••••"
                   class="w-full p-3.5 pr-12 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                   required
@@ -96,6 +99,7 @@
               <input
                 :type="showPassword ? 'text' : 'password'"
                 v-model="form.confirmPassword"
+                autocomplete="new-password"
                 placeholder="••••••••"
                 class="w-full p-3.5 bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                 required
@@ -124,8 +128,13 @@
           </div>
 
           <form @submit.prevent="handleVerifyOtp" class="space-y-5">
-            <div v-if="otpErrorMessage" class="text-red-600 text-sm font-medium">
-              {{ otpErrorMessage }}
+            <div v-if="otpErrorMessage" role="alert" class="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <svg class="h-5 w-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+              <span>{{ otpErrorMessage }}</span>
+            </div>
+
+            <div v-if="otpInfoMessage" role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+              {{ otpInfoMessage }}
             </div>
 
             <div class="space-y-1.5">
@@ -133,8 +142,10 @@
               <input
                 type="text"
                 inputmode="numeric"
+                autocomplete="one-time-code"
                 maxlength="6"
-                v-model="otpCode"
+                :value="otpCode"
+                @input="otpCode = $event.target.value.replace(/\D/g, '')"
                 placeholder="123456"
                 class="w-full p-3.5 text-center text-2xl tracking-[0.5em] bg-gray-50 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
                 required
@@ -149,6 +160,11 @@
           <div class="text-center pt-2">
             <button type="button" @click="handleResendOtp" :disabled="isResending" class="text-emerald-600 font-bold text-sm hover:underline disabled:opacity-50">
               {{ isResending ? 'Resending...' : "Didn't get a code? Resend" }}
+            </button>
+          </div>
+          <div class="text-center">
+            <button type="button" @click="backToForm" class="text-gray-500 font-semibold text-sm hover:underline">
+              Wrong number or details? Go back and edit
             </button>
           </div>
         </template>
@@ -181,6 +197,7 @@
 import logoUrl from '../Assets/logofinal.png'
 import loginBgUrl from '../Assets/login-bg.png'
 import { ref } from 'vue'
+import { validatePassword } from '../utils/validators'
 import {
   looksLikeBot,
   lockoutSecondsLeft,
@@ -215,6 +232,7 @@ const phoneVerified = ref(false)
 
 const otpCode = ref('')
 const otpErrorMessage = ref('')
+const otpInfoMessage = ref('')
 const isVerifying = ref(false)
 const isResending = ref(false)
 
@@ -226,6 +244,16 @@ const form = ref({
   confirmPassword: ''
 })
 
+// Server answers 400/409/429 BEFORE any SMS goes out (bad input, taken
+// username/number, cooldown), so those must not use up the user's SMS budget.
+const noSmsSent = (error) => [400, 409, 429].includes(error?.status)
+
+// Same rule as the server: no leading, trailing or doubled dot. The username
+// becomes the local part of the internal login email, and those forms are
+// rejected by Supabase Auth -- which used to happen AFTER the OTP was used up.
+const USERNAME_RE = /^[A-Za-z0-9._-]{3,30}$/
+const isValidUsername = (u) => USERNAME_RE.test(u) && !/^\.|\.$|\.\./.test(u)
+
 const handleRegister = async () => {
   errorMessage.value = ''
 
@@ -235,7 +263,20 @@ const handleRegister = async () => {
     return
   }
 
-  if (!form.value.contact_number || !form.value.contact_number.trim()) {
+  form.value.full_name = form.value.full_name.trim().replace(/\s+/g, ' ')
+  if (!form.value.full_name) {
+    errorMessage.value = 'Please enter your full name.'
+    return
+  }
+
+  form.value.username = form.value.username.trim()
+  if (!isValidUsername(form.value.username)) {
+    errorMessage.value = 'Username must be 3-30 characters using letters, numbers, dot, dash or underscore only (no spaces; a dot cannot be first, last or doubled).'
+    return
+  }
+
+  form.value.contact_number = form.value.contact_number.trim()
+  if (!form.value.contact_number) {
     errorMessage.value = 'Contact number is required.'
     return
   }
@@ -245,18 +286,20 @@ const handleRegister = async () => {
     return
   }
 
+  // Login and the server both trim the password, so trim here BEFORE checking
+  // length/match -- otherwise "abcdef1 " passes here but is rejected by the
+  // server after the SMS was already sent.
+  form.value.password = form.value.password.trim()
+  form.value.confirmPassword = form.value.confirmPassword.trim()
+
   if (form.value.password !== form.value.confirmPassword) {
     errorMessage.value = 'Passwords do not match.'
     return
   }
 
-  if (form.value.password.length < 8) {
-    errorMessage.value = 'Password must be at least 8 characters long.'
-    return
-  }
-
-  if (!/[A-Za-z]/.test(form.value.password) || !/[0-9]/.test(form.value.password)) {
-    errorMessage.value = 'Password must contain at least one letter and one number.'
+  const passwordError = validatePassword(form.value.password)
+  if (passwordError) {
+    errorMessage.value = passwordError
     return
   }
 
@@ -265,20 +308,20 @@ const handleRegister = async () => {
     errorMessage.value = `Too many code requests. Please try again in ${formatWait(sendWait)}.`
     return
   }
-  recordHit(SEND_KEY, SEND_WINDOW)
 
   isLoading.value = true
 
   try {
     // Texts the OTP. The account is only created after the code is verified.
     await requestRegistrationOtp(form.value.username, form.value.contact_number)
+    recordHit(SEND_KEY, SEND_WINDOW)
+    otpCode.value = ''
+    otpErrorMessage.value = ''
+    otpInfoMessage.value = ''
     accountCreated.value = true  // switch to the OTP screen
   } catch (error) {
-    if (error.response && error.response.data && error.response.data.error) {
-      errorMessage.value = error.response.data.error
-    } else {
-      errorMessage.value = error.message || 'Something went wrong. Please try again.'
-    }
+    if (!noSmsSent(error)) recordHit(SEND_KEY, SEND_WINDOW)
+    errorMessage.value = error.message || 'Something went wrong. Please try again.'
   } finally {
     isLoading.value = false
   }
@@ -286,10 +329,17 @@ const handleRegister = async () => {
 
 const handleVerifyOtp = async () => {
   otpErrorMessage.value = ''
+  otpInfoMessage.value = ''
 
   const locked = lockoutSecondsLeft(VERIFY_KEY)
   if (locked > 0) {
     otpErrorMessage.value = `Too many wrong codes. Try again in ${formatWait(locked)}.`
+    return
+  }
+
+  otpCode.value = otpCode.value.trim()
+  if (!/^\d{6}$/.test(otpCode.value)) {
+    otpErrorMessage.value = 'Enter the 6-digit code from the SMS.'
     return
   }
 
@@ -300,7 +350,11 @@ const handleVerifyOtp = async () => {
     resetFailures(VERIFY_KEY)
     phoneVerified.value = true
   } catch (error) {
-    const wait = recordFailure(VERIFY_KEY, 5, 60)
+    // Only a rejected code (400) counts as a wrong guess. A taken username
+    // (409), a server error (5xx) or a dropped connection are not the user's
+    // fault and must not lock them out.
+    const wrongGuess = error.status === 400
+    const wait = wrongGuess ? recordFailure(VERIFY_KEY, 5, 60) : 0
     otpErrorMessage.value = wait > 0
       ? `Too many wrong codes. Try again in ${formatWait(wait)}.`
       : (error.message || 'Invalid or expired code. Please try again.')
@@ -311,23 +365,37 @@ const handleVerifyOtp = async () => {
 
 const handleResendOtp = async () => {
   otpErrorMessage.value = ''
+  otpInfoMessage.value = ''
 
   const wait = rateLimitSecondsLeft(SEND_KEY, SEND_MAX, SEND_WINDOW, RESEND_COOLDOWN)
   if (wait > 0) {
     otpErrorMessage.value = `Please wait ${formatWait(wait)} before requesting another code.`
     return
   }
-  recordHit(SEND_KEY, SEND_WINDOW)
 
   isResending.value = true
 
   try {
     await resendRegistrationOtp(form.value.contact_number, form.value.username)
+    recordHit(SEND_KEY, SEND_WINDOW)
+    otpCode.value = ''
+    otpInfoMessage.value = 'A new code was sent. Older codes no longer work.'
   } catch (error) {
+    if (!noSmsSent(error)) recordHit(SEND_KEY, SEND_WINDOW)
     otpErrorMessage.value = error.message || 'Could not resend code. Please try again.'
   } finally {
     isResending.value = false
   }
+}
+
+// Typed the wrong number/username? Without this the user was stuck on the
+// OTP screen until they refreshed the page.
+const backToForm = () => {
+  otpCode.value = ''
+  otpErrorMessage.value = ''
+  otpInfoMessage.value = ''
+  errorMessage.value = ''
+  accountCreated.value = false
 }
 </script>
 

@@ -78,6 +78,15 @@ async function usernameTaken(username: string) {
   return (data?.length ?? 0) > 0;
 }
 
+// The username becomes the local part of the internal login email
+// (username@gmail.com). Supabase Auth rejects a local part that starts/ends
+// with a dot or has two dots in a row, and that used to fail AFTER the OTP
+// was used up -- so reject those usernames up front.
+const USERNAME_RE = /^[A-Za-z0-9._-]{3,30}$/;
+const isValidUsername = (u: string) => USERNAME_RE.test(u) && !/^\.|\.$|\.\./.test(u);
+const USERNAME_MSG =
+  'Username must be 3-30 characters using letters, numbers, dot, dash or underscore only (no spaces; a dot cannot be first, last or doubled).';
+
 function validatePassword(pw: string) {
   if (pw.length < 8) throw new HttpError(400, 'Password must be at least 8 characters long.');
   if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) {
@@ -110,7 +119,7 @@ async function throttle(phone: string, purpose: string) {
 }
 
 // Validates a code. consume=true makes it single-use.
-async function checkCode(phone: string, purpose: string, code: unknown, consume: boolean) {
+async function checkCode(phone: string, purpose: string, code: unknown, consume: boolean): Promise<string> {
   const clean = String(code ?? '').trim();
   if (!/^\d{6}$/.test(clean)) throw new HttpError(400, INVALID_CODE);
 
@@ -136,6 +145,7 @@ async function checkCode(phone: string, purpose: string, code: unknown, consume:
       .update({ consumed: true }).eq('id', row.id).eq('consumed', false).select('id');
     if (!claimed?.length) throw new HttpError(400, INVALID_CODE);
   }
+  return row.id;
 }
 
 async function handleSend(body: any) {
@@ -149,7 +159,9 @@ async function handleSend(body: any) {
   if (purpose === 'register') {
     if (matches.length) throw new HttpError(409, 'That contact number is already registered.');
     const username = String(body.username ?? '').trim();
-    if (username && await usernameTaken(username)) throw new HttpError(409, 'That username is already taken.');
+    // Reject a bad username BEFORE texting, so no SMS credit is wasted.
+    if (!isValidUsername(username)) throw new HttpError(400, USERNAME_MSG);
+    if (await usernameTaken(username)) throw new HttpError(409, 'That username is already taken.');
   } else {
     // Don't reveal whether a number has an account.
     if (!matches.length) return { ok: true };
@@ -194,9 +206,7 @@ async function handleRegister(body: any) {
   // Login trims the password, so store it trimmed too.
   const password = String(body.password ?? '').trim();
 
-  if (!/^[A-Za-z0-9._-]{3,30}$/.test(username)) {
-    throw new HttpError(400, 'Username must be 3-30 characters: letters, numbers, dot, dash or underscore only.');
-  }
+  if (!isValidUsername(username)) throw new HttpError(400, USERNAME_MSG);
   if (!fullName || fullName.length > 100) throw new HttpError(400, 'Please enter your full name.');
   validatePassword(password);
 
@@ -204,7 +214,7 @@ async function handleRegister(body: any) {
   if ((await profilesByPhone(phone)).length) throw new HttpError(409, 'That contact number is already registered.');
   if (await usernameTaken(username)) throw new HttpError(409, 'That username is already taken.');
 
-  await checkCode(phone, 'register', body.code, true);
+  const codeId = await checkCode(phone, 'register', body.code, true);
 
   // Internal login identity (nobody logs in with it; login is username/number based).
   const email = `${username.toLowerCase()}@gmail.com`;
@@ -216,6 +226,9 @@ async function handleRegister(body: any) {
   });
   if (error) {
     console.error('createUser failed:', error.message);
+    // The account was NOT created, so give the code back -- otherwise the user
+    // loses a working code (and an SMS credit) through no fault of their own.
+    await admin.from('tbl_otp_codes').update({ consumed: false }).eq('id', codeId);
     if (/already|registered|exists/i.test(error.message)) throw new HttpError(409, 'That username is already taken.');
     throw new HttpError(500, 'We could not create the account. Please try again.');
   }
