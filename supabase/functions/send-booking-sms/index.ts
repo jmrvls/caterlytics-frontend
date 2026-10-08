@@ -106,7 +106,11 @@ Deno.serve(async (req) => {
     }
 
     const firstName = String(booking.client_name ?? '').trim().split(/\s+/)[0] || 'there';
-    const message = `Hi ${firstName}, your booking with ${bizName} on ${formatDate(booking.event_date)} is CONFIRMED. Thank you!`;
+    // Number the client can call/text back (the sender name itself can't take replies).
+    // Change it without redeploying code by setting the SUPPORT_CONTACT_NUMBER secret.
+    const contactNumber = Deno.env.get('SUPPORT_CONTACT_NUMBER') ?? '09673193013';
+    const shortBiz = bizName.length > 30 ? bizName.slice(0, 29) + '…' : bizName; // keep it to 1 SMS (160 chars)
+    const message = `Hi ${firstName}, your booking with ${shortBiz} on ${formatDate(booking.event_date)} is CONFIRMED. Questions? Call ${contactNumber}. Thank you!`;
     logCtx = { booking_id: bookingId, recipient: to, message };
 
     const providerResponse = await sendSms(to, message);
