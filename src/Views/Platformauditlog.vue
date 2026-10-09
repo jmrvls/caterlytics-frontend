@@ -3,7 +3,7 @@
 
     <!-- TOP BAR (same look as the Super Admin dashboard) -->
     <header class="bg-gray-900 dark:bg-black border-b border-gray-800 sticky top-0 z-30" style="padding-top: env(safe-area-inset-top)">
-      <div class="max-w-7xl mx-auto px-3 sm:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
+      <div class="w-full px-3 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-2 sm:gap-4">
         <div class="flex items-center gap-3 min-w-0">
           <img :src="logoUrl" alt="Logo" class="w-8 h-8 object-contain flex-shrink-0" />
           <div class="min-w-0">
@@ -25,7 +25,7 @@
       </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-3 sm:px-8 py-5 sm:py-8">
+    <main class="w-full px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
 
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div class="min-w-0">
