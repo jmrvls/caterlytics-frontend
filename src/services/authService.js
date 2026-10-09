@@ -8,6 +8,9 @@ function looksLikePhoneNumber(identifier) {
   return /^[+]?[\d\s-]{7,}$/.test(identifier.trim());
 }
 
+// '.invalid' is a reserved TLD: this address can never belong to a real account.
+const NO_SUCH_ACCOUNT_EMAIL = 'no-such-account@caterlytics.invalid';
+
 async function loginIdentifierToEmail(identifier) {
   // Stray leading/trailing whitespace (very common from autofill or
   // copy-paste out of a password manager) would otherwise make an
@@ -18,17 +21,19 @@ async function loginIdentifierToEmail(identifier) {
   if (looksLikePhoneNumber(cleanIdentifier)) {
     const { data, error } = await supabase.rpc('resolve_login_email_by_phone', { p_contact_number: cleanIdentifier });
     if (error || !data) {
-      // No matching number -- fall through with something that will
-      // never match a real account, so the caller gets the normal
-      // "Invalid username or password" error instead of a different one.
-      return `${cleanIdentifier.replace(/\D/g, '')}@gmail.com`;
+      // No matching number -- fall through with an address that can never
+      // exist, so the caller gets the normal "Invalid username or password".
+      return NO_SUCH_ACCOUNT_EMAIL;
     }
     return data;
   }
 
   const { data, error } = await supabase.rpc('resolve_login_email', { p_username: cleanIdentifier });
   if (error || !data) {
-    return `${cleanIdentifier.toLowerCase()}@gmail.com`;
+    // IMPORTANT: never turn the typed name into "<name>@gmail.com". That let
+    // anyone log in as whichever real account happened to own that email
+    // (e.g. typing "client2" opened the Super Admin account).
+    return NO_SUCH_ACCOUNT_EMAIL;
   }
   return data;
 }
