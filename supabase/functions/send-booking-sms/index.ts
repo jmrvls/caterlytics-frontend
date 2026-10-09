@@ -1,8 +1,9 @@
-// send-booking-sms: texts the client that their booking is confirmed.
+// send-booking-cancel-sms: texts the client that their booking was cancelled
+// (or, if it was still Pending, that the request could not be accepted).
 //
-// POST { booking_id }  ->  { sent: true } | { sent: false, reason }
-// Every send attempt is now recorded in public.tbl_sms_log (with PhilSMS's
-// full response) so a "client never got the SMS" report can be traced.
+// POST { booking_id, previous_status }  ->  { sent: true } | { sent: false, reason }
+// Only admin/staff of the booking's business can call it, and only while the
+// booking is actually Cancelled. Every attempt is logged in public.tbl_sms_log.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { normalizePhone, sendSms } from '../_shared/philsms.ts';
 
@@ -36,11 +37,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return reply({ error: 'Method not allowed.' }, 405);
 
-  let claimedId: string | null = null;
-  let claimRestore: string | null = null;
   let logCtx: { booking_id: unknown; recipient: string; message: string } | null = null;
   try {
-    // 1. Who is calling? Must be logged in as admin/staff.
+    // 1. Must be logged in as admin/staff.
     const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
     const { data: auth, error: authErr } = await admin.auth.getUser(token);
     if (authErr || !auth?.user) return reply({ error: 'Not logged in.' }, 401);
@@ -52,15 +51,14 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const bookingId = body?.booking_id;
     if (!bookingId) return reply({ error: 'booking_id is required.' }, 400);
+    const wasPending = body?.previous_status === 'Pending';
 
     const { data: booking, error: bErr } = await admin.from('tbl_bookings')
-      .select('booking_id, booking_status, client_name, client_contact_number, event_date, event_time, business_id, created_by, confirmation_sms_sent_at')
+      .select('booking_id, booking_status, client_name, client_contact_number, event_date, business_id, created_by')
       .eq('booking_id', bookingId).maybeSingle();
     if (bErr) throw new Error(`load booking: ${bErr.message}`);
     if (!booking) return reply({ error: 'Booking not found.' }, 404);
 
-    // Some bookings have no business_id; in that case use the business of whoever created it,
-    // so staff of another business can never trigger (and spend credits on) this booking.
     let bookingBusinessId = booking.business_id;
     if (!bookingBusinessId && booking.created_by) {
       const { data: creator } = await admin.from('tbl_profiles').select('business_id').eq('id', booking.created_by).maybeSingle();
@@ -69,13 +67,9 @@ Deno.serve(async (req) => {
     if (me.business_id && bookingBusinessId && me.business_id !== bookingBusinessId) {
       return reply({ error: 'Not allowed.' }, 403);
     }
-    if (booking.booking_status !== 'Confirmed') return reply({ sent: false, reason: 'not_confirmed' });
-    // force=true is the admin's "Resend SMS" button (PhilSMS accepted it earlier but it never arrived).
-    const force = body?.force === true;
-    if (booking.confirmation_sms_sent_at && !force) return reply({ sent: false, reason: 'already_sent' });
+    if (booking.booking_status !== 'Cancelled') return reply({ sent: false, reason: 'not_cancelled' });
 
-    // Bookings made from the client dashboard have no number saved on the booking,
-    // so fall back to the contact number on the client's own profile.
+    // 3. Phone number (fall back to the client's profile, same as the confirmation SMS).
     let rawPhone = booking.client_contact_number;
     if (!normalizePhone(rawPhone) && booking.created_by) {
       const { data: owner } = await admin.from('tbl_profiles').select('contact_number').eq('id', booking.created_by).maybeSingle();
@@ -87,18 +81,6 @@ Deno.serve(async (req) => {
       return reply({ sent: false, reason: 'invalid_phone' });
     }
 
-    // 3. Claim the booking first so two quick calls can't both send (and charge twice).
-    const prevSentAt = booking.confirmation_sms_sent_at ?? null;
-    let claimQ = admin.from('tbl_bookings')
-      .update({ confirmation_sms_sent_at: new Date().toISOString() })
-      .eq('booking_id', bookingId);
-    // Normal send: only claim if nobody sent yet. Forced resend: only claim if nobody touched it meanwhile.
-    claimQ = prevSentAt === null ? claimQ.is('confirmation_sms_sent_at', null) : claimQ.eq('confirmation_sms_sent_at', prevSentAt);
-    const { data: claimed } = await claimQ.select('booking_id');
-    if (!claimed?.length) return reply({ sent: false, reason: 'already_sent' });
-    claimedId = bookingId;
-    claimRestore = prevSentAt;
-
     let bizName = 'Caterlytics';
     if (bookingBusinessId) {
       const { data: biz } = await admin.from('tbl_business').select('business_name').eq('business_id', bookingBusinessId).maybeSingle();
@@ -106,28 +88,26 @@ Deno.serve(async (req) => {
     }
 
     const firstName = String(booking.client_name ?? '').trim().split(/\s+/)[0] || 'there';
-    // Number the client can call/text back (the sender name itself can't take replies).
-    // Change it without redeploying code by setting the SUPPORT_CONTACT_NUMBER secret.
     const contactNumber = Deno.env.get('SUPPORT_CONTACT_NUMBER') ?? '09673193013';
-    const shortBiz = bizName.length > 30 ? bizName.slice(0, 29) + '…' : bizName; // keep it to 1 SMS (160 chars)
-    const message = `Hi ${firstName}, your booking with ${shortBiz} on ${formatDate(booking.event_date)} is CONFIRMED. Questions? Call ${contactNumber}. Thank you!`;
+    const shortBiz = bizName.length > 30 ? bizName.slice(0, 29) + '…' : bizName; // keep it near 1 SMS
+    const date = formatDate(booking.event_date);
+    const message = wasPending
+      ? `Hi ${firstName}, we're sorry, your booking request with ${shortBiz} for ${date} could not be accepted. Questions? Call ${contactNumber}.`
+      : `Hi ${firstName}, your booking with ${shortBiz} on ${date} has been CANCELLED. Questions? Call ${contactNumber}.`;
     logCtx = { booking_id: bookingId, recipient: to, message };
 
     const providerResponse = await sendSms(to, message);
-    console.log('send-booking-sms provider response:', JSON.stringify(providerResponse));
+    console.log('send-booking-cancel-sms provider response:', JSON.stringify(providerResponse));
     await logSms({
       ...logCtx,
       ok: true,
       provider_status: String(providerResponse?.status ?? 'unknown'),
       provider_response: providerResponse ?? null,
     });
-    claimedId = null;
     return reply({ sent: true });
   } catch (e) {
-    // Sending failed: release the claim so it can be retried.
-    if (claimedId) await admin.from('tbl_bookings').update({ confirmation_sms_sent_at: claimRestore }).eq('booking_id', claimedId);
     const msg = (e as Error).message;
-    console.error('send-booking-sms failed:', msg);
+    console.error('send-booking-cancel-sms failed:', msg);
     if (logCtx) await logSms({ ...logCtx, ok: false, provider_status: 'error', error: msg });
     return reply({ sent: false, reason: 'error', error: 'The SMS provider rejected or could not send the text. ' + msg, detail: msg }, 500);
   }

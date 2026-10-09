@@ -646,7 +646,7 @@ import {
   getSelectionsForBookings
 } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, getAllMenuItems } from '../services/packageService'
-import { sendBookingConfirmationSms, resendBookingConfirmationSms } from '../services/smsService'
+import { sendBookingConfirmationSms, resendBookingConfirmationSms, sendBookingCancellationSms } from '../services/smsService'
 import {
   getAssignableStaff,
   getAssignedStaff,
@@ -1182,6 +1182,14 @@ async function handleStatusChange(booking, newStatus) {
       )
     } else if (countBefore) {
       showStockNotice(`${countBefore} item(s) returned to inventory.`)
+    }
+    if (newStatus === 'Cancelled' && previousStatus !== 'Cancelled') {
+      // no await: SMS must never block the UI, but tell the admin if it didn't go out
+      sendBookingCancellationSms(booking.booking_id, previousStatus).then((res) => {
+        if (res && res.sent === false) {
+          pageError.value = `Booking cancelled, but the SMS was not sent: ${res.message || 'unknown error.'}`
+        }
+      })
     }
     statusCounts.value = {
       ...statusCounts.value,
