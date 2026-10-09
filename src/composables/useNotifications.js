@@ -32,11 +32,14 @@ const stockUnreadCount = ref(0)
 const bookingUnreadCount = ref(0)
 const assignmentUnreadCount = ref(0)
 const pendingBusinessUnreadCount = ref(0)
+const lifecycleAlerts = ref([]) // Super-Admin-only: expiring / expired / inactive tenants
+const lifecycleUnreadCount = ref(0)
 const unreadCount = ref(0) // combined, for the bell badge
 const seenIds = new Set() // low-stock item ids already "read"
 const seenBookingIds = new Set() // booking ids already "read"
 const seenAssignmentIds = new Set() // booking_ids already "read"
 const seenPendingBusinessIds = new Set() // business_ids already "read"
+const seenLifecycleKeys = new Set() // lifecycle alert keys already "read"
 let stockChannel = null
 let bookingChannel = null
 let assignmentChannel = null
@@ -68,6 +71,20 @@ function saveSeenPending() {
     localStorage.setItem(seenPendingStorageKey(), JSON.stringify([...seenPendingBusinessIds]))
   } catch { /* ignore quota / private-mode errors */ }
 }
+const seenLifecycleStorageKey = () => `caterlytics:seenLifecycleAlerts:${currentUserId || 'anon'}`
+function loadSeenLifecycle() {
+  seenLifecycleKeys.clear()
+  try {
+    const raw = JSON.parse(localStorage.getItem(seenLifecycleStorageKey()) || '[]')
+    if (Array.isArray(raw)) raw.forEach((k) => seenLifecycleKeys.add(k))
+  } catch { /* storage unavailable or corrupted -- start empty */ }
+}
+function saveSeenLifecycle() {
+  try {
+    // Keep the list from growing forever: only the most recent 300 keys.
+    localStorage.setItem(seenLifecycleStorageKey(), JSON.stringify([...seenLifecycleKeys].slice(-300)))
+  } catch { /* ignore quota / private-mode errors */ }
+}
 function resetNotificationState() {
   lowStockItems.value = []
   newBookings.value = []
@@ -77,12 +94,15 @@ function resetNotificationState() {
   bookingUnreadCount.value = 0
   assignmentUnreadCount.value = 0
   pendingBusinessUnreadCount.value = 0
+  lifecycleAlerts.value = []
+  lifecycleUnreadCount.value = 0
   unreadCount.value = 0
   loading.value = true
   seenIds.clear()
   seenBookingIds.clear()
   seenAssignmentIds.clear()
   seenPendingBusinessIds.clear()
+  seenLifecycleKeys.clear()
 }
 
 // Call on logout so the next person to log in on this tab starts clean.
@@ -95,7 +115,54 @@ export function resetNotifications() {
 
 function recomputeUnread() {
   unreadCount.value = stockUnreadCount.value + bookingUnreadCount.value
-    + assignmentUnreadCount.value + pendingBusinessUnreadCount.value
+    + assignmentUnreadCount.value + pendingBusinessUnreadCount.value + lifecycleUnreadCount.value
+}
+
+// Same thresholds as the Tenants tab cards and the daily database job
+// (notify_tenant_lifecycle): expiring = 30 days or less, inactive = 60+ days.
+const EXPIRY_WARN_DAYS = 30
+const INACTIVE_DAYS = 60
+
+function buildLifecycleAlerts(businesses, lifecycle) {
+  if (!Array.isArray(lifecycle)) return []
+  const life = new Map(lifecycle.map((l) => [l.business_id, l]))
+  const alerts = []
+  for (const b of businesses) {
+    const l = life.get(b.business_id)
+    if (!l) continue
+    const name = b.business_name || 'Unnamed business'
+    const left = l.days_left === null || l.days_left === undefined ? null : Number(l.days_left)
+
+    if (left !== null && b.status === 'Active' && left >= 0 && left <= EXPIRY_WARN_DAYS) {
+      // Bucket so the alert comes back as the deadline gets closer (30/14/7/3/1/0).
+      const bucket = left <= 0 ? 0 : left <= 1 ? 1 : left <= 3 ? 3 : left <= 7 ? 7 : left <= 14 ? 14 : 30
+      alerts.push({
+        key: `expiring:${b.business_id}:${bucket}:${l.subscription_expires_at}`,
+        kind: 'expiring', severity: left <= 7 ? 'high' : 'medium',
+        business_id: b.business_id, business_name: name,
+        text: left === 0 ? 'Subscription expires today' : `Subscription expires in ${left} day(s)`,
+      })
+    } else if (left !== null && left < 0 && ['Active', 'Suspended'].includes(b.status)) {
+      alerts.push({
+        key: `expired:${b.business_id}:${l.subscription_expires_at}`,
+        kind: 'expired', severity: 'high',
+        business_id: b.business_id, business_name: name,
+        text: `Subscription expired ${Math.abs(left)} day(s) ago`,
+      })
+    }
+
+    const idle = Number(l.days_inactive)
+    if (b.status === 'Active' && Number.isFinite(idle) && idle >= INACTIVE_DAYS) {
+      alerts.push({
+        key: `inactive:${b.business_id}:${Math.floor(idle / 30) * 30}:${String(l.last_activity_at || '').slice(0, 10)}`,
+        kind: 'inactive', severity: 'low',
+        business_id: b.business_id, business_name: name,
+        text: `No bookings for ${idle} days`,
+      })
+    }
+  }
+  const order = { high: 0, medium: 1, low: 2 }
+  return alerts.sort((a, c) => order[a.severity] - order[c.severity])
 }
 
 // Super-Admin-only feed: "a new business is waiting for your approval."
@@ -106,11 +173,15 @@ function recomputeUnread() {
 // available. Either path alone is enough for the badge to stay correct.
 export async function refreshPendingBusinesses() {
   try {
-    const { getPlatformBusinesses } = await import('../services/superAdminService')
-    const rows = await getPlatformBusinesses()
+    const { getPlatformBusinesses, getTenantLifecycle } = await import('../services/superAdminService')
+    const [rows, lifecycle] = await Promise.all([getPlatformBusinesses(), getTenantLifecycle()])
     const pending = rows.filter((b) => b.status === 'Pending')
     pendingBusinesses.value = pending
     pendingBusinessUnreadCount.value = pending.filter((b) => !seenPendingBusinessIds.has(b.business_id)).length
+
+    // Subscription / inactivity alerts (null = tenant_lifecycle.sql not run yet).
+    lifecycleAlerts.value = buildLifecycleAlerts(rows, lifecycle)
+    lifecycleUnreadCount.value = lifecycleAlerts.value.filter((a) => !seenLifecycleKeys.has(a.key)).length
     recomputeUnread()
   } catch (err) {
     console.error('Failed to load pending-business notifications:', err)
@@ -209,6 +280,9 @@ function markAllRead() {
   pendingBusinesses.value.forEach((b) => seenPendingBusinessIds.add(b.business_id))
   saveSeenPending()
   pendingBusinessUnreadCount.value = 0
+  lifecycleAlerts.value.forEach((a) => seenLifecycleKeys.add(a.key))
+  saveSeenLifecycle()
+  lifecycleUnreadCount.value = 0
   recomputeUnread()
 }
 
@@ -238,6 +312,7 @@ export function useNotifications() {
     // Their one alert is "a new business just registered and needs review."
     if (isSuperAdmin) {
       loadSeenPending()
+      loadSeenLifecycle()
       newBookings.value = []
       lowStockItems.value = []
       bookingUnreadCount.value = 0
@@ -379,6 +454,8 @@ export function useNotifications() {
     bookingUnreadCount,
     assignmentUnreadCount,
     pendingBusinessUnreadCount,
+    lifecycleAlerts,
+    lifecycleUnreadCount,
     loading,
     markAllRead,
     refresh: refreshStock,

@@ -927,7 +927,16 @@ function barHeight(m) {
 const EXPIRY_WARN_DAYS = 30   // "expiring soon" window
 const INACTIVE_DAYS = 60      // no booking activity for this long = inactive
 const lifecycleReady = ref(false) // false until tenant_lifecycle.sql has been run
-const lifecycleFilter = ref('')   // '' | 'Expiring' | 'Expired' | 'Inactive'
+const LIFECYCLE_FILTERS = ['Expiring', 'Expired', 'Inactive']
+const lifecycleFilter = ref(LIFECYCLE_FILTERS.includes(route.query.lifecycle) ? route.query.lifecycle : '')   // '' | 'Expiring' | 'Expired' | 'Inactive'
+// Clicking a subscription/inactivity alert in the bell lands here with ?lifecycle=...
+watch(() => route.query.lifecycle, (f) => {
+  if (LIFECYCLE_FILTERS.includes(f)) {
+    mainTab.value = 'Tenants'
+    statusFilter.value = 'All'
+    lifecycleFilter.value = f
+  }
+})
 
 function isLiveTenant(b) { return b.status === 'Active' || b.status === 'Suspended' }
 function isExpiring(b) {
