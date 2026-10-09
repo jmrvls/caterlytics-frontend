@@ -1116,10 +1116,10 @@ async function handleSaveMenu() {
   }
   const badLimit = MENU_CATEGORIES.filter((cat) => {
     const n = menuForm.value[cat]?.max_selections
-    return n != null && n !== '' && (!Number.isInteger(Number(n)) || Number(n) < 0)
+    return n != null && n !== '' && (!Number.isInteger(Number(n)) || Number(n) < 1)
   })
   if (badLimit.length) {
-    menuError.value = `Pick limit must be a whole number: ${badLimit.join(', ')}.`
+    menuError.value = `Pick limit must be a whole number of 1 or more: ${badLimit.join(', ')}. (Leave it blank and untick the dishes to remove that category.)`
     return
   }
 

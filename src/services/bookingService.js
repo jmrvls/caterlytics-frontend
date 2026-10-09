@@ -72,6 +72,29 @@ export async function getBookingStatusCounts() {
   return counts;
 }
 
+// Mirrors the package's own guest range (min_guests / max_guests, null = no
+// limit). Without this, the range was only a "Heads up" hint in the UI and a
+// client could book any guest count, or dodge the range by editing the booking.
+async function assertPackageGuestRange(packageId, guestCount) {
+  if (!packageId) return;
+  const { data: pkg, error } = await supabase
+    .from('tbl_menu_packages')
+    .select('package_name, min_guests, max_guests')
+    .eq('package_id', packageId)
+    .maybeSingle();
+
+  if (error) throw new Error("Couldn't verify the package's guest limits. Please try again.");
+  if (!pkg) throw new Error('The selected package no longer exists. Please pick another one.');
+
+  const { package_name: name, min_guests: min, max_guests: max } = pkg;
+  if (min != null && guestCount < min) {
+    throw new Error(`"${name}" needs at least ${min} guests (you entered ${guestCount}). Please increase the guest count or pick another package.`);
+  }
+  if (max != null && guestCount > max) {
+    throw new Error(`"${name}" is for up to ${max} guests (you entered ${guestCount}). Please lower the guest count or pick another package.`);
+  }
+}
+
 export async function createBooking(bookingData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('You must be logged in.');
@@ -98,6 +121,7 @@ export async function createBooking(bookingData) {
   if (!bookingData.event_date) {
     throw new Error('Event date is required.');
   }
+  await assertPackageGuestRange(bookingData.package_id, guestCount);
   // Same rule as the database trigger (trg_booking_date_guard); the date
   // input's min= can be bypassed, this and the trigger cannot.
   if (bookingData.event_date < localToday()) {
@@ -288,7 +312,7 @@ export async function updateMyBooking(id, updates) {
 
   const { data: currentBooking, error: fetchError } = await supabase
     .from('tbl_bookings')
-    .select('booking_status, created_by, event_date, quoted_total, promo_code, loyalty_points_used')
+    .select('booking_status, created_by, event_date, guest_count, package_id, quoted_total, promo_code, loyalty_points_used')
     .eq('booking_id', id)
     .single();
 
@@ -306,6 +330,13 @@ export async function updateMyBooking(id, updates) {
   }
   if (newGuests > MAX_GUESTS) {
     throw new Error(`Guest count cannot be more than ${MAX_GUESTS.toLocaleString()}.`);
+  }
+  // Only re-check the package's guest range when the guest count or the package
+  // actually changed, so an old booking whose package range was edited later can
+  // still have its time/location/date updated.
+  const newPackageId = updates.package_id || null;
+  if (newGuests !== Number(currentBooking.guest_count) || newPackageId !== (currentBooking.package_id ?? null)) {
+    await assertPackageGuestRange(newPackageId, newGuests);
   }
   if (updates.event_date && updates.event_date !== currentBooking.event_date && updates.event_date < localToday()) {
     throw new Error('Event date cannot be in the past.');

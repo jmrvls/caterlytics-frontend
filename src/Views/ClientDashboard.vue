@@ -896,7 +896,7 @@
                 <select v-model="editForm.package_id" @change="handleEditPackageChange" :disabled="!editBusinessId" required class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100">
                   <option value="" disabled>{{ editBusinessId ? 'Select a package' : 'Select a business first' }}</option>
                   <option v-for="p in editBusinessPackages" :key="p.package_id" :value="p.package_id">
-                    {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head
+                    {{ p.package_name }} — ₱{{ formatPrice(p.price_per_head) }}/head<template v-if="guestRangeLabel(p)"> ({{ guestRangeLabel(p) }})</template>
                   </option>
                 </select>
               </div>
