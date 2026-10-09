@@ -133,7 +133,10 @@ export async function loginUser(identifier, password) {
 // server, so no login session is ever opened on the browser.
 // ---------------------------------------------------------------------------
 async function callPhoneOtp(body) {
-  const { data, error } = await supabase.functions.invoke('phone-otp', { body });
+  // Optional: run the function in the same region as the database (e.g.
+  // VITE_SUPABASE_FUNCTIONS_REGION=ap-southeast-1) so its queries are fast.
+  const region = import.meta.env.VITE_SUPABASE_FUNCTIONS_REGION;
+  const { data, error } = await supabase.functions.invoke('phone-otp', region ? { body, region } : { body });
   if (error) {
     let message = 'Something went wrong. Please try again.';
     // HTTP status of the function's reply (undefined when the request never

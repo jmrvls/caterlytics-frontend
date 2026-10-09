@@ -97,22 +97,26 @@ function validatePassword(pw: string) {
 async function throttle(phone: string, purpose: string) {
   const now = Date.now();
 
-  const { data: last } = await admin.from('tbl_otp_codes').select('created_at')
-    .eq('phone', phone).eq('purpose', purpose)
-    .order('created_at', { ascending: false }).limit(1);
+  const hourAgo = new Date(now - 60 * 60 * 1000).toISOString();
+
+  // The three checks are independent, so run them at the same time instead of
+  // one after another (saves two database round trips per send).
+  const [{ data: last }, { count: phoneCount }, { count: globalCount }] = await Promise.all([
+    admin.from('tbl_otp_codes').select('created_at')
+      .eq('phone', phone).eq('purpose', purpose)
+      .order('created_at', { ascending: false }).limit(1),
+    admin.from('tbl_otp_codes')
+      .select('id', { count: 'exact', head: true }).eq('phone', phone).gte('created_at', hourAgo),
+    admin.from('tbl_otp_codes')
+      .select('id', { count: 'exact', head: true }).gte('created_at', hourAgo),
+  ]);
+
   if (last?.length && now - new Date(last[0].created_at).getTime() < RESEND_COOLDOWN_MS) {
     throw new HttpError(429, 'Please wait a minute before requesting another code.');
   }
-
-  const hourAgo = new Date(now - 60 * 60 * 1000).toISOString();
-  const { count: phoneCount } = await admin.from('tbl_otp_codes')
-    .select('id', { count: 'exact', head: true }).eq('phone', phone).gte('created_at', hourAgo);
   if ((phoneCount ?? 0) >= MAX_PER_PHONE_PER_HOUR) {
     throw new HttpError(429, 'Too many code requests for this number. Please try again in an hour.');
   }
-
-  const { count: globalCount } = await admin.from('tbl_otp_codes')
-    .select('id', { count: 'exact', head: true }).gte('created_at', hourAgo);
   if ((globalCount ?? 0) >= MAX_GLOBAL_PER_HOUR) {
     throw new HttpError(429, 'Too many requests right now. Please try again later.');
   }
@@ -155,14 +159,16 @@ async function handleSend(body: any) {
   const phone = normalizePhone(body.phone);
   if (!phone) throw new HttpError(400, 'Please enter a valid Philippine mobile number (e.g. 0917 123 4567).');
 
-  const matches = await profilesByPhone(phone);
   if (purpose === 'register') {
-    if (matches.length) throw new HttpError(409, 'That contact number is already registered.');
     const username = String(body.username ?? '').trim();
     // Reject a bad username BEFORE texting, so no SMS credit is wasted.
     if (!isValidUsername(username)) throw new HttpError(400, USERNAME_MSG);
-    if (await usernameTaken(username)) throw new HttpError(409, 'That username is already taken.');
+    // Independent lookups -> run together.
+    const [matches, taken] = await Promise.all([profilesByPhone(phone), usernameTaken(username)]);
+    if (matches.length) throw new HttpError(409, 'That contact number is already registered.');
+    if (taken) throw new HttpError(409, 'That username is already taken.');
   } else {
+    const matches = await profilesByPhone(phone);
     // Don't reveal whether a number has an account.
     if (!matches.length) return { ok: true };
     if (matches.length > 1) {
@@ -173,22 +179,26 @@ async function handleSend(body: any) {
   await throttle(phone, purpose);
 
   // Housekeeping + invalidate any earlier unused code for this number.
-  await admin.from('tbl_otp_codes').delete().lt('created_at', new Date(Date.now() - 24 * 3600 * 1000).toISOString());
-  await admin.from('tbl_otp_codes').update({ consumed: true })
-    .eq('phone', phone).eq('purpose', purpose).eq('consumed', false);
-
   const code = randomCode();
+  const [, , codeHash] = await Promise.all([
+    admin.from('tbl_otp_codes').delete().lt('created_at', new Date(Date.now() - 24 * 3600 * 1000).toISOString()),
+    admin.from('tbl_otp_codes').update({ consumed: true })
+      .eq('phone', phone).eq('purpose', purpose).eq('consumed', false),
+    hashCode(phone, purpose, code),
+  ]);
   const { data: inserted, error: insErr } = await admin.from('tbl_otp_codes').insert({
     phone,
     purpose,
-    code_hash: await hashCode(phone, purpose, code),
+    code_hash: codeHash,
     expires_at: new Date(Date.now() + CODE_TTL_MS).toISOString(),
   }).select('id').single();
   if (insErr || !inserted) throw new Error(`insert otp: ${insErr?.message}`);
 
   try {
     // Under 160 characters = 1 SMS unit.
+    const smsStart = performance.now();
     await sendSms(phone, `Caterlytics: ${code} is your verification code. It expires in 5 minutes. Do not share it.`);
+    console.log(`phone-otp PhilSMS took ${Math.round(performance.now() - smsStart)}ms`);
   } catch (e) {
     await admin.from('tbl_otp_codes').delete().eq('id', inserted.id);
     console.error('sendSms failed:', (e as Error).message);
@@ -211,8 +221,9 @@ async function handleRegister(body: any) {
   validatePassword(password);
 
   // Check before spending the code so a taken username doesn't burn it.
-  if ((await profilesByPhone(phone)).length) throw new HttpError(409, 'That contact number is already registered.');
-  if (await usernameTaken(username)) throw new HttpError(409, 'That username is already taken.');
+  const [existing, taken] = await Promise.all([profilesByPhone(phone), usernameTaken(username)]);
+  if (existing.length) throw new HttpError(409, 'That contact number is already registered.');
+  if (taken) throw new HttpError(409, 'That username is already taken.');
 
   const codeId = await checkCode(phone, 'register', body.code, true);
 
@@ -259,8 +270,11 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return reply({ error: 'Method not allowed.' }, 405);
 
+  const t0 = performance.now();
+  let action = 'unknown';
   try {
     const body = await req.json();
+    action = String(body?.action ?? 'unknown');
     switch (body?.action) {
       case 'send':
         return reply(await handleSend(body));
@@ -281,5 +295,8 @@ Deno.serve(async (req) => {
     if (e instanceof HttpError) return reply({ error: e.message }, e.status);
     console.error('phone-otp failed:', (e as Error).message);
     return reply({ error: 'Something went wrong. Please try again.' }, 500);
+  } finally {
+    // Shows up in Dashboard > Edge Functions > phone-otp > Logs.
+    console.log(`phone-otp ${action} took ${Math.round(performance.now() - t0)}ms`);
   }
 });
