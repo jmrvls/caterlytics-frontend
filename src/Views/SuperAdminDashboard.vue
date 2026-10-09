@@ -105,12 +105,12 @@
       <!-- MAIN TABS -->
       <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 sm:mb-10 overflow-x-auto no-scrollbar">
         <button
-          v-for="t in ['Tenants', 'Analytics', 'Communication']" :key="t"
+          v-for="t in ['Tenants', 'Analytics', 'Config', 'Communication']" :key="t"
           type="button"
           @click="mainTab = t"
           :class="mainTab === t ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
           class="px-5 py-3 sm:py-3.5 text-sm font-bold border-b-2 -mb-px transition whitespace-nowrap"
-        >{{ t === 'Analytics' ? 'Platform Analytics' : t === 'Communication' ? 'Communication Hub' : 'Tenants' }}</button>
+        >{{ t === 'Analytics' ? 'Platform Analytics' : t === 'Config' ? 'Global Config' : t === 'Communication' ? 'Communication Hub' : 'Tenants' }}</button>
       </div>
 
       <template v-if="mainTab === 'Tenants'">
@@ -514,6 +514,8 @@
       </div>
 
       <!-- ============ COMMUNICATION HUB ============ -->
+      <GlobalConfigPanel v-else-if="mainTab === 'Config'" />
+
       <AnnouncementsPanel v-else-if="mainTab === 'Communication'" />
     </main>
 
@@ -731,6 +733,7 @@ import autoTable from 'jspdf-autotable'
 import logoUrl from '../Assets/logofinal.png'
 import NotificationBell from '../Components/SuperAdminBell.vue'
 import AnnouncementsPanel from '../Components/AnnouncementsPanel.vue'
+import GlobalConfigPanel from '../Components/GlobalConfigPanel.vue'
 import { logoutUser } from '../services/authService'
 import { logActivity } from '../services/activitylogservice'
 import { localToday, formatDateOnly } from '../utils/date'
@@ -784,7 +787,7 @@ const stats = ref({
 const businesses = ref([])
 
 // ---------- Platform analytics (bookings + revenue per tenant, peak months) ----------
-const mainTab = ref('Tenants') // 'Tenants' | 'Analytics' | 'Communication'
+const mainTab = ref('Tenants') // 'Tenants' | 'Analytics' | 'Config' | 'Communication'
 const ANALYTICS_RANGES = [
   { key: '6M', label: 'Last 6 months' },
   { key: '12M', label: 'Last 12 months' },

@@ -1,6 +1,7 @@
 import { supabase } from '../supabaseClient';
 import { toTitleCase } from '../utils/textFormat';
 import { localToday } from '../utils/date';
+import { getPlatformSettings, checkBookingRules, checkCancellation } from './platformSettingsService';
 
 // Mirrors the database CHECK (guest_count_positive) so users get a clear message.
 export const MAX_GUESTS = 5000;
@@ -101,6 +102,18 @@ export async function createBooking(bookingData) {
   // input's min= can be bypassed, this and the trigger cannot.
   if (bookingData.event_date < localToday()) {
     throw new Error('Event date cannot be in the past.');
+  }
+  // Super Admin's platform-wide booking rules (global_config.sql). Lead time /
+  // advance limits are for clients (the only callers that pass business_id);
+  // the guest cap applies to everyone. The database trigger is the real
+  // enforcement -- this just gives a clear message first.
+  {
+    const { settings } = await getPlatformSettings();
+    const ruleError = checkBookingRules(settings, {
+      event_date: bookingData.business_id ? bookingData.event_date : undefined,
+      guest_count: guestCount,
+    });
+    if (ruleError) throw new Error(ruleError);
   }
 
   const contactNumber = String(bookingData.client_contact_number || '').replace(/[\s-]/g, '');
@@ -239,6 +252,19 @@ export async function deleteBooking(id) {
 // booking policy) enforces that a Client can only touch their own
 // bookings, only while Pending/Confirmed, and can only move to Cancelled.
 export async function cancelMyBooking(id) {
+  // Platform cancellation policy: online cancellation closes N days before the
+  // event (set by the Super Admin). The database trigger enforces the same rule.
+  const { data: existing } = await supabase
+    .from('tbl_bookings')
+    .select('event_date')
+    .eq('booking_id', id)
+    .maybeSingle();
+  if (existing?.event_date) {
+    const { settings } = await getPlatformSettings();
+    const rule = checkCancellation(settings, existing.event_date);
+    if (!rule.allowed) throw new Error(rule.message);
+  }
+
   // If the booking was Confirmed, the database trigger gives the deducted
   // ingredients back to inventory automatically.
   const { data, error } = await supabase
@@ -283,6 +309,14 @@ export async function updateMyBooking(id, updates) {
   }
   if (updates.event_date && updates.event_date !== currentBooking.event_date && updates.event_date < localToday()) {
     throw new Error('Event date cannot be in the past.');
+  }
+  {
+    const { settings } = await getPlatformSettings();
+    const ruleError = checkBookingRules(settings, {
+      event_date: updates.event_date && updates.event_date !== currentBooking.event_date ? updates.event_date : undefined,
+      guest_count: newGuests,
+    });
+    if (ruleError) throw new Error(ruleError);
   }
 
   // If the date is changing, re-check for conflicts (excluding this booking).

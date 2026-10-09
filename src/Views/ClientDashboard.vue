@@ -396,7 +396,7 @@
                     v-model="form.event_date"
                     @change="handleDateCheck"
                     required
-                    :min="todayStr"
+                    :min="minEventDate" :max="maxEventDate"
                     class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
                   />
                 </div>
@@ -573,11 +573,16 @@
                   <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
                     Est. Total: ₱{{ formatPrice(quote ? quote.total : (selectedPackage.price_per_head || 0) * (form.guest_count || 0) + addonsSubtotal) }}
                   </p>
+                  <template v-if="feeBreakdown.serviceFee > 0 || feeBreakdown.tax > 0">
+                    <p v-if="feeBreakdown.serviceFee > 0" class="text-xs mt-1 text-gray-500 dark:text-gray-400">Service fee: +{{ platformMoney(feeBreakdown.serviceFee) }}</p>
+                    <p v-if="feeBreakdown.tax > 0" class="text-xs mt-0.5 text-gray-500 dark:text-gray-400">{{ platform.tax_label }} ({{ platform.tax_rate_percent }}%): +{{ platformMoney(feeBreakdown.tax) }}</p>
+                    <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">Total with fees: {{ platformMoney(feeBreakdown.total) }}</p>
+                  </template>
                   <p v-if="quote && quote.loyalty_enabled && quote.points_to_earn > 0" class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">You'll earn about {{ quote.points_to_earn }} points when this booking is completed.</p>
                 </div>
                 <div class="flex-1">
                   <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
-                  <input type="number" v-model.number="form.guest_count" required min="1" max="5000" step="1" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+                  <input type="number" v-model.number="form.guest_count" required min="1" :max="platform.max_guests" step="1" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
                 </div>
               </div>
 
@@ -814,6 +819,10 @@
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
             This is for <span class="font-semibold text-gray-700 dark:text-gray-200">{{ formatDate(bookingToCancel.event_date) }}</span> at {{ bookingToCancel.event_location }}. This can't be undone once cancelled.
           </p>
+          <p v-if="!cancelRule.allowed" class="text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-3">{{ cancelRule.message }}</p>
+          <p v-if="platform.cancellation_policy" class="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-lg p-3 mb-3">
+            <span class="font-semibold">Cancellation policy:</span> {{ platform.cancellation_policy }}
+          </p>
           <p
             v-if="bookingToCancel.tbl_payments && Number(bookingToCancel.tbl_payments.amount_paid) > 0"
             class="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-5"
@@ -824,7 +833,7 @@
             <button @click="bookingToCancel = null" class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
               Keep Booking
             </button>
-            <button @click="handleCancelBooking" :disabled="isCancelling" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
+            <button @click="handleCancelBooking" :disabled="isCancelling || !cancelRule.allowed" class="flex-1 bg-red-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 disabled:opacity-50">
               {{ isCancelling ? 'Cancelling...' : 'Yes, Cancel' }}
             </button>
           </div>
@@ -846,7 +855,7 @@
                   v-model="editForm.event_date"
                   @change="handleEditDateCheck"
                   required
-                  :min="todayStr"
+                  :min="minEventDate" :max="maxEventDate"
                   class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100"
                 />
               </div>
@@ -880,7 +889,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Number of Guests</label>
-                <input type="number" v-model.number="editForm.guest_count" required min="1" max="5000" step="1" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
+                <input type="number" v-model.number="editForm.guest_count" required min="1" :max="platform.max_guests" step="1" class="w-full mt-1 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900 dark:text-gray-100" />
               </div>
               <div>
                 <label class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Catering Package</label>
@@ -1019,6 +1028,7 @@ import { supabase } from '../supabaseClient'
 import { logoutUser } from '../services/authService'
 import { getMyProfile } from '../services/profileService'
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { getPlatformSettings, bookingDateRange, checkCancellation, computeFees, SETTINGS_DEFAULTS } from '../services/platformSettingsService'
 import { useRouter } from 'vue-router'
 import { PORTIONS, getSelectionsForBookings, createBooking, getMyBookings, checkDateConflict, getTakenDates, cancelMyBooking, updateMyBooking, setBookingSelections, getBookingSelections } from '../services/bookingService'
 import { getAllPackages, getPackageMenu, MENU_CATEGORIES } from '../services/packageService'
@@ -1093,6 +1103,28 @@ let currentUserId = ''
 // Local date (NOT toISOString, which is UTC and gives "yesterday" in the
 // Philippines between 12:00 AM and 8:00 AM).
 const todayStr = toDateStr(new Date())
+
+// ---------- Platform-wide rules set by the Super Admin (Global Config) ----------
+// Falls back to harmless defaults if global_config.sql has not been run.
+const platform = ref({ ...SETTINGS_DEFAULTS })
+const minEventDate = computed(() => bookingDateRange(platform.value).min)
+const maxEventDate = computed(() => bookingDateRange(platform.value).max)
+onMounted(async () => {
+  const res = await getPlatformSettings()
+  platform.value = res.settings
+})
+const cancelRule = computed(() =>
+  bookingToCancel.value ? checkCancellation(platform.value, bookingToCancel.value.event_date) : { allowed: true, message: '' }
+)
+// Service fee + tax shown on top of the quoted total. The quote itself still
+// comes from the server; these lines are the platform default fee/tax estimate.
+const estSubtotal = computed(() =>
+  selectedPackage.value
+    ? (quote.value ? Number(quote.value.total) : (selectedPackage.value.price_per_head || 0) * (form.value.guest_count || 0) + addonsSubtotal.value)
+    : 0
+)
+const feeBreakdown = computed(() => computeFees(platform.value, estSubtotal.value))
+const platformMoney = (n) => `${platform.value.currency_symbol}${formatPrice(n)}`
 
 // ---------- Availability calendar (Book Catering step) ----------
 // Shows a whole month of a business's Pending/Confirmed dates up front, so
