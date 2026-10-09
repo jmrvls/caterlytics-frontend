@@ -104,9 +104,11 @@ export async function loginUser(identifier, password) {
     }
   }
 
-  // Activity tracking: record the sign-in for business accounts (best-effort,
-  // never blocks login).
-  if (profile.business_id) await logActivity('LOGIN', 'Auth', 'Signed in');
+  // Activity tracking: record the sign-in for business accounts AND the platform
+  // Super Admin (best-effort, never blocks login). The Super Admin has no
+  // business_id, so checking business_id alone left their sign-ins unlogged
+  // while their sign-outs were logged.
+  if (profile.business_id || profile.role === 'Super Admin') await logActivity('LOGIN', 'Auth', 'Signed in');
 
   return {
     message: 'Login successful',

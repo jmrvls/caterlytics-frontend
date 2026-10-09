@@ -40,6 +40,12 @@ export const TABLE_LABELS = {
   tbl_fleet_settings: 'Fleet settings',
 };
 
+// Tables that only the platform Super Admin touches. Kept separate from
+// TABLE_LABELS so they don't appear in the tenant owners' filter dropdown.
+export const PLATFORM_TABLE_LABELS = {
+  tbl_announcements: 'Announcement',
+};
+
 export const ACTION_LABELS = { INSERT: 'Created', UPDATE: 'Updated', DELETE: 'Deleted' };
 
 export async function getAuditLog({ limit = 25, offset = 0, table = null, action = null, actor = null, from = null, to = null } = {}) {

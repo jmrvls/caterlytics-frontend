@@ -732,6 +732,7 @@ import logoUrl from '../Assets/logofinal.png'
 import NotificationBell from '../Components/SuperAdminBell.vue'
 import AnnouncementsPanel from '../Components/AnnouncementsPanel.vue'
 import { logoutUser } from '../services/authService'
+import { logActivity } from '../services/activitylogservice'
 import { localToday, formatDateOnly } from '../utils/date'
 import { supabase } from '../supabaseClient'
 import { resetNotifications, refreshPendingBusinesses } from '../composables/useNotifications'
@@ -1278,6 +1279,8 @@ async function exportPDF() {
 
   const dateSlug = localToday()
   doc.save(`caterlytics-platform-${statusFilter.value.toLowerCase()}-${dateSlug}.pdf`)
+  // Audit: the Super Admin's exports are recorded like tenants' are.
+  logActivity('EXPORT', 'Platform Console', `Exported platform report PDF (${filteredBusinesses.value.length} businesses, filter: ${statusFilter.value}${lifecycleFilter.value ? ' / ' + lifecycleFilter.value : ''})`)
 }
 
 let refreshTimer = null

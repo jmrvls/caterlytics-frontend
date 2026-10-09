@@ -163,7 +163,9 @@ import logoUrl from '../Assets/logofinal.png'
 import { logoutUser } from '../services/authService'
 import { resetNotifications } from '../composables/useNotifications'
 import { getPlatformAuditLog, getPlatformBusinesses } from '../services/superAdminService'
-import { logActivity, TABLE_LABELS, ACTION_LABELS, describeChange } from '../services/activitylogservice'
+import { logActivity, TABLE_LABELS as TENANT_TABLE_LABELS, PLATFORM_TABLE_LABELS, ACTION_LABELS, describeChange } from '../services/activitylogservice'
+
+const TABLE_LABELS = { ...TENANT_TABLE_LABELS, ...PLATFORM_TABLE_LABELS }
 
 const router = useRouter()
 const userName = ref('')
@@ -217,9 +219,15 @@ const show = (v) => {
   if (typeof v === 'string' && ISO_TS.test(v) && !isNaN(new Date(v))) return formatWhen(v)
   return String(v)
 }
-const subjectOf = (r) => r.source === 'changes'
-  ? `${TABLE_LABELS[r.table_name] || r.table_name}${r.record_id ? ' #' + r.record_id : ''}`
-  : (r.summary || '—')
+const subjectOf = (r) => {
+  if (r.source !== 'changes') return r.summary || '—'
+  // announcements are keyed by a long UUID -- show their title instead
+  if (r.table_name === 'tbl_announcements') {
+    const title = (r.new_data || r.old_data || {}).title
+    return title ? `Announcement: ${title}` : 'Announcement'
+  }
+  return `${TABLE_LABELS[r.table_name] || r.table_name}${r.record_id ? ' #' + r.record_id : ''}`
+}
 const changesOf = (r) => (r.source === 'changes' ? describeChange(r) : [])
 const toggleRow = (id) => { expanded.value = expanded.value === id ? null : id }
 
