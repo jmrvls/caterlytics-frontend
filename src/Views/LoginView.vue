@@ -20,7 +20,7 @@
       >
         <div
           class="relative overflow-hidden"
-          style="aspect-ratio: 978 / 629; width: min(94cqw, calc(94cqh * 978 / 629)); transform: translateX(3cqw)"
+          style="aspect-ratio: 978 / 629; width: min(80cqw, calc(80cqh * 978 / 629)); transform: translateX(2cqw)"
         >
           <img
             :src="loginBgUrl"
