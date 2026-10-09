@@ -281,11 +281,12 @@
 
     <!-- UPLOAD / EDIT MODAL -->
     <div v-if="showModal" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/50" @click="closeModal"></div>
+      <div class="absolute inset-0 bg-black/50" @click="onBackdropClick"></div>
       <div class="relative bg-white dark:bg-gray-800 w-full max-w-lg max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-xl">
         <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">{{ editing ? 'Edit Document' : 'Upload Document' }}</h3>
 
         <div v-if="modalError" class="text-red-600 dark:text-red-400 text-sm font-medium mb-3">{{ modalError }}</div>
+        <div v-if="modalHint" class="text-amber-600 dark:text-amber-400 text-sm font-medium mb-3">{{ modalHint }}</div>
 
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Document title</label>
         <input v-model="form.title" type="text" maxlength="150" placeholder="e.g. Mayor's Permit 2026" class="mb-3 w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
@@ -328,8 +329,21 @@
         </p>
 
         <div class="flex gap-3">
-          <button @click="closeModal" :disabled="isSaving" class="flex-1 py-2.5 border border-gray-200 dark:border-gray-700 rounded-none text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition">Cancel</button>
+          <button @click="onCancelClick" :disabled="isSaving" class="flex-1 py-2.5 border border-gray-200 dark:border-gray-700 rounded-none text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition">Cancel</button>
           <button @click="submitForm" :disabled="isSaving" class="flex-1 py-2.5 bg-emerald-600 text-white rounded-none text-sm font-semibold hover:bg-emerald-700 disabled:opacity-60 transition">{{ isSaving ? (editing ? 'Saving...' : 'Uploading...') : (editing ? 'Save changes' : 'Upload') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DISCARD CHANGES CONFIRM -->
+    <div v-if="confirmDiscard" class="fixed inset-0 z-[80] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50" @click="confirmDiscard = false"></div>
+      <div class="relative bg-white dark:bg-gray-800 w-full max-w-sm p-5 sm:p-6 shadow-xl">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-2">Discard your changes?</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mb-5">What you typed or chose will be lost.</p>
+        <div class="flex gap-3">
+          <button @click="confirmDiscard = false" class="flex-1 py-2.5 border border-gray-200 dark:border-gray-700 rounded-none text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition">Keep editing</button>
+          <button @click="discardAndClose" class="flex-1 py-2.5 bg-red-600 text-white rounded-none text-sm font-semibold hover:bg-red-700 transition">Discard</button>
         </div>
       </div>
     </div>
@@ -406,6 +420,15 @@ const isDeleting = ref(false)
 const emptyForm = () => ({ title: '', doc_type: '', party_name: '', reference_no: '', issue_date: '', expiry_date: '', notes: '' })
 const form = ref(emptyForm())
 
+// Unsaved-changes protection: a stray click on the dark backdrop used to close the
+// modal and the next open wiped everything the user had typed.
+const modalHint = ref('')
+const confirmDiscard = ref(false)
+let initialSnapshot = ''
+let hintTimer = null
+const snapshotForm = () => { initialSnapshot = JSON.stringify(form.value) }
+const isDirty = computed(() => showModal.value && (JSON.stringify(form.value) !== initialSnapshot || !!chosenFile.value))
+
 const summary = computed(() => summarize(docs.value))
 
 const filteredDocs = computed(() => {
@@ -467,6 +490,9 @@ function openUpload() {
   form.value = emptyForm()
   chosenFile.value = null
   modalError.value = ''
+  modalHint.value = ''
+  confirmDiscard.value = false
+  snapshotForm()
   showModal.value = true
 }
 
@@ -479,12 +505,36 @@ function openEdit(d) {
   }
   chosenFile.value = null
   modalError.value = ''
+  modalHint.value = ''
+  confirmDiscard.value = false
+  snapshotForm()
   showModal.value = true
 }
 
 function closeModal() {
   if (isSaving.value) return
   showModal.value = false
+}
+
+// Click on the dark area outside the modal: only closes it if nothing was typed/chosen.
+function onBackdropClick() {
+  if (isSaving.value) return
+  if (!isDirty.value) { closeModal(); return }
+  modalHint.value = 'You have unsaved changes. Save them, or press Cancel to discard.'
+  clearTimeout(hintTimer)
+  hintTimer = setTimeout(() => { modalHint.value = '' }, 3500)
+}
+
+// Cancel button: asks first if there is something to lose.
+function onCancelClick() {
+  if (isSaving.value) return
+  if (isDirty.value) { confirmDiscard.value = true; return }
+  closeModal()
+}
+
+function discardAndClose() {
+  confirmDiscard.value = false
+  closeModal()
 }
 
 function onFileChosen(e) {

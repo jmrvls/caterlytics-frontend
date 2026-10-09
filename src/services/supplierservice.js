@@ -45,25 +45,49 @@ export async function updateSupplier(id, form) {
   return data;
 }
 
+// Supabase reports success even when an update/delete matched NO rows (row already
+// gone, or blocked by RLS). Asking for the affected rows back lets us tell the user
+// the truth instead of showing a fake "success" message.
+function ensureAffected(data, message) {
+  if (!data || !data.length) {
+    const err = new Error(message);
+    err.code = 'NO_ROWS_AFFECTED';
+    throw err;
+  }
+}
+
 export async function setSupplierActive(id, isActive) {
-  const { error } = await supabase.from('tbl_suppliers').update({ is_active: isActive }).eq('supplier_id', id);
+  const { data, error } = await supabase.from('tbl_suppliers').update({ is_active: isActive }).eq('supplier_id', id).select('supplier_id');
   if (error) throw fail(error, 'Failed to update supplier.');
+  ensureAffected(data, 'That supplier could not be updated. It may have been deleted. Please refresh.');
 }
 
 export async function deleteSupplier(id) {
-  const { error } = await supabase.from('tbl_suppliers').delete().eq('supplier_id', id);
+  const { data, error } = await supabase.from('tbl_suppliers').delete().eq('supplier_id', id).select('supplier_id');
   if (error) throw fail(error, 'Failed to delete supplier.');
+  ensureAffected(data, 'That supplier could not be deleted. It may already be gone. Please refresh.');
 }
 
 // Orders come with their supplier and lines in one request.
+// Loaded page by page (newest first) so old orders never silently disappear, which
+// would also make each supplier's order count and received value too low.
+const PO_PAGE_SIZE = 500;
+const PO_MAX_PAGES = 20; // safety cap: 10,000 orders
 export async function getPurchaseOrders() {
-  const { data, error } = await supabase
-    .from('tbl_purchase_orders')
-    .select('*, supplier:tbl_suppliers(supplier_name, contact_person, contact_number), items:tbl_purchase_order_items(*)')
-    .order('created_at', { ascending: false })
-    .limit(500);
-  if (error) throw fail(error, 'Failed to load purchase orders.');
-  return (data || []).map((po) => ({ ...po, items: (po.items || []).sort((a, b) => a.po_item_id - b.po_item_id) }));
+  const all = [];
+  for (let page = 0; page < PO_MAX_PAGES; page += 1) {
+    const from = page * PO_PAGE_SIZE;
+    const { data, error } = await supabase
+      .from('tbl_purchase_orders')
+      .select('*, supplier:tbl_suppliers(supplier_name, contact_person, contact_number), items:tbl_purchase_order_items(*)')
+      .order('created_at', { ascending: false })
+      .order('po_id', { ascending: false })
+      .range(from, from + PO_PAGE_SIZE - 1);
+    if (error) throw fail(error, 'Failed to load purchase orders.');
+    all.push(...(data || []));
+    if (!data || data.length < PO_PAGE_SIZE) break;
+  }
+  return all.map((po) => ({ ...po, items: (po.items || []).sort((a, b) => a.po_item_id - b.po_item_id) }));
 }
 
 // Creates (no po_id) or edits a draft. markOrdered places the order straight away.
@@ -74,14 +98,42 @@ export async function savePurchaseOrder(form, { markOrdered = false } = {}) {
 }
 
 // Draft -> Ordered, or Draft/Ordered -> Cancelled. (Received goes through receivePurchaseOrder.)
-export async function setPurchaseOrderStatus(id, status) {
-  const { error } = await supabase.from('tbl_purchase_orders').update({ status }).eq('po_id', id);
-  if (error) throw fail(error, 'Failed to update the order.');
+// The change only goes through if the order is STILL in a status that allows it. A stale
+// screen (another tab/admin already received or cancelled the order) can no longer flip
+// the status back or cancel an order whose stock was already added.
+const ALLOWED_FROM = {
+  Ordered: ['Draft'],
+  Cancelled: ['Draft', 'Ordered'],
+};
+function statusChanged() {
+  const err = new Error('This order was changed by someone else, so the action was not applied. The list has been refreshed.');
+  err.code = 'STATUS_CHANGED';
+  return err;
 }
 
+export async function setPurchaseOrderStatus(id, status) {
+  const from = ALLOWED_FROM[status];
+  if (!from) throw new Error(`Cannot change an order to "${status}" here.`);
+  const { data, error } = await supabase
+    .from('tbl_purchase_orders')
+    .update({ status })
+    .eq('po_id', id)
+    .in('status', from)
+    .select('po_id');
+  if (error) throw fail(error, 'Failed to update the order.');
+  if (!data || !data.length) throw statusChanged();
+}
+
+// Only Draft or Cancelled orders can be deleted (the screen only offers it for those).
 export async function deletePurchaseOrder(id) {
-  const { error } = await supabase.from('tbl_purchase_orders').delete().eq('po_id', id);
+  const { data, error } = await supabase
+    .from('tbl_purchase_orders')
+    .delete()
+    .eq('po_id', id)
+    .in('status', ['Draft', 'Cancelled'])
+    .select('po_id');
   if (error) throw fail(error, 'Failed to delete the order.');
+  if (!data || !data.length) throw statusChanged();
 }
 
 // lines: [{ po_item_id, qty }] = how many of each item arrived now.

@@ -221,7 +221,7 @@
                   <tr v-for="o in filteredOrders" :key="o.po_id" @click="openDetail(o)" class="text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer">
                     <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{{ o.po_number }}</td>
                     <td class="px-4 py-3">{{ o.supplier?.supplier_name }}</td>
-                    <td class="px-4 py-3"><span :class="PO_STATUS[o.status].cls" class="inline-block px-2 py-0.5 text-xs font-semibold whitespace-nowrap">{{ PO_STATUS[o.status].label }}</span></td>
+                    <td class="px-4 py-3"><span :class="statusOf(o.status).cls" class="inline-block px-2 py-0.5 text-xs font-semibold whitespace-nowrap">{{ statusOf(o.status).label }}</span></td>
                     <td class="px-4 py-3 whitespace-nowrap">{{ formatShortDate(o.order_date) }}</td>
                     <td class="px-4 py-3 whitespace-nowrap" :class="overdue(o) ? 'text-red-600 dark:text-red-400 font-semibold' : ''">{{ o.expected_date ? formatShortDate(o.expected_date) : '—' }}<span v-if="overdue(o)"> (overdue)</span></td>
                     <td class="px-4 py-3 text-right font-semibold whitespace-nowrap">{{ formatPeso(poTotal(o)) }}</td>
@@ -243,7 +243,7 @@
                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ o.supplier?.supplier_name }} <span class="text-gray-400 font-normal">· {{ o.po_number }}</span></p>
                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ itemSummary(o) }}</p>
                   </div>
-                  <span :class="PO_STATUS[o.status].cls" class="inline-block px-2 py-0.5 text-xs font-semibold whitespace-nowrap">{{ PO_STATUS[o.status].label }}</span>
+                  <span :class="statusOf(o.status).cls" class="inline-block px-2 py-0.5 text-xs font-semibold whitespace-nowrap">{{ statusOf(o.status).label }}</span>
                   <span class="text-sm font-semibold text-gray-800 dark:text-gray-100 whitespace-nowrap">{{ formatPeso(poOutstandingValue(o)) }}</span>
                   <button @click="openReceive(o)" class="px-3 py-1.5 bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition whitespace-nowrap">Receive</button>
                 </div>
@@ -292,7 +292,7 @@
             <label :class="lbl">Supplier</label>
             <select v-model="poForm.supplier_id" :class="[inputCls, 'w-full mb-3']">
               <option value="" disabled>Choose a supplier</option>
-              <option v-for="s in activeSuppliers" :key="s.supplier_id" :value="s.supplier_id">{{ s.supplier_name }} ({{ s.category }})</option>
+              <option v-for="s in poSupplierOptions" :key="s.supplier_id" :value="s.supplier_id">{{ s.supplier_name }} ({{ s.category }}){{ s.is_active ? '' : ' - inactive' }}</option>
             </select>
           </div>
           <div><label :class="lbl">Order date</label><input v-model="poForm.order_date" type="date" :class="[inputCls, 'w-full mb-3']" /></div>
@@ -300,6 +300,7 @@
         </div>
 
         <label :class="lbl">Items</label>
+        <p v-if="inventoryError" class="text-xs text-amber-600 dark:text-amber-400 mb-2">Inventory could not be loaded, so the item list is empty. You can still type item names, but they will not be linked to stock.</p>
         <div class="space-y-2 mb-2">
           <div v-for="(l, idx) in poForm.lines" :key="l.key" class="grid grid-cols-12 gap-2 items-start">
             <div class="col-span-12 sm:col-span-5">
@@ -337,7 +338,7 @@
       <div class="relative bg-white dark:bg-gray-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 shadow-xl">
         <div class="flex items-start justify-between gap-3 mb-1">
           <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">{{ detail.po_number }}</h3>
-          <span :class="PO_STATUS[detail.status].cls" class="inline-block px-2 py-0.5 text-xs font-semibold">{{ PO_STATUS[detail.status].label }}</span>
+          <span :class="statusOf(detail.status).cls" class="inline-block px-2 py-0.5 text-xs font-semibold">{{ statusOf(detail.status).label }}</span>
         </div>
         <p class="text-sm text-gray-600 dark:text-gray-300">{{ detail.supplier?.supplier_name }}<span v-if="detail.supplier?.contact_number"> · {{ detail.supplier.contact_number }}</span></p>
         <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Ordered {{ formatShortDate(detail.order_date) }}<span v-if="detail.expected_date"> · Expected {{ formatShortDate(detail.expected_date) }}</span><span v-if="detail.received_date"> · Received {{ formatShortDate(detail.received_date) }}</span></p>
@@ -422,7 +423,7 @@
 import { logoutUser } from '../services/authService'
 import { resetNotifications } from '../composables/useNotifications'
 import logoUrl from '../Assets/logofinal.png'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import NotificationBell from '../Components/NotificationBell.vue'
 import { useSidebarState } from '../composables/useSidebarState'
 import { useChatUnread } from '../composables/useChatUnread'
@@ -471,6 +472,7 @@ const suppliers = ref([])
 const orders = ref([])
 const inventory = ref([])
 const isLoading = ref(false)
+const inventoryError = ref(false)
 const isSaving = ref(false)
 const pageError = ref('')
 const modalError = ref('')
@@ -481,12 +483,19 @@ const categoryFilter = ref('')
 const showInactive = ref(false)
 const poSearch = ref('')
 const statusFilter = ref('')
-const today = computed(() => localISODate())
+// A plain computed() would be cached forever (it has nothing reactive to watch), so
+// "Overdue" / "Today" went stale if the page stayed open past midnight. Refresh it.
+const today = ref(localISODate())
+const refreshToday = () => { const t = localISODate(); if (t !== today.value) today.value = t }
+let todayTimer = null
+onUnmounted(() => { clearInterval(todayTimer); document.removeEventListener('visibilitychange', refreshToday) })
 
 const activeSuppliers = computed(() => suppliers.value.filter((s) => s.is_active))
 const statsMap = computed(() => supplierStats(orders.value))
 const statsOf = (s) => statsMap.value[s.supplier_id] || { orders: 0, open: 0, spent: 0 }
 const overdue = (o) => isOverdue(o, today.value)
+// Never crash the table if an order has a status this screen doesn't know about.
+const statusOf = (st) => PO_STATUS[st] || { label: st || 'Unknown', cls: PO_STATUS.Draft.cls }
 const openOrders = computed(() => orders.value.filter((o) => OPEN_STATUSES.includes(o.status)))
 const schedule = computed(() => buildSchedule(orders.value, today.value))
 const cards = computed(() => {
@@ -511,16 +520,17 @@ const filteredOrders = computed(() => {
   const q = poSearch.value.trim().toLowerCase()
   return orders.value.filter((o) => {
     if (statusFilter.value && o.status !== statusFilter.value) return false
-    return !q || o.po_number.toLowerCase().includes(q) || (o.supplier?.supplier_name || '').toLowerCase().includes(q)
+    return !q || (o.po_number || '').toLowerCase().includes(q) || (o.supplier?.supplier_name || '').toLowerCase().includes(q)
   })
 })
 const itemSummary = (o) =>
-  o.items.filter((i) => i.quantity > i.received_qty).map((i) => `${i.quantity - i.received_qty} ${i.unit} ${i.item_name}`).join(', ')
+  (o.items || []).filter((i) => i.quantity > i.received_qty).map((i) => `${i.quantity - i.received_qty} ${i.unit} ${i.item_name}`).join(', ')
 
 onMounted(() => {
   const storedUser = sessionStorage.getItem('user')
   if (!storedUser) { router.push('/'); return }
-  const user = JSON.parse(storedUser)
+  let user
+  try { user = JSON.parse(storedUser) } catch { router.push('/'); return }
   // Same access as Inventory (see the route guard in main.js).
   if (!['Admin', 'Owner/Manager'].includes(user.role)) { router.push('/'); return }
   const displayName = user.full_name || user.username || 'User'
@@ -528,6 +538,8 @@ onMounted(() => {
   userRole.value = user.role
   userInitial.value = displayName.charAt(0).toUpperCase()
   userAvatarUrl.value = user.avatar_url || ''
+  todayTimer = setInterval(refreshToday, 60 * 1000)
+  document.addEventListener('visibilitychange', refreshToday)
   loadAll()
 })
 
@@ -535,11 +547,17 @@ async function loadAll(silent = false) {
   if (!silent) isLoading.value = true
   pageError.value = ''
   setupMissing.value = false
+  refreshToday()
   try {
-    const [s, o] = await Promise.all([getSuppliers(), getPurchaseOrders()])
+    inventoryError.value = false
+    const [s, o, inv] = await Promise.all([
+      getSuppliers(),
+      getPurchaseOrders(),
+      getAllInventory().catch((e) => { console.error(e); inventoryError.value = true; return [] }),
+    ])
     suppliers.value = s
     orders.value = o
-    try { inventory.value = await getAllInventory() } catch { inventory.value = [] }
+    inventory.value = inv
     if (detail.value) detail.value = o.find((x) => x.po_id === detail.value.po_id) || null
   } catch (error) {
     if (error?.code === 'SUPPLIERS_NOT_SET_UP') setupMissing.value = true
@@ -550,9 +568,11 @@ async function loadAll(silent = false) {
   }
 }
 
+let flashTimer = null
 function flash(message) {
   successMessage.value = message
-  setTimeout(() => { successMessage.value = '' }, 4000)
+  clearTimeout(flashTimer)
+  flashTimer = setTimeout(() => { successMessage.value = '' }, 4000)
 }
 
 // ---- Suppliers ----
@@ -598,11 +618,25 @@ async function toggleActive(s) {
 const showPoModal = ref(false)
 const detail = ref(null)
 let lineSeq = 0
-const newLine = (l = {}) => ({ key: ++lineSeq, item_id: '', item_name: '', unit: 'kg', quantity: '', unit_cost: '', ...l })
+const newLine = (l = {}) => ({ key: ++lineSeq, item_id: '', item_name: '', unit: 'kg', quantity: '', unit_cost: '', autoCost: '', ...l })
 const poForm = ref({})
 
+// Dropdown choices: active suppliers, plus the order's current supplier if it has since
+// been deactivated (otherwise the dropdown looked blank while the old id stayed hidden).
+const poSupplierOptions = computed(() => {
+  const cur = poForm.value?.supplier_id
+  const list = activeSuppliers.value.slice()
+  if (cur && !list.some((s) => s.supplier_id === cur)) {
+    const s = suppliers.value.find((x) => x.supplier_id === cur)
+    if (s) list.unshift(s)
+  }
+  return list
+})
+const supplierIsActive = (id) => !!suppliers.value.find((s) => s.supplier_id === id)?.is_active
+
 function openPoModal(po = null, supplierId = '') {
-  if (!activeSuppliers.value.length) {
+  // Only creating a NEW order needs an active supplier; editing a draft always works.
+  if (!po && !activeSuppliers.value.length) {
     pageError.value = 'Add a supplier first, then create a purchase order.'
     tab.value = 'suppliers'
     return
@@ -630,12 +664,22 @@ function pickItem(line, raw) {
   line.item_id = item.item_id
   line.item_name = item.item_name
   line.unit = item.unit || 'kg'
-  if (line.unit_cost === '') line.unit_cost = item.unit_cost || ''
+  // Fill the cost when it is empty OR still the price we auto-filled for the previous
+  // item. A price the user typed themselves is never overwritten.
+  const untouched = line.unit_cost === '' || (line.autoCost !== '' && Number(line.unit_cost) === Number(line.autoCost))
+  if (untouched) {
+    line.unit_cost = item.unit_cost || ''
+    line.autoCost = item.unit_cost || ''
+  }
 }
 
 async function submitPo(markOrdered) {
   if (isSaving.value) return
   modalError.value = ''
+  if (markOrdered && poForm.value.supplier_id && !supplierIsActive(poForm.value.supplier_id)) {
+    modalError.value = 'This supplier is inactive. Reactivate it or choose another supplier before placing the order.'
+    return
+  }
   isSaving.value = true
   try {
     await savePurchaseOrder(poForm.value, { markOrdered })
@@ -658,6 +702,10 @@ function openDetail(o) {
 async function placeOrder(po) {
   if (isSaving.value) return
   modalError.value = ''
+  if (!supplierIsActive(po.supplier_id)) {
+    modalError.value = 'This supplier is inactive. Reactivate it (or edit the draft and choose another supplier) before placing the order.'
+    return
+  }
   isSaving.value = true
   try {
     await setPurchaseOrderStatus(po.po_id, 'Ordered')
@@ -666,6 +714,7 @@ async function placeOrder(po) {
     await loadAll(true)
   } catch (error) {
     modalError.value = error?.message || 'Failed to place the order.'
+    if (error?.code === 'STATUS_CHANGED') await loadAll(true)
   } finally {
     isSaving.value = false
   }
@@ -688,6 +737,19 @@ async function submitReceive() {
   const lines = Object.entries(r.qty).map(([id, q]) => ({ po_item_id: Number(id), qty: q === '' ? 0 : Number(q) }))
   if (lines.some((l) => !Number.isInteger(l.qty) || l.qty < 0)) {
     modalError.value = 'Quantities must be whole numbers, 0 or more.'
+    return
+  }
+  // The input's max="" is only a hint (typing past it is allowed), so check it here.
+  for (const l of lines) {
+    const item = r.po.items.find((i) => i.po_item_id === l.po_item_id)
+    const outstanding = item ? item.quantity - item.received_qty : 0
+    if (l.qty > outstanding) {
+      modalError.value = `"${item?.item_name || 'Item'}": you can receive at most ${[outstanding, item?.unit].filter((x) => x !== undefined && x !== '').join(' ')} (what is still outstanding).`
+      return
+    }
+  }
+  if (r.date && r.po.order_date && r.date < r.po.order_date) {
+    modalError.value = 'Date received cannot be before the order date.'
     return
   }
   isSaving.value = true
