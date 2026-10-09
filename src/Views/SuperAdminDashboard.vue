@@ -105,12 +105,12 @@
       <!-- MAIN TABS -->
       <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-6 sm:mb-10 overflow-x-auto no-scrollbar">
         <button
-          v-for="t in ['Tenants', 'Analytics', 'Config', 'Communication']" :key="t"
+          v-for="t in ['Tenants', 'Compliance', 'Analytics', 'Config', 'Communication']" :key="t"
           type="button"
           @click="mainTab = t"
           :class="mainTab === t ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'"
           class="px-5 py-3 sm:py-3.5 text-sm font-bold border-b-2 -mb-px transition whitespace-nowrap"
-        >{{ t === 'Analytics' ? 'Platform Analytics' : t === 'Config' ? 'Global Config' : t === 'Communication' ? 'Communication Hub' : 'Tenants' }}</button>
+        >{{ t === 'Analytics' ? 'Platform Analytics' : t === 'Config' ? 'Global Config' : t === 'Communication' ? 'Communication Hub' : t }}<span v-if="t === 'Compliance' && licensePending" class="ml-2 inline-block min-w-[1.25rem] px-1.5 py-0.5 text-[10px] leading-none font-bold text-white bg-blue-600 rounded-full text-center">{{ licensePending }}</span></button>
       </div>
 
       <template v-if="mainTab === 'Tenants'">
@@ -514,6 +514,8 @@
       </div>
 
       <!-- ============ COMMUNICATION HUB ============ -->
+      <LicenseVerificationPanel v-else-if="mainTab === 'Compliance'" @pending-count="licensePending = $event" />
+
       <GlobalConfigPanel v-else-if="mainTab === 'Config'" />
 
       <AnnouncementsPanel v-else-if="mainTab === 'Communication'" />
@@ -734,6 +736,7 @@ import logoUrl from '../Assets/logofinal.png'
 import NotificationBell from '../Components/SuperAdminBell.vue'
 import AnnouncementsPanel from '../Components/AnnouncementsPanel.vue'
 import GlobalConfigPanel from '../Components/GlobalConfigPanel.vue'
+import LicenseVerificationPanel from '../Components/LicenseVerificationPanel.vue'
 import { logoutUser } from '../services/authService'
 import { logActivity } from '../services/activitylogservice'
 import { localToday, formatDateOnly } from '../utils/date'
@@ -743,6 +746,7 @@ import {
   getPlatformStats, getPlatformBusinesses, setBusinessStatus, getBusinessStatusAudit,
   getBusinessStaffList, getBusinessPackagesList, getBusinessBookingsList,
   getTenantLifecycle, renewBusinessSubscription, setBusinessExpiry, getTenantAnalytics,
+  getLicenseQueue,
 } from '../services/superAdminService'
 
 const FILTERS = ['All', 'Pending', 'Active', 'Suspended', 'Rejected', 'Closed']
@@ -787,7 +791,13 @@ const stats = ref({
 const businesses = ref([])
 
 // ---------- Platform analytics (bookings + revenue per tenant, peak months) ----------
-const mainTab = ref('Tenants') // 'Tenants' | 'Analytics' | 'Config' | 'Communication'
+const mainTab = ref('Tenants') // 'Tenants' | 'Compliance' | 'Analytics' | 'Config' | 'Communication'
+// Licenses waiting for review (badge on the Compliance tab). The panel keeps it
+// up to date once it is open; this is the initial load.
+const licensePending = ref(0)
+getLicenseQueue()
+  .then((rows) => { licensePending.value = (rows || []).filter((d) => d.verification_status === 'Pending').length })
+  .catch(() => {})
 const ANALYTICS_RANGES = [
   { key: '6M', label: 'Last 6 months' },
   { key: '12M', label: 'Last 12 months' },

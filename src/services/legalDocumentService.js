@@ -2,7 +2,18 @@ import { supabase } from '../supabaseClient';
 import { cleanDocForm, validateFile } from '../utils/legaldocs';
 
 const BUCKET = 'legal-documents';
-const COLUMNS = 'document_id, title, doc_type, party_name, reference_no, issue_date, expiry_date, notes, file_path, file_name, file_size, mime_type, created_at, updated_at';
+const BASE_COLUMNS = 'document_id, title, doc_type, party_name, reference_no, issue_date, expiry_date, notes, file_path, file_name, file_size, mime_type, created_at, updated_at';
+// License verification columns (license_verification.sql). If that script has
+// not been run yet we fall back to BASE_COLUMNS so this page keeps working.
+const VERIFY_COLUMNS = 'verification_status, verification_submitted_at, verified_at, verification_note';
+const COLUMNS = `${BASE_COLUMNS}, ${VERIFY_COLUMNS}`;
+
+let verifyColumnsOk = true; // flips to false if license_verification.sql has not been run
+const cols = () => (verifyColumnsOk ? COLUMNS : BASE_COLUMNS);
+
+function isMissingColumn(error) {
+  return error?.code === '42703' || /column .* does not exist|could not find the .* column/i.test(error?.message || '');
+}
 
 function isMissingTable(error) {
   return (
@@ -49,12 +60,20 @@ async function removeFile(path) {
 
 // RLS limits this to the caller's own business (Admin / Owner-Manager only).
 export async function getLegalDocuments() {
-  const { data, error } = await supabase
+  const query = (columns) => supabase
     .from('tbl_legal_documents')
-    .select(COLUMNS)
+    .select(columns)
     .order('expiry_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(2000);
+
+  verifyColumnsOk = true;
+  let { data, error } = await query(COLUMNS);
+  if (error && isMissingColumn(error)) {
+    verifyColumnsOk = false;
+    ({ data, error } = await query(BASE_COLUMNS));
+    if (!error) return (data || []).map((d) => ({ ...d, verification_unavailable: true }));
+  }
 
   if (error) {
     if (isMissingTable(error)) throw setupError();
@@ -78,7 +97,7 @@ export async function uploadLegalDocument(businessId, form, file) {
       file_size: file.size,
       mime_type: file.type || null,
     })
-    .select(COLUMNS)
+    .select(cols())
     .single();
 
   if (error) {
@@ -110,7 +129,7 @@ export async function updateLegalDocument(doc, form, newFile = null, businessId 
     .from('tbl_legal_documents')
     .update(patch)
     .eq('document_id', doc.document_id)
-    .select(COLUMNS)
+    .select(cols())
     .maybeSingle();
 
   if (error || !data) {
@@ -142,4 +161,36 @@ export async function getDocumentUrl(doc, { download = false, expiresIn = 120 } 
     .createSignedUrl(doc.file_path, expiresIn, download ? { download: doc.file_name } : undefined);
   if (error || !data?.signedUrl) throw new Error('Could not open the file. It may have been removed.');
   return data.signedUrl;
+}
+
+// ---------- License verification ----------
+// The database trigger decides what a business user may change: they can only
+// move a license Unverified/Rejected -> Pending (submit) or Pending ->
+// Unverified (withdraw). Verified/Rejected is set by the Super Admin only.
+async function setVerificationStatus(doc, status) {
+  const { data, error } = await supabase
+    .from('tbl_legal_documents')
+    .update({ verification_status: status })
+    .eq('document_id', doc.document_id)
+    .select(COLUMNS)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingColumn(error)) {
+      const err = new Error('License verification is not set up in the database yet. Run license_verification.sql in the Supabase SQL Editor.');
+      err.code = 'VERIFY_NOT_SET_UP';
+      throw err;
+    }
+    throw new Error(error.message || 'Failed to update the verification status.');
+  }
+  if (!data) throw new Error('You do not have permission to change this document.');
+  return data;
+}
+
+export function submitLicenseForVerification(doc) {
+  return setVerificationStatus(doc, 'Pending');
+}
+
+export function withdrawLicenseSubmission(doc) {
+  return setVerificationStatus(doc, 'Unverified');
 }

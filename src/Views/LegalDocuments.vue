@@ -169,6 +169,34 @@
             <button @click="statusFilter = summary.expired ? 'expired' : 'expiring'" class="underline font-semibold ml-1">Show</button>
           </div>
 
+          <!-- License compliance (verified by the platform admin) -->
+          <div v-if="verificationReady" class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <div>
+                <h2 class="font-bold text-gray-800 dark:text-gray-100">License compliance</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Upload each required license, add its number, then submit it for verification by the platform admin.</p>
+              </div>
+              <span :class="compliance.compliant ? LICENSE_STATE_UI.verified.cls : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'" class="px-2.5 py-1 text-xs font-semibold whitespace-nowrap">
+                {{ compliance.compliant ? 'Fully compliant' : `${compliance.verified} of ${compliance.total} required licenses verified` }}
+              </span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div v-for="item in compliance.items" :key="item.type" class="flex items-start justify-between gap-2 border border-gray-100 dark:border-gray-700 px-3 py-2">
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-800 dark:text-gray-100">{{ item.type }}</p>
+                  <p v-if="item.state === 'rejected' && item.doc?.verification_note" class="text-xs text-red-600 dark:text-red-400 break-words">{{ item.doc.verification_note }}</p>
+                  <p v-else-if="item.state === 'missing'" class="text-xs text-gray-400 dark:text-gray-500">Upload this document below.</p>
+                  <p v-else-if="item.state === 'unsubmitted'" class="text-xs text-gray-400 dark:text-gray-500">Uploaded — submit it for verification.</p>
+                  <p v-else-if="item.state === 'expired'" class="text-xs text-gray-400 dark:text-gray-500">Renew and upload the new one.</p>
+                </div>
+                <span :class="LICENSE_STATE_UI[item.state].cls" class="px-2 py-0.5 text-xs font-semibold whitespace-nowrap">{{ LICENSE_STATE_UI[item.state].label }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="verificationUnavailable" class="border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 text-sm p-4 mb-4">
+            License verification needs a one-time database setup. Run <span class="font-mono font-semibold">license_verification.sql</span> in the Supabase SQL Editor, then refresh this page.
+          </div>
+
           <!-- Summary cards -->
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4">
@@ -223,6 +251,12 @@
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ d.doc_type }}<span v-if="d.party_name"> · {{ d.party_name }}</span></p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Expires: {{ formatDate(d.expiry_date) }} <span v-if="d.expiry_date">({{ expiryNote(d) }})</span></p>
+                <div v-if="verificationReady && isLicenseType(d.doc_type)" class="mt-2">
+                  <span :class="VERIFICATION_UI[verificationOf(d)].cls" class="inline-block px-2 py-0.5 text-xs font-semibold">{{ VERIFICATION_UI[verificationOf(d)].label }}</span>
+                  <p v-if="verificationOf(d) === 'Rejected' && d.verification_note" class="text-xs text-red-600 dark:text-red-400 mt-1 break-words">{{ d.verification_note }}</p>
+                  <button v-if="canSubmit(d)" @click="doSubmitVerification(d)" :disabled="verifyBusyId === d.document_id" class="ml-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 disabled:opacity-50">{{ verificationOf(d) === 'Rejected' ? 'Resubmit' : 'Submit for verification' }}</button>
+                  <button v-else-if="verificationOf(d) === 'Pending'" @click="doWithdrawVerification(d)" :disabled="verifyBusyId === d.document_id" class="ml-2 text-xs font-semibold text-gray-600 dark:text-gray-300 disabled:opacity-50">Withdraw</button>
+                </div>
                 <div class="flex gap-3 mt-3 text-sm font-semibold">
                   <button @click="openFile(d)" class="text-emerald-700 dark:text-emerald-400">View</button>
                   <button @click="downloadFile(d)" class="text-gray-600 dark:text-gray-300">Download</button>
@@ -243,11 +277,12 @@
                     <th class="px-4 py-3 font-medium whitespace-nowrap">Issued</th>
                     <th class="px-4 py-3 font-medium whitespace-nowrap">Expires</th>
                     <th class="px-4 py-3 font-medium">Status</th>
+                    <th v-if="verificationReady" class="px-4 py-3 font-medium">Verification</th>
                     <th class="px-4 py-3 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                  <tr v-if="!filteredDocs.length"><td colspan="7" class="text-center py-8 text-gray-400 dark:text-gray-500">No documents match.</td></tr>
+                  <tr v-if="!filteredDocs.length"><td :colspan="verificationReady ? 8 : 7" class="text-center py-8 text-gray-400 dark:text-gray-500">No documents match.</td></tr>
                   <tr v-for="d in filteredDocs" :key="d.document_id" class="text-gray-700 dark:text-gray-300 align-top">
                     <td class="px-4 py-3 max-w-xs">
                       <p class="font-medium text-gray-900 dark:text-gray-100 break-words">{{ d.title }}</p>
@@ -264,6 +299,16 @@
                       <p v-if="d.expiry_date" class="text-xs text-gray-400 dark:text-gray-500">{{ expiryNote(d) }}</p>
                     </td>
                     <td class="px-4 py-3"><span :class="STATUS_UI[docStatus(d)].cls" class="inline-block px-2 py-0.5 text-xs font-semibold whitespace-nowrap">{{ STATUS_UI[docStatus(d)].label }}</span></td>
+                    <td v-if="verificationReady" class="px-4 py-3 max-w-[14rem]">
+                      <template v-if="isLicenseType(d.doc_type)">
+                        <span :class="VERIFICATION_UI[verificationOf(d)].cls" class="inline-block px-2 py-0.5 text-xs font-semibold whitespace-nowrap">{{ VERIFICATION_UI[verificationOf(d)].label }}</span>
+                        <p v-if="verificationOf(d) === 'Verified' && d.verified_at" class="text-xs text-gray-400 dark:text-gray-500 mt-1">on {{ formatDate(d.verified_at) }}</p>
+                        <p v-if="verificationOf(d) === 'Rejected' && d.verification_note" class="text-xs text-red-600 dark:text-red-400 mt-1 break-words">{{ d.verification_note }}</p>
+                        <button v-if="canSubmit(d)" @click="doSubmitVerification(d)" :disabled="verifyBusyId === d.document_id" class="block text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline mt-1 disabled:opacity-50">{{ verificationOf(d) === 'Rejected' ? 'Resubmit' : 'Submit for verification' }}</button>
+                        <button v-else-if="verificationOf(d) === 'Pending'" @click="doWithdrawVerification(d)" :disabled="verifyBusyId === d.document_id" class="block text-xs font-semibold text-gray-600 dark:text-gray-300 hover:underline mt-1 disabled:opacity-50">Withdraw</button>
+                      </template>
+                      <span v-else class="text-gray-400 dark:text-gray-500">—</span>
+                    </td>
                     <td class="px-4 py-3 text-right whitespace-nowrap">
                       <button @click="openFile(d)" class="text-emerald-700 dark:text-emerald-400 font-semibold hover:underline mr-3">View</button>
                       <button @click="downloadFile(d)" class="text-gray-600 dark:text-gray-300 font-semibold hover:underline mr-3">Download</button>
@@ -321,6 +366,10 @@
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes <span class="text-gray-400">(optional)</span></label>
         <textarea v-model="form.notes" rows="2" maxlength="500" placeholder="e.g. Renew at City Hall every January" class="mb-3 w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-none text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
 
+        <p v-if="verificationReady && editing && isLicenseType(editing.doc_type) && verificationOf(editing) !== 'Unverified'" class="mb-3 text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-2">
+          Changing the type, reference no., dates or file of a license that was already submitted resets it to "Not submitted" — you will need to submit it for verification again.
+        </p>
+
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">File <span v-if="editing" class="text-gray-400">(leave empty to keep the current file)</span></label>
         <input ref="fileInput" type="file" :accept="ACCEPT_ATTR" @change="onFileChosen" class="w-full mb-1 text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:px-3 file:py-2 file:border-0 file:rounded-none file:bg-gray-100 dark:file:bg-gray-700 file:text-sm file:font-semibold file:text-gray-700 dark:file:text-gray-200" />
         <p class="text-xs text-gray-500 dark:text-gray-400 mb-5">
@@ -375,11 +424,13 @@ import { useReviewAlerts } from '../composables/useReviewAlerts'
 import { useRouter } from 'vue-router'
 import {
   getLegalDocuments, uploadLegalDocument, updateLegalDocument,
-  deleteLegalDocument, getDocumentUrl
+  deleteLegalDocument, getDocumentUrl,
+  submitLicenseForVerification, withdrawLicenseSubmission
 } from '../services/legalDocumentService'
 import {
   DOC_TYPES, CATEGORIES, STATUS_UI, EXPIRY_WARN_DAYS, ACCEPT_ATTR,
-  docStatus, expiryNote, categoryOf, summarize, formatDate, formatFileSize
+  docStatus, expiryNote, categoryOf, summarize, formatDate, formatFileSize,
+  isLicenseType, verificationOf, VERIFICATION_UI, LICENSE_STATE_UI, complianceReport
 } from '../utils/legaldocs'
 
 const router = useRouter()
@@ -430,6 +481,36 @@ const snapshotForm = () => { initialSnapshot = JSON.stringify(form.value) }
 const isDirty = computed(() => showModal.value && (JSON.stringify(form.value) !== initialSnapshot || !!chosenFile.value))
 
 const summary = computed(() => summarize(docs.value))
+
+// ---- License verification (compliance) ----
+const verificationUnavailable = computed(() => docs.value.some((d) => d.verification_unavailable))
+const verificationReady = computed(() => !setupMissing.value && !verificationUnavailable.value)
+const compliance = computed(() => complianceReport(docs.value))
+const verifyBusyId = ref(null)
+
+// A license can be (re)submitted when it was never submitted, or was rejected,
+// and it is not already expired.
+function canSubmit(d) {
+  return ['Unverified', 'Rejected'].includes(verificationOf(d)) && docStatus(d) !== 'expired'
+}
+
+async function changeVerification(d, action, okMessage) {
+  pageError.value = ''
+  verifyBusyId.value = d.document_id
+  try {
+    const updated = await action(d)
+    docs.value = docs.value.map((x) => (x.document_id === updated.document_id ? updated : x))
+    flash(okMessage)
+  } catch (error) {
+    pageError.value = error?.message || 'Could not update the verification status.'
+    console.error(error)
+  } finally {
+    verifyBusyId.value = null
+  }
+}
+
+const doSubmitVerification = (d) => changeVerification(d, submitLicenseForVerification, 'Submitted. The platform admin will review it.')
+const doWithdrawVerification = (d) => changeVerification(d, withdrawLicenseSubmission, 'Submission withdrawn.')
 
 const filteredDocs = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()

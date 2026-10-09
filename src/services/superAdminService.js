@@ -149,3 +149,36 @@ export async function getPlatformAuditLog({
   const rows = data || [];
   return { rows, total: rows.length ? Number(rows[0].total_count) : 0 };
 }
+
+// ---------- Compliance: license verification ----------
+// Every permit/license of every business (Super Admin only -- the RPC returns
+// nothing for anyone else). Requires license_verification.sql; returns null
+// (instead of throwing) when that script has not been run yet.
+export async function getLicenseQueue() {
+  const { data, error } = await supabase.rpc('get_license_verification_queue');
+  if (error) {
+    console.error('License verification not available:', error.message);
+    return null;
+  }
+  return data || [];
+}
+
+// decision: 'Verified' | 'Rejected' (a note is required for a rejection).
+export async function reviewLicense(documentId, decision, note = null) {
+  const { error } = await supabase.rpc('review_license_document', {
+    p_document_id: documentId,
+    p_decision: decision,
+    p_note: note || null,
+  });
+  if (error) throw new Error(error.message || 'Failed to save the review.');
+}
+
+// Short-lived link to a business's private license file. The Super Admin has a
+// storage read policy on the legal-documents bucket.
+export async function getLicenseFileUrl(filePath, fileName, { download = false } = {}) {
+  const { data, error } = await supabase.storage
+    .from('legal-documents')
+    .createSignedUrl(filePath, 120, download ? { download: fileName } : undefined);
+  if (error || !data?.signedUrl) throw new Error('Could not open the file. It may have been removed.');
+  return data.signedUrl;
+}

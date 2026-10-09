@@ -135,3 +135,78 @@ export function cleanDocForm(form) {
     notes: notes || null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Compliance checks: LICENSE VERIFICATION
+// Mirrors private.license_doc_types() in license_verification.sql.
+// ---------------------------------------------------------------------------
+
+// Permits / licenses the platform can verify.
+export const LICENSE_TYPES = [
+  "Mayor's / Business Permit",
+  'Sanitary Permit',
+  'Fire Safety Certificate (FSIC)',
+  'DTI / SEC Registration',
+  'BIR Certificate of Registration',
+  'FDA License to Operate',
+];
+
+// A business is "compliant" once every one of these is verified and not expired.
+export const REQUIRED_LICENSES = [
+  "Mayor's / Business Permit",
+  'Sanitary Permit',
+  'DTI / SEC Registration',
+  'BIR Certificate of Registration',
+];
+
+export function isLicenseType(docType) {
+  return LICENSE_TYPES.includes(docType);
+}
+
+export function verificationOf(doc) {
+  return doc?.verification_status || 'Unverified';
+}
+
+export const VERIFICATION_UI = {
+  Unverified: { label: 'Not submitted', cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
+  Pending: { label: 'Pending review', cls: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  Verified: { label: 'Verified', cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  Rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+};
+
+// State of one required license, best first.
+export const LICENSE_STATE_UI = {
+  verified: { label: 'Verified', cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+  pending: { label: 'Pending review', cls: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  rejected: { label: 'Rejected', cls: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  expired: { label: 'Expired', cls: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+  unsubmitted: { label: 'Not submitted', cls: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+  missing: { label: 'Missing', cls: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' },
+};
+
+const STATE_RANK = { verified: 0, pending: 1, rejected: 2, unsubmitted: 3, expired: 4, missing: 5 };
+
+function licenseState(doc, today) {
+  if (docStatus(doc, today) === 'expired') return 'expired'; // an expired license never counts
+  const v = verificationOf(doc);
+  if (v === 'Verified') return 'verified';
+  if (v === 'Pending') return 'pending';
+  if (v === 'Rejected') return 'rejected';
+  return 'unsubmitted';
+}
+
+// docs: any list of legal documents of ONE business (non-license docs are ignored).
+// Returns { items: [{ type, state, doc }], verified, total, compliant }.
+export function complianceReport(docs, today = localISODate()) {
+  const items = REQUIRED_LICENSES.map((type) => {
+    let best = null;
+    for (const doc of docs || []) {
+      if (doc.doc_type !== type) continue;
+      const state = licenseState(doc, today);
+      if (!best || STATE_RANK[state] < STATE_RANK[best.state]) best = { type, state, doc };
+    }
+    return best || { type, state: 'missing', doc: null };
+  });
+  const verified = items.filter((i) => i.state === 'verified').length;
+  return { items, verified, total: items.length, compliant: verified === items.length };
+}
