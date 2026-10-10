@@ -701,9 +701,9 @@ async function handleCreateUser() {
       fullName,
       newUser.value.role,
       // Store 09171234567, not "0917 123 4567", so login-by-number and SMS match.
-      toLocalMobile(newUser.value.contact_number),
+      toLocalMobile(newUser.value.contact_number) || null,
       newUser.value.availability,
-      newUser.value.role === 'Staff' ? newUser.value.position : null
+      newUser.value.role === 'Staff' ? (newUser.value.position || null) : null
     )
     showAddUserModal.value = false
     fetchUsers()
@@ -758,9 +758,9 @@ async function handleUpdateUser() {
     await updateStaffUser(editUser.value.id, {
       full_name: String(editUser.value.full_name).trim(),
       role: editUser.value.role,
-      contact_number: toLocalMobile(editUser.value.contact_number),
+      contact_number: toLocalMobile(editUser.value.contact_number) || null,
       availability: editUser.value.availability,
-      position: editUser.value.role === 'Staff' ? editUser.value.position : null
+      position: editUser.value.role === 'Staff' ? (editUser.value.position || null) : null
     })
     showEditUserModal.value = false
     fetchUsers()
