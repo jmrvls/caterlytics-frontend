@@ -59,6 +59,9 @@ export async function updateStaffUser(id, { full_name, role, contact_number, ava
     .single();
 
   if (error) {
+    // Database rules (owner profile, role changes) raise readable messages -- show them.
+    if (error.code === 'P0001' && error.message) throw new Error(error.message);
+    if (error.code === '23505') throw new Error('That contact number is already used by another account.');
     if (error.code === 'PGRST116') {
       throw new Error("You don't have permission to edit staff profiles. Only Admin accounts can do this.");
     }

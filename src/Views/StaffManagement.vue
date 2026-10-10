@@ -217,7 +217,7 @@
               </div>
 
               <div v-if="userRole === 'Admin' || userRole === 'Owner/Manager'" class="flex items-center gap-2">
-                <button @click="openEditUserModal(u)" class="flex-1 py-2 rounded-none text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 active:bg-emerald-100 dark:active:bg-emerald-900/40">
+                <button v-if="canManage(u)" @click="openEditUserModal(u)" class="flex-1 py-2 rounded-none text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 active:bg-emerald-100 dark:active:bg-emerald-900/40">
                   Edit
                 </button>
                 <button
@@ -228,7 +228,7 @@
                   Schedule
                 </button>
                 <button
-                  v-if="u.id !== currentUserId"
+                  v-if="u.id !== currentUserId && u.role !== 'Owner/Manager'"
                   @click="confirmDeleteUser(u)"
                   class="flex-1 py-2 text-xs font-semibold text-red-600 dark:text-red-400 active:bg-red-100 dark:active:bg-red-900/40"
                 >
@@ -289,7 +289,7 @@
                   </td>
                   <td class="px-6 py-3.5 text-right">
                     <div v-if="userRole === 'Admin' || userRole === 'Owner/Manager'" class="flex items-center justify-end gap-3">
-                      <button @click="openEditUserModal(u)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                      <button v-if="canManage(u)" @click="openEditUserModal(u)" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
                         Edit
                       </button>
                       <button
@@ -300,7 +300,7 @@
                         Schedule
                       </button>
                       <button
-                        v-if="u.id !== currentUserId"
+                        v-if="u.id !== currentUserId && u.role !== 'Owner/Manager'"
                         @click="confirmDeleteUser(u)"
                         class="text-xs font-semibold text-red-600 dark:text-red-400 hover:underline"
                       >
@@ -355,7 +355,7 @@
               <option disabled value="">Select a role</option>
               <option value="Admin">Admin</option>
               <option value="Staff">Staff</option>
-              <option value="Owner/Manager">Owner/Manager</option>
+              <option v-if="userRole === 'Owner/Manager'" value="Owner/Manager">Owner/Manager</option>
             </select>
           </div>
 
@@ -419,11 +419,12 @@
 
           <div class="relative">
             <label class="absolute -top-2.5 left-3 bg-white dark:bg-gray-800 px-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">Role</label>
-            <select v-model="editUser.role" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
+            <select v-model="editUser.role" :disabled="!canEditRole" class="w-full p-3 bg-white dark:bg-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900 dark:text-gray-100" required>
               <option value="Admin">Admin</option>
               <option value="Staff">Staff</option>
-              <option value="Owner/Manager">Owner/Manager</option>
+              <option v-if="editUser.role === 'Owner/Manager'" value="Owner/Manager">Owner/Manager</option>
             </select>
+            <p v-if="!canEditRole" class="text-xs text-gray-400 dark:text-gray-500 mt-1">Only an Admin can change roles, and the owner's role is fixed.</p>
           </div>
 
           <div v-if="editUser.role === 'Staff'" class="relative">
@@ -603,6 +604,15 @@ const editUser = ref({ id: '', full_name: '', username: '', role: '', contact_nu
 
 const userToDelete = ref(null)
 const isDeletingUser = ref(false)
+// Mirrors the database rules: only the owner may edit the owner profile, and
+// only an Admin may change roles (the owner role itself never changes).
+function canManage(u) {
+  return u.role !== 'Owner/Manager' || u.id === currentUserId.value
+}
+const canEditRole = computed(() => {
+  const target = userList.value.find((u) => u.id === editUser.value.id)
+  return userRole.value === 'Admin' && target?.role !== 'Owner/Manager'
+})
 const deleteUserError = ref('')
 
 // ---------- Staff schedule (per-date unavailability) ----------

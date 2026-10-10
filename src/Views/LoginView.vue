@@ -123,29 +123,6 @@
           </router-link>
         </div>
 
-        <!-- For caterers: contact to apply -->
-        <div class="text-center pt-5 border-t border-gray-100 space-y-1">
-          <p class="text-xs text-gray-500">
-            <span class="font-bold">For caterers:</span> want to use Caterlytics for your business?
-          </p>
-          <p class="text-xs font-bold">
-            <a
-              href="https://m.me/jmr.vls"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-emerald-600 hover:underline"
-            >Messenger</a>
-            <span class="text-gray-300 mx-1">·</span>
-            <a
-              href="https://mail.google.com/mail/?view=cm&fs=1&to=jomaridorado99@gmail.com&su=Caterlytics%20Application&body=Business%20name%3A%0ALocation%3A%0AFacebook%20page%3A%0AContact%20number%3A"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-emerald-600 hover:underline"
-            >Email</a>
-          </p>
-        </div>
-
-        <!-- Copyright Footnote Section -->
         <div class="text-center pt-6 border-t border-gray-100">
           <span class="text-gray-400 text-xs font-bold tracking-widest uppercase">Caterlytics</span>
         </div>
