@@ -123,6 +123,21 @@
               Already have an account? <router-link to="/" class="text-emerald-600 font-bold hover:underline">Sign in</router-link>
             </p>
           </div>
+
+          <!-- For caterers: how to get onto the platform -->
+          <div class="text-center pt-4 mt-2 border-t border-gray-100 space-y-1">
+            <p class="text-xs text-gray-500">
+              <span class="font-bold">For caterers:</span> want to use Caterlytics for your business?
+            </p>
+            <p class="text-xs font-bold">
+              <a
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=jomaridorado99@gmail.com&su=Caterlytics%20Application&body=Business%20name%3A%0ALocation%3A%0AFacebook%20page%3A%0AContact%20number%3A"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-emerald-600 hover:underline"
+              >Email us</a>
+            </p>
+          </div>
         </template>
 
         <!-- Post-signup: ask for the SMS OTP sent to their phone -->
